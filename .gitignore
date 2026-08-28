@@ -1,0 +1,38 @@
+# Environment variables
+*.env
+.env-btst
+.env-better-auth
+
+# Dependencies
+node_modules/
+
+
+# Logs and system files
+*.log
+*.DS_Store
+
+# Package locks (Optional: remove if you want to track versions)
+package-lock.json
+yarn.lock
+
+#
+
+.output/
+.vite/
+.vite-temp/
+.nitro
+.vscode/
+.agents/
+.claude/
+
+# Environment files
+.env*
+**/.env*
+
+
+# Local backup files
+*.backup
+
+# macOS metadata
+.DS_Store
+._*

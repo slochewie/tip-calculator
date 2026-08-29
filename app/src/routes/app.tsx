@@ -200,7 +200,7 @@ function AuthenticatedTipCalculator() {
 
   return (
     <>
-      <header className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 pt-4 md:flex-row md:items-center md:justify-between md:px-6 md:pt-6 lg:px-8 lg:pt-8">
+      <header className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 pr-16 pt-4 md:flex-row md:items-center md:justify-between md:px-6 md:pr-20 md:pt-6 lg:px-8 lg:pr-24 lg:pt-8">
         <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
           <div className="flex min-w-0 items-center gap-3">
             <div className="flex size-10 shrink-0 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-sm">

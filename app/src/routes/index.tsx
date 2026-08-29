@@ -1,6 +1,11 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { PlusIcon, Trash2Icon } from "lucide-react";
+import {
+	ChevronDownIcon,
+	ChevronUpIcon,
+	PlusIcon,
+	Trash2Icon,
+} from "lucide-react";
 
 import {
 	Accordion,
@@ -26,6 +31,7 @@ import {
 import {
 	InputGroup,
 	InputGroupAddon,
+	InputGroupButton,
 	InputGroupInput,
 	InputGroupText,
 } from "#/components/ui/input-group.tsx";
@@ -133,17 +139,16 @@ function allocateClaims(
 
 function Home() {
 	const [claimPercent, setClaimPercent] = useState("8");
-	const [nextRegisterId, setNextRegisterId] = useState(3);
+	const [nextRegisterId, setNextRegisterId] = useState(2);
 
 	const [registers, setRegisters] = useState<Register[]>([
-		{ id: 1, name: "Register A", sales: "5000" },
-		{ id: 2, name: "Register B", sales: "5000" },
+		{ id: 1, name: "Register A", sales: "0" },
 	]);
 
 	const [staff, setStaff] = useState<RoleState>({
-		bartender: 2,
-		barback: 1,
-		door: 3,
+		bartender: 1,
+		barback: 0,
+		door: 0,
 	});
 
 	const [weights, setWeights] = useState<WeightState>({
@@ -179,13 +184,9 @@ function Home() {
 
 	const roleBreakdown = ROLE_ORDER.map((role) => {
 		const entries = allocations.filter((entry) => entry.role === role);
-
 		const totalCents = entries.reduce((sum, entry) => sum + entry.cents, 0);
-
 		const amounts = entries.map((entry) => entry.cents);
-
 		const minimum = amounts.length ? Math.min(...amounts) : 0;
-
 		const maximum = amounts.length ? Math.max(...amounts) : 0;
 
 		return {
@@ -232,6 +233,13 @@ function Home() {
 		}));
 	}
 
+	function adjustStaff(role: RoleKey, amount: number) {
+		setStaff((current) => ({
+			...current,
+			[role]: clampInteger(current[role] + amount),
+		}));
+	}
+
 	function updateWeight(role: RoleKey, value: string) {
 		setWeights((current) => ({
 			...current,
@@ -246,7 +254,6 @@ function Home() {
 					<h1 className="font-heading text-3xl font-semibold tracking-tight">
 						Tip Claim Calculator
 					</h1>
-
 					<Badge variant="secondary">Weighted roles</Badge>
 				</div>
 
@@ -261,7 +268,6 @@ function Home() {
 					<Card>
 						<CardHeader>
 							<CardTitle>Sales and claim target</CardTitle>
-
 							<CardDescription>
 								Add every register used during the shift and enter its sales
 								total.
@@ -286,7 +292,6 @@ function Home() {
 											value={claimPercent}
 											onChange={(event) => setClaimPercent(event.target.value)}
 										/>
-
 										<InputGroupAddon align="inline-end">
 											<InputGroupText>% of total sales</InputGroupText>
 										</InputGroupAddon>
@@ -310,7 +315,6 @@ function Home() {
 											<FieldLabel htmlFor={`register-name-${register.id}`}>
 												Register
 											</FieldLabel>
-
 											<Input
 												id={`register-name-${register.id}`}
 												value={register.name}
@@ -326,10 +330,8 @@ function Home() {
 											<FieldLabel htmlFor={`register-sales-${register.id}`}>
 												Sales
 											</FieldLabel>
-
 											<InputGroup>
 												<InputGroupAddon>$</InputGroupAddon>
-
 												<InputGroupInput
 													id={`register-sales-${register.id}`}
 													type="number"
@@ -372,7 +374,6 @@ function Home() {
 					<Card>
 						<CardHeader>
 							<CardTitle>On-duty staff</CardTitle>
-
 							<CardDescription>
 								Enter how many people in each role are sharing the required
 								claim.
@@ -387,19 +388,41 @@ function Home() {
 											{ROLE_LABELS[role]}
 										</FieldLabel>
 
-										<Input
-											id={`staff-${role}`}
-											className="sm:max-w-32"
-											type="number"
-											inputMode="numeric"
-											min="0"
-											max="50"
-											step="1"
-											value={staff[role]}
-											onChange={(event) =>
-												updateStaff(role, event.target.value)
-											}
-										/>
+										<InputGroup className="sm:max-w-32">
+											<InputGroupInput
+												id={`staff-${role}`}
+												type="number"
+												inputMode="numeric"
+												min="0"
+												max="50"
+												step="1"
+												value={staff[role]}
+												onChange={(event) =>
+													updateStaff(role, event.target.value)
+												}
+											/>
+											<InputGroupAddon
+												align="inline-end"
+												className="gap-0"
+											>
+												<InputGroupButton
+													size="icon-xs"
+													aria-label={`Decrease ${ROLE_LABELS[role]} count`}
+													disabled={staff[role] <= 0}
+													onClick={() => adjustStaff(role, -1)}
+												>
+													<ChevronDownIcon />
+												</InputGroupButton>
+												<InputGroupButton
+													size="icon-xs"
+													aria-label={`Increase ${ROLE_LABELS[role]} count`}
+													disabled={staff[role] >= 50}
+													onClick={() => adjustStaff(role, 1)}
+												>
+													<ChevronUpIcon />
+												</InputGroupButton>
+											</InputGroupAddon>
+										</InputGroup>
 									</Field>
 								))}
 							</FieldGroup>
@@ -407,7 +430,6 @@ function Home() {
 							<Accordion type="single" collapsible className="mt-3">
 								<AccordionItem value="weights">
 									<AccordionTrigger>Allocation settings</AccordionTrigger>
-
 									<AccordionContent className="flex flex-col gap-4">
 										<p className="text-muted-foreground">
 											Higher weights receive a larger share. Defaults reproduce
@@ -420,7 +442,6 @@ function Home() {
 													<FieldLabel htmlFor={`weight-${role}`}>
 														{ROLE_LABELS[role]} weight
 													</FieldLabel>
-
 													<Input
 														id={`weight-${role}`}
 														className="sm:max-w-32"
@@ -448,7 +469,6 @@ function Home() {
 					<Card>
 						<CardHeader>
 							<CardTitle>Required claim</CardTitle>
-
 							<CardDescription>
 								{normalizedPercent.toLocaleString("en-US", {
 									maximumFractionDigits: 2,
@@ -463,7 +483,6 @@ function Home() {
 									<span className="text-sm text-muted-foreground">
 										Total sales
 									</span>
-
 									<span className="text-2xl font-semibold tabular-nums">
 										{currency.format(totalSales)}
 									</span>
@@ -473,7 +492,6 @@ function Home() {
 									<span className="text-sm text-muted-foreground">
 										Minimum claim
 									</span>
-
 									<span className="text-2xl font-semibold tabular-nums">
 										{currency.format(requiredClaimCents / 100)}
 									</span>
@@ -486,7 +504,6 @@ function Home() {
 								<span className="text-muted-foreground">
 									Active weight units
 								</span>
-
 								<span className="font-medium tabular-nums">{totalWeight}</span>
 							</div>
 						</CardContent>
@@ -495,7 +512,6 @@ function Home() {
 					<Card>
 						<CardHeader>
 							<CardTitle>Claim breakdown</CardTitle>
-
 							<CardDescription>
 								Amount each role should claim based on the active staff and
 								weights.
@@ -531,19 +547,15 @@ function Home() {
 														<span className="font-medium">
 															{ROLE_LABELS[row.role]}
 														</span>
-
 														<Badge variant="outline">{row.weight}×</Badge>
 													</div>
 												</TableCell>
-
 												<TableCell className="text-right tabular-nums">
 													{row.count}
 												</TableCell>
-
 												<TableCell className="text-right tabular-nums">
 													{each}
 												</TableCell>
-
 												<TableCell className="text-right font-medium tabular-nums">
 													{currency.format(row.totalCents / 100)}
 												</TableCell>
@@ -556,10 +568,8 @@ function Home() {
 							{allocations.length > 0 && (
 								<>
 									<Separator />
-
 									<div className="flex items-center justify-between gap-4">
 										<span className="text-sm font-medium">Allocated total</span>
-
 										<span className="text-lg font-semibold tabular-nums">
 											{currency.format(
 												allocations.reduce((sum, item) => sum + item.cents, 0) /

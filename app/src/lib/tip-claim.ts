@@ -71,6 +71,11 @@ type TipClaimReportsResponse = {
   error?: string;
 };
 
+type TipClaimDeleteResponse = {
+  shiftId?: string;
+  error?: string;
+};
+
 export async function saveTipClaimShift(payload: TipClaimSavePayload) {
   const url = new URL("/api/auth/tip-claim/shifts", authBaseURL);
 
@@ -121,4 +126,41 @@ export async function listTipClaimShifts(organizationId: string) {
   }
 
   return Array.isArray(result.shifts) ? result.shifts : [];
+}
+
+export async function deleteTipClaimShift(
+  organizationId: string,
+  shiftId: string,
+) {
+  const url = new URL("/api/auth/tip-claim/shifts", authBaseURL);
+
+  const response = await fetch(url, {
+    method: "DELETE",
+    credentials: "include",
+    headers: {
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      organizationId,
+      shiftId,
+    }),
+  });
+
+  const result = (await response.json()) as TipClaimDeleteResponse;
+
+  if (!response.ok) {
+    throw new Error(
+      typeof result.error === "string"
+        ? result.error
+        : "Unable to delete shift.",
+    );
+  }
+
+  if (result.shiftId !== shiftId) {
+    throw new Error("Deleted shift response did not match the requested shift.");
+  }
+
+  return {
+    shiftId: result.shiftId,
+  };
 }

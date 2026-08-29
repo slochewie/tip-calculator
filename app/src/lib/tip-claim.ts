@@ -32,8 +32,42 @@ export type TipClaimSavePayload = {
   staff: TipClaimSaveStaff[];
 };
 
+export type TipClaimReportRegister = TipClaimSaveRegister & {
+  id: string;
+  shiftId: string;
+  createdAt: string;
+};
+
+export type TipClaimReportStaff = TipClaimSaveStaff & {
+  id: string;
+  shiftId: string;
+  createdAt: string;
+};
+
+export type TipClaimShiftReport = {
+  id: string;
+  organizationId: string;
+  savedByUserId: string;
+  claimPercent: number;
+  totalSalesCents: number;
+  requiredClaimCents: number;
+  totalWeightUnits: number;
+  bartenderWeight: number;
+  barbackWeight: number;
+  doorWeight: number;
+  completedAt: string;
+  createdAt: string;
+  registers: TipClaimReportRegister[];
+  staff: TipClaimReportStaff[];
+};
+
 type TipClaimSaveResponse = {
   shiftId?: string;
+  error?: string;
+};
+
+type TipClaimReportsResponse = {
+  shifts?: TipClaimShiftReport[];
   error?: string;
 };
 
@@ -66,4 +100,25 @@ export async function saveTipClaimShift(payload: TipClaimSavePayload) {
   return {
     shiftId: result.shiftId,
   };
+}
+
+export async function listTipClaimShifts(organizationId: string) {
+  const url = new URL("/api/auth/tip-claim/shifts", authBaseURL);
+  url.searchParams.set("organizationId", organizationId);
+
+  const response = await fetch(url, {
+    credentials: "include",
+  });
+
+  const result = (await response.json()) as TipClaimReportsResponse;
+
+  if (!response.ok) {
+    throw new Error(
+      typeof result.error === "string"
+        ? result.error
+        : "Unable to load tip claim reports.",
+    );
+  }
+
+  return Array.isArray(result.shifts) ? result.shifts : [];
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { Button } from "#/components/ui/button.tsx";
@@ -10,14 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "#/components/ui/card.tsx";
-import {
-  Field,
-  FieldDescription,
-  FieldGroup,
-  FieldLabel,
-} from "#/components/ui/field.tsx";
-import { Input } from "#/components/ui/input.tsx";
-import { authClient } from "#/lib/auth-client.ts";
+import { authBaseURL, authClient } from "#/lib/auth-client.ts";
 
 export const Route = createFileRoute("/app")({
   component: AuthenticatedTipCalculator,
@@ -25,101 +18,28 @@ export const Route = createFileRoute("/app")({
 
 function AuthenticatedTipCalculator() {
   const { data: session, isPending } = authClient.useSession();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isSigningIn, setIsSigningIn] = useState(false);
 
-  async function handleSignIn(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setErrorMessage(null);
-    setIsSigningIn(true);
-
-    try {
-      const result = await authClient.signIn.email({
-        email,
-        password,
-      });
-
-      if (result.error) {
-        setErrorMessage(result.error.message ?? "Unable to sign in.");
-      }
-    } catch (error) {
-      console.error("Unable to sign in", error);
-      setErrorMessage(
-        "Unable to reach the authentication service. Please try again.",
-      );
-    } finally {
-      setIsSigningIn(false);
+  useEffect(() => {
+    if (isPending || session) {
+      return;
     }
-  }
 
-  if (isPending) {
+    const redirectTo = window.location.href;
+    const signInURL = new URL("/auth/sign-in", authBaseURL);
+    signInURL.searchParams.set("redirectTo", redirectTo);
+    window.location.replace(signInURL.toString());
+  }, [isPending, session]);
+
+  if (isPending || !session) {
     return (
       <main className="mx-auto flex w-full max-w-md p-4 md:p-6 lg:p-8">
         <Card className="w-full">
           <CardHeader>
             <CardTitle>Tip Claim Calculator</CardTitle>
-            <CardDescription>Checking your session…</CardDescription>
-          </CardHeader>
-        </Card>
-      </main>
-    );
-  }
-
-  if (!session) {
-    return (
-      <main className="mx-auto flex w-full max-w-md p-4 md:p-6 lg:p-8">
-        <Card className="w-full">
-          <CardHeader>
-            <CardTitle>Sign in</CardTitle>
             <CardDescription>
-              Use your NiteOwl account to access the authenticated Tip Claim
-              Calculator.
+              {isPending ? "Checking your session…" : "Redirecting to sign in…"}
             </CardDescription>
           </CardHeader>
-
-          <form onSubmit={handleSignIn}>
-            <CardContent>
-              <FieldGroup>
-                <Field>
-                  <FieldLabel htmlFor="email">Email</FieldLabel>
-                  <Input
-                    id="email"
-                    type="email"
-                    autoComplete="email"
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    required
-                  />
-                </Field>
-
-                <Field>
-                  <FieldLabel htmlFor="password">Password</FieldLabel>
-                  <Input
-                    id="password"
-                    type="password"
-                    autoComplete="current-password"
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    required
-                  />
-                  {errorMessage ? (
-                    <FieldDescription>{errorMessage}</FieldDescription>
-                  ) : null}
-                </Field>
-              </FieldGroup>
-            </CardContent>
-
-            <CardFooter className="flex flex-wrap gap-2">
-              <Button type="submit" disabled={isSigningIn}>
-                {isSigningIn ? "Signing in…" : "Sign in"}
-              </Button>
-              <Button variant="outline" asChild>
-                <Link to="/">Public calculator</Link>
-              </Button>
-            </CardFooter>
-          </form>
         </Card>
       </main>
     );

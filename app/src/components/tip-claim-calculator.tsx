@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+	CheckCircle2Icon,
 	ChevronDownIcon,
 	ChevronUpIcon,
 	PlusIcon,
+	SaveIcon,
 	Trash2Icon,
 } from "lucide-react";
 
@@ -52,6 +54,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "#/components/ui/table.tsx";
+import { saveTipClaimShift } from "#/lib/tip-claim.ts";
 
 type Register = {
 	id: number;
@@ -212,12 +215,20 @@ export function TipClaimCalculator({
 		barback: 3,
 		door: 1,
 	});
+	const [savePending, setSavePending] = useState(false);
+	const [saveError, setSaveError] = useState<string | null>(null);
+	const [savedShiftId, setSavedShiftId] = useState<string | null>(null);
 
 	const usesOrganizationMembers = members !== undefined;
 
 	useEffect(() => {
 		setMemberAssignments([]);
 	}, [organizationId]);
+
+	useEffect(() => {
+		setSaveError(null);
+		setSavedShiftId(null);
+	}, [claimPercent, memberAssignments, organizationId, registers, weights]);
 
 	const effectiveStaff = useMemo<RoleState>(() => {
 		if (!usesOrganizationMembers) {
@@ -237,11 +248,15 @@ export function TipClaimCalculator({
 		);
 	}, [memberAssignments, staff, usesOrganizationMembers]);
 
-	const totalSales = useMemo(
+	const totalSalesCents = useMemo(
 		() =>
-			registers.reduce((sum, register) => sum + parseMoney(register.sales), 0),
+			registers.reduce(
+				(sum, register) => sum + Math.round(parseMoney(register.sales) * 100),
+				0,
+			),
 		[registers],
 	);
+	const totalSales = totalSalesCents / 100;
 
 	const normalizedPercent = Math.min(
 		100,
@@ -249,7 +264,7 @@ export function TipClaimCalculator({
 	);
 
 	const requiredClaimCents = Math.round(
-		totalSales * (normalizedPercent / 100) * 100,
+		totalSalesCents * (normalizedPercent / 100),
 	);
 
 	const allocations = useMemo(
@@ -259,6 +274,11 @@ export function TipClaimCalculator({
 
 	const totalWeight = ROLE_ORDER.reduce(
 		(sum, role) => sum + effectiveStaff[role] * Math.max(0, weights[role]),
+		0,
+	);
+
+	const allocatedClaimCents = allocations.reduce(
+		(sum, allocation) => sum + allocation.cents,
 		0,
 	);
 
@@ -427,6 +447,88 @@ export function TipClaimCalculator({
 			...current,
 			[role]: clampInteger(Number(value), 0, 100),
 		}));
+	}
+
+	async function saveEndOfShift() {
+		if (!organizationId || !members) {
+			setSaveError("Select an organization before saving the shift.");
+			return;
+		}
+
+		if (memberAssignments.length === 0) {
+			setSaveError("Add at least one on-duty staff member before saving.");
+			return;
+		}
+
+		if (registers.some((register) => register.name.trim().length === 0)) {
+			setSaveError("Every register needs a name before saving.");
+			return;
+		}
+
+		if (requiredClaimCents > 0 && allocatedClaimCents !== requiredClaimCents) {
+			setSaveError("The required claim must be fully allocated before saving.");
+			return;
+		}
+
+		const roleIndexes: RoleState = {
+			bartender: 0,
+			barback: 0,
+			door: 0,
+		};
+
+		const savedStaff = memberAssignments.map((assignment) => {
+			const member = members.find((candidate) => candidate.id === assignment.userId);
+
+			if (!member) {
+				throw new Error("One of the assigned staff members is no longer available.");
+			}
+
+			const allocation = allocations.filter(
+				(candidate) => candidate.role === assignment.role,
+			)[roleIndexes[assignment.role]];
+			roleIndexes[assignment.role] += 1;
+
+			return {
+				userId: member.id,
+				name: member.name,
+				email: member.email,
+				role: assignment.role,
+				registerKey: assignment.registerId?.toString() ?? null,
+				weight: weights[assignment.role],
+				claimCents: allocation?.cents ?? 0,
+			};
+		});
+
+		setSavePending(true);
+		setSaveError(null);
+
+		try {
+			const result = await saveTipClaimShift({
+				organizationId,
+				claimPercent: normalizedPercent,
+				totalSalesCents,
+				requiredClaimCents,
+				totalWeightUnits: totalWeight,
+				weights,
+				completedAt: new Date(),
+				registers: registers.map((register) => ({
+					registerKey: register.id.toString(),
+					name: register.name.trim(),
+					salesCents: Math.round(parseMoney(register.sales) * 100),
+				})),
+				staff: savedStaff,
+			});
+
+			setSavedShiftId(result.shiftId);
+		} catch (error) {
+			setSaveError(
+				error instanceof Error
+					? error.message
+					: "Unable to save end-of-shift sales.",
+			);
+		} finally {
+			setSavePending(false);
+		}
 	}
 
 	return (
@@ -907,10 +1009,7 @@ export function TipClaimCalculator({
 									<div className="flex items-center justify-between gap-4">
 										<span className="text-sm font-medium">Allocated total</span>
 										<span className="text-lg font-semibold tabular-nums">
-											{currency.format(
-												allocations.reduce((sum, item) => sum + item.cents, 0) /
-													100,
-											)}
+											{currency.format(allocatedClaimCents / 100)}
 										</span>
 									</div>
 								</>
@@ -924,6 +1023,54 @@ export function TipClaimCalculator({
 							)}
 						</CardContent>
 					</Card>
+
+					{usesOrganizationMembers ? (
+						<Card>
+							<CardHeader>
+								<CardTitle>End of shift</CardTitle>
+								<CardDescription>
+									Save the current sales, staff assignments, register assignments,
+									weights, and calculated claims as a completed shift snapshot.
+								</CardDescription>
+							</CardHeader>
+							<CardContent className="gap-3">
+								<Button
+									type="button"
+									className="w-full"
+									disabled={
+										savePending ||
+										Boolean(savedShiftId) ||
+										!organizationId ||
+										memberAssignments.length === 0 ||
+										(requiredClaimCents > 0 && allocatedClaimCents !== requiredClaimCents)
+									}
+									onClick={() => void saveEndOfShift()}
+								>
+									{savedShiftId ? (
+										<CheckCircle2Icon data-icon="inline-start" />
+									) : (
+										<SaveIcon data-icon="inline-start" />
+									)}
+									{savePending
+										? "Saving…"
+										: savedShiftId
+											? "End of Shift Sales Saved"
+											: "Save End of Shift Sales"}
+								</Button>
+
+								{saveError ? (
+									<p className="text-sm text-destructive">{saveError}</p>
+								) : null}
+
+								{savedShiftId ? (
+									<p className="text-sm text-muted-foreground">
+										Shift saved successfully. Editing any shift value will enable a
+										new save.
+									</p>
+								) : null}
+							</CardContent>
+						</Card>
+					) : null}
 				</div>
 			</div>
 		</main>

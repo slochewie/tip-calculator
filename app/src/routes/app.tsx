@@ -29,12 +29,50 @@ export const Route = createFileRoute("/app")({
 
 type OrganizationMember = {
   id: string;
+  status?: string | null;
+  active?: boolean;
+  disabled?: boolean;
+  deactivated?: boolean;
   user: {
     id: string;
     name: string;
     email: string;
+    banned?: boolean;
+    status?: string | null;
+    active?: boolean;
+    disabled?: boolean;
+    deactivated?: boolean;
   };
 };
+
+const INACTIVE_STATUSES = new Set([
+  "banned",
+  "deactivated",
+  "disabled",
+  "inactive",
+  "suspended",
+]);
+
+function hasInactiveStatus(value: unknown) {
+  return (
+    typeof value === "string" &&
+    INACTIVE_STATUSES.has(value.trim().toLowerCase())
+  );
+}
+
+function isInactiveMember(member: OrganizationMember) {
+  return (
+    member.active === false ||
+    member.disabled === true ||
+    member.deactivated === true ||
+    hasInactiveStatus(member.status) ||
+    member.user.banned === true ||
+    member.user.active === false ||
+    member.user.disabled === true ||
+    member.user.deactivated === true ||
+    hasInactiveStatus(member.user.status)
+  );
+}
 
 function readOrganizationMembers(value: unknown): TipClaimMember[] {
   if (!value || typeof value !== "object" || !("members" in value)) {
@@ -64,11 +102,17 @@ function readOrganizationMembers(value: unknown): TipClaimMember[] {
       return [];
     }
 
+    const organizationMember = candidate as OrganizationMember;
+
+    if (isInactiveMember(organizationMember)) {
+      return [];
+    }
+
     return [
       {
-        id: candidate.user.id,
-        name: candidate.user.name,
-        email: candidate.user.email,
+        id: organizationMember.user.id,
+        name: organizationMember.user.name,
+        email: organizationMember.user.email,
       },
     ];
   });

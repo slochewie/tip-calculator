@@ -1,3 +1,4 @@
+import { organizationClient } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
 
 export const authBaseURL =
@@ -6,4 +7,11 @@ export const authBaseURL =
 
 export const authClient = createAuthClient({
   baseURL: authBaseURL,
+  plugins: [
+    organizationClient({
+      teams: {
+        enabled: true,
+      },
+    }),
+  ],
 });

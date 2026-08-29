@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
 	ChevronDownIcon,
 	ChevronUpIcon,
@@ -35,6 +35,13 @@ import {
 	InputGroupText,
 } from "#/components/ui/input-group.tsx";
 import { Input } from "#/components/ui/input.tsx";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "#/components/ui/select.tsx";
 import { Separator } from "#/components/ui/separator.tsx";
 import {
 	Table,
@@ -60,6 +67,25 @@ type Allocation = {
 	role: RoleKey;
 	person: number;
 	cents: number;
+};
+
+type StaffAssignment = {
+	userId: string;
+	role: RoleKey;
+};
+
+export type TipClaimMember = {
+	id: string;
+	name: string;
+	email: string;
+};
+
+type TipClaimCalculatorProps = {
+	organizationId?: string;
+	organizationName?: string;
+	members?: TipClaimMember[];
+	membersPending?: boolean;
+	membersError?: string | null;
 };
 
 const ROLE_LABELS: Record<RoleKey, string> = {
@@ -134,7 +160,13 @@ function allocateClaims(
 	}));
 }
 
-export function TipClaimCalculator() {
+export function TipClaimCalculator({
+	organizationId,
+	organizationName,
+	members,
+	membersPending = false,
+	membersError = null,
+}: TipClaimCalculatorProps = {}) {
 	const [claimPercent, setClaimPercent] = useState("8");
 	const [nextRegisterId, setNextRegisterId] = useState(2);
 
@@ -148,11 +180,39 @@ export function TipClaimCalculator() {
 		door: 0,
 	});
 
+	const [memberAssignments, setMemberAssignments] = useState<StaffAssignment[]>(
+		[],
+	);
+
 	const [weights, setWeights] = useState<WeightState>({
 		bartender: 5,
 		barback: 3,
 		door: 1,
 	});
+
+	const usesOrganizationMembers = members !== undefined;
+
+	useEffect(() => {
+		setMemberAssignments([]);
+	}, [organizationId]);
+
+	const effectiveStaff = useMemo<RoleState>(() => {
+		if (!usesOrganizationMembers) {
+			return staff;
+		}
+
+		return memberAssignments.reduce<RoleState>(
+			(counts, assignment) => ({
+				...counts,
+				[assignment.role]: counts[assignment.role] + 1,
+			}),
+			{
+				bartender: 0,
+				barback: 0,
+				door: 0,
+			},
+		);
+	}, [memberAssignments, staff, usesOrganizationMembers]);
 
 	const totalSales = useMemo(
 		() =>
@@ -170,12 +230,12 @@ export function TipClaimCalculator() {
 	);
 
 	const allocations = useMemo(
-		() => allocateClaims(requiredClaimCents, staff, weights),
-		[requiredClaimCents, staff, weights],
+		() => allocateClaims(requiredClaimCents, effectiveStaff, weights),
+		[effectiveStaff, requiredClaimCents, weights],
 	);
 
 	const totalWeight = ROLE_ORDER.reduce(
-		(sum, role) => sum + staff[role] * Math.max(0, weights[role]),
+		(sum, role) => sum + effectiveStaff[role] * Math.max(0, weights[role]),
 		0,
 	);
 
@@ -188,13 +248,19 @@ export function TipClaimCalculator() {
 
 		return {
 			role,
-			count: staff[role],
+			count: effectiveStaff[role],
 			weight: weights[role],
 			totalCents,
 			minimum,
 			maximum,
 		};
 	});
+
+	const assignedUserIds = new Set(
+		memberAssignments.map((assignment) => assignment.userId),
+	);
+	const unassignedMembers =
+		members?.filter((member) => !assignedUserIds.has(member.id)) ?? [];
 
 	function updateRegister(id: number, changes: Partial<Register>) {
 		setRegisters((current) =>
@@ -235,6 +301,41 @@ export function TipClaimCalculator() {
 			...current,
 			[role]: clampInteger(current[role] + amount),
 		}));
+	}
+
+	function addMemberAssignment() {
+		const member = unassignedMembers[0];
+
+		if (!member) {
+			return;
+		}
+
+		setMemberAssignments((current) => [
+			...current,
+			{
+				userId: member.id,
+				role: "bartender",
+			},
+		]);
+	}
+
+	function updateMemberAssignment(
+		index: number,
+		changes: Partial<StaffAssignment>,
+	) {
+		setMemberAssignments((current) =>
+			current.map((assignment, assignmentIndex) =>
+				assignmentIndex === index
+					? { ...assignment, ...changes }
+					: assignment,
+			),
+		);
+	}
+
+	function removeMemberAssignment(index: number) {
+		setMemberAssignments((current) =>
+			current.filter((_, assignmentIndex) => assignmentIndex !== index),
+		);
 	}
 
 	function updateWeight(role: RoleKey, value: string) {
@@ -372,57 +473,162 @@ export function TipClaimCalculator() {
 						<CardHeader>
 							<CardTitle>On-duty staff</CardTitle>
 							<CardDescription>
-								Enter how many people in each role are sharing the required
-								claim.
+								{usesOrganizationMembers
+									? organizationName
+										? `Select the ${organizationName} members working this shift and assign each person a claim role.`
+										: "Select an organization, then assign its members to claim roles."
+									: "Enter how many people in each role are sharing the required claim."}
 							</CardDescription>
 						</CardHeader>
 
 						<CardContent>
-							<FieldGroup className="gap-3">
-								{ROLE_ORDER.map((role) => (
-									<Field key={role} orientation="responsive">
-										<FieldLabel htmlFor={`staff-${role}`}>
-											{ROLE_LABELS[role]}
-										</FieldLabel>
+							{usesOrganizationMembers ? (
+								<div className="flex flex-col gap-3">
+									{!organizationId ? (
+										<p className="text-sm text-muted-foreground">
+											Select an organization to load its members.
+										</p>
+									) : membersPending ? (
+										<p className="text-sm text-muted-foreground">
+											Loading organization members…
+										</p>
+									) : membersError ? (
+										<p className="text-sm text-destructive">{membersError}</p>
+									) : members?.length === 0 ? (
+										<p className="text-sm text-muted-foreground">
+											No organization members are available.
+										</p>
+									) : (
+										<>
+											{memberAssignments.length === 0 ? (
+												<p className="text-sm text-muted-foreground">
+													No staff assigned yet.
+												</p>
+											) : null}
 
-										<InputGroup className="sm:max-w-32">
-											<InputGroupInput
-												id={`staff-${role}`}
-												type="number"
-												inputMode="numeric"
-												min="0"
-												max="50"
-												step="1"
-												value={staff[role]}
-												onChange={(event) =>
-													updateStaff(role, event.target.value)
-												}
-											/>
-											<InputGroupAddon
-												align="inline-end"
-												className="gap-0"
+											{memberAssignments.map((assignment, index) => {
+												const availableMembers =
+													members?.filter(
+														(member) =>
+															member.id === assignment.userId ||
+															!assignedUserIds.has(member.id),
+													) ?? [];
+
+												return (
+													<div
+														key={`${assignment.userId}-${index}`}
+														className="grid min-w-0 gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(140px,0.45fr)_auto]"
+													>
+														<Select
+															value={assignment.userId}
+															onValueChange={(userId) =>
+																updateMemberAssignment(index, { userId })
+															}
+														>
+															<SelectTrigger className="w-full">
+																<SelectValue placeholder="Select member" />
+															</SelectTrigger>
+															<SelectContent>
+																{availableMembers.map((member) => (
+																	<SelectItem key={member.id} value={member.id}>
+																		{member.name || member.email}
+																	</SelectItem>
+																))}
+															</SelectContent>
+														</Select>
+
+														<Select
+															value={assignment.role}
+															onValueChange={(role) =>
+																updateMemberAssignment(index, {
+																	role: role as RoleKey,
+																})
+															}
+														>
+															<SelectTrigger className="w-full">
+																<SelectValue />
+															</SelectTrigger>
+															<SelectContent>
+																{ROLE_ORDER.map((role) => (
+																	<SelectItem key={role} value={role}>
+																		{ROLE_LABELS[role]}
+																	</SelectItem>
+																))}
+															</SelectContent>
+														</Select>
+
+														<Button
+															type="button"
+															variant="ghost"
+															size="icon"
+															aria-label="Remove staff member"
+															onClick={() => removeMemberAssignment(index)}
+														>
+															<Trash2Icon />
+														</Button>
+													</div>
+												);
+											})}
+
+											<Button
+												type="button"
+												variant="outline"
+												disabled={unassignedMembers.length === 0}
+												onClick={addMemberAssignment}
 											>
-												<InputGroupButton
-													size="icon-xs"
-													aria-label={`Decrease ${ROLE_LABELS[role]} count`}
-													disabled={staff[role] <= 0}
-													onClick={() => adjustStaff(role, -1)}
+												<PlusIcon data-icon="inline-start" />
+												Add staff member
+											</Button>
+										</>
+									)}
+								</div>
+							) : (
+								<FieldGroup className="gap-3">
+									{ROLE_ORDER.map((role) => (
+										<Field key={role} orientation="responsive">
+											<FieldLabel htmlFor={`staff-${role}`}>
+												{ROLE_LABELS[role]}
+											</FieldLabel>
+
+											<InputGroup className="sm:max-w-32">
+												<InputGroupInput
+													id={`staff-${role}`}
+													type="number"
+													inputMode="numeric"
+													min="0"
+													max="50"
+													step="1"
+													value={staff[role]}
+													onChange={(event) =>
+														updateStaff(role, event.target.value)
+													}
+												/>
+												<InputGroupAddon
+													align="inline-end"
+													className="gap-0"
 												>
-													<ChevronDownIcon />
-												</InputGroupButton>
-												<InputGroupButton
-													size="icon-xs"
-													aria-label={`Increase ${ROLE_LABELS[role]} count`}
-													disabled={staff[role] >= 50}
-													onClick={() => adjustStaff(role, 1)}
-												>
-													<ChevronUpIcon />
-												</InputGroupButton>
-											</InputGroupAddon>
-										</InputGroup>
-									</Field>
-								))}
-							</FieldGroup>
+													<InputGroupButton
+														size="icon-xs"
+														aria-label={`Decrease ${ROLE_LABELS[role]} count`}
+														disabled={staff[role] <= 0}
+														onClick={() => adjustStaff(role, -1)}
+													>
+														<ChevronDownIcon />
+													</InputGroupButton>
+													<InputGroupButton
+														size="icon-xs"
+														aria-label={`Increase ${ROLE_LABELS[role]} count`}
+														disabled={staff[role] >= 50}
+														onClick={() => adjustStaff(role, 1)}
+													>
+														<ChevronUpIcon />
+													</InputGroupButton>
+												</InputGroupAddon>
+											</InputGroup>
+										</Field>
+									))}
+								</FieldGroup>
+							)}
 
 							<Accordion type="single" collapsible className="mt-3">
 								<AccordionItem value="weights">

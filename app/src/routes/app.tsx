@@ -27,92 +27,38 @@ export const Route = createFileRoute("/app")({
   component: AuthenticatedTipCalculator,
 });
 
-type OrganizationMember = {
-  id: string;
-  status?: string | null;
-  active?: boolean;
-  disabled?: boolean;
-  deactivated?: boolean;
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    banned?: boolean;
-    status?: string | null;
-    active?: boolean;
-    disabled?: boolean;
-    deactivated?: boolean;
-  };
+type EligibleOrganizationMember = {
+  memberId: string;
+  userId: string;
+  name: string;
+  email: string;
 };
 
-const INACTIVE_STATUSES = new Set([
-  "banned",
-  "deactivated",
-  "disabled",
-  "inactive",
-  "suspended",
-]);
-
-function hasInactiveStatus(value: unknown) {
-  return (
-    typeof value === "string" &&
-    INACTIVE_STATUSES.has(value.trim().toLowerCase())
-  );
-}
-
-function isInactiveMember(member: OrganizationMember) {
-  return (
-    member.active === false ||
-    member.disabled === true ||
-    member.deactivated === true ||
-    hasInactiveStatus(member.status) ||
-    member.user.banned === true ||
-    member.user.active === false ||
-    member.user.disabled === true ||
-    member.user.deactivated === true ||
-    hasInactiveStatus(member.user.status)
-  );
-}
-
-function readOrganizationMembers(value: unknown): TipClaimMember[] {
-  if (!value || typeof value !== "object" || !("members" in value)) {
+function readEligibleMembers(value: unknown): TipClaimMember[] {
+  if (!Array.isArray(value)) {
     return [];
   }
 
-  const members = (value as { members?: unknown }).members;
-
-  if (!Array.isArray(members)) {
-    return [];
-  }
-
-  return members.flatMap((member) => {
+  return value.flatMap((member) => {
     if (!member || typeof member !== "object") {
       return [];
     }
 
-    const candidate = member as Partial<OrganizationMember>;
+    const candidate = member as Partial<EligibleOrganizationMember>;
 
     if (
-      typeof candidate.id !== "string" ||
-      !candidate.user ||
-      typeof candidate.user.id !== "string" ||
-      typeof candidate.user.name !== "string" ||
-      typeof candidate.user.email !== "string"
+      typeof candidate.userId !== "string" ||
+      typeof candidate.name !== "string" ||
+      typeof candidate.email !== "string"
     ) {
-      return [];
-    }
-
-    const organizationMember = candidate as OrganizationMember;
-
-    if (isInactiveMember(organizationMember)) {
       return [];
     }
 
     return [
       {
-        id: organizationMember.user.id,
-        name: organizationMember.user.name,
-        email: organizationMember.user.email,
+        id: candidate.userId,
+        name: candidate.name,
+        email: candidate.email,
       },
     ];
   });
@@ -178,29 +124,45 @@ function AuthenticatedTipCalculator() {
       setAreMembersPending(true);
       setMembersError(null);
 
-      const result = await authClient.organization.listMembers({
-        query: {
-          organizationId: activeOrganization.id,
-          limit: 100,
-          offset: 0,
-          sortBy: "createdAt",
-          sortDirection: "asc",
-        },
-      });
+      try {
+        const url = new URL(
+          "/api/auth/organization-member-status/eligible",
+          authBaseURL,
+        );
 
-      if (cancelled) {
-        return;
-      }
+        url.searchParams.set("organizationId", activeOrganization.id);
 
-      if (result.error) {
-        setMembers([]);
-        setMembersError(result.error.message ?? "Unable to load members.");
+        const response = await fetch(url, {
+          credentials: "include",
+        });
+
+        const result = await response.json();
+
+        if (cancelled) {
+          return;
+        }
+
+        if (!response.ok) {
+          throw new Error(
+            typeof result?.error === "string"
+              ? result.error
+              : "Unable to load members.",
+          );
+        }
+
+        setMembers(readEligibleMembers(result));
         setAreMembersPending(false);
-        return;
-      }
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
 
-      setMembers(readOrganizationMembers(result.data));
-      setAreMembersPending(false);
+        setMembers([]);
+        setMembersError(
+          error instanceof Error ? error.message : "Unable to load members.",
+        );
+        setAreMembersPending(false);
+      }
     }
 
     void loadMembers();

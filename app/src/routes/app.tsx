@@ -1,8 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Building2Icon, LogOutIcon, UserRoundIcon } from "lucide-react";
 
-import { TipClaimCalculator } from "#/components/tip-claim-calculator.tsx";
+import {
+  TipClaimCalculator,
+  type TipClaimMember,
+} from "#/components/tip-claim-calculator.tsx";
 import { Badge } from "#/components/ui/badge.tsx";
 import { Button } from "#/components/ui/button.tsx";
 import {
@@ -24,6 +27,53 @@ export const Route = createFileRoute("/app")({
   component: AuthenticatedTipCalculator,
 });
 
+type OrganizationMember = {
+  id: string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+  };
+};
+
+function readOrganizationMembers(value: unknown): TipClaimMember[] {
+  if (!value || typeof value !== "object" || !("members" in value)) {
+    return [];
+  }
+
+  const members = (value as { members?: unknown }).members;
+
+  if (!Array.isArray(members)) {
+    return [];
+  }
+
+  return members.flatMap((member) => {
+    if (!member || typeof member !== "object") {
+      return [];
+    }
+
+    const candidate = member as Partial<OrganizationMember>;
+
+    if (
+      typeof candidate.id !== "string" ||
+      !candidate.user ||
+      typeof candidate.user.id !== "string" ||
+      typeof candidate.user.name !== "string" ||
+      typeof candidate.user.email !== "string"
+    ) {
+      return [];
+    }
+
+    return [
+      {
+        id: candidate.user.id,
+        name: candidate.user.name,
+        email: candidate.user.email,
+      },
+    ];
+  });
+}
+
 function AuthenticatedTipCalculator() {
   const { data: session, isPending } = authClient.useSession();
   const {
@@ -34,6 +84,9 @@ function AuthenticatedTipCalculator() {
     data: activeOrganization,
     isPending: isActiveOrganizationPending,
   } = authClient.useActiveOrganization();
+  const [members, setMembers] = useState<TipClaimMember[]>([]);
+  const [areMembersPending, setAreMembersPending] = useState(false);
+  const [membersError, setMembersError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isPending || session) {
@@ -66,6 +119,52 @@ function AuthenticatedTipCalculator() {
     organizations,
     session,
   ]);
+
+  useEffect(() => {
+    if (!session || !activeOrganization?.id) {
+      setMembers([]);
+      setMembersError(null);
+      setAreMembersPending(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadMembers() {
+      setAreMembersPending(true);
+      setMembersError(null);
+
+      const result = await authClient.organization.listMembers({
+        query: {
+          organizationId: activeOrganization.id,
+          limit: 100,
+          offset: 0,
+          sortBy: "createdAt",
+          sortDirection: "asc",
+        },
+      });
+
+      if (cancelled) {
+        return;
+      }
+
+      if (result.error) {
+        setMembers([]);
+        setMembersError(result.error.message ?? "Unable to load members.");
+        setAreMembersPending(false);
+        return;
+      }
+
+      setMembers(readOrganizationMembers(result.data));
+      setAreMembersPending(false);
+    }
+
+    void loadMembers();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeOrganization?.id, session]);
 
   if (isPending || !session) {
     return (
@@ -156,7 +255,13 @@ function AuthenticatedTipCalculator() {
         </div>
       </header>
 
-      <TipClaimCalculator />
+      <TipClaimCalculator
+        organizationId={activeOrganization?.id}
+        organizationName={activeOrganization?.name}
+        members={members}
+        membersPending={areMembersPending}
+        membersError={membersError}
+      />
     </>
   );
 }

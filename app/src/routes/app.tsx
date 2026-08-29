@@ -35,16 +35,23 @@ function AuthenticatedTipCalculator() {
     setErrorMessage(null);
     setIsSigningIn(true);
 
-    const result = await authClient.signIn.email({
-      email,
-      password,
-    });
+    try {
+      const result = await authClient.signIn.email({
+        email,
+        password,
+      });
 
-    if (result.error) {
-      setErrorMessage(result.error.message ?? "Unable to sign in.");
+      if (result.error) {
+        setErrorMessage(result.error.message ?? "Unable to sign in.");
+      }
+    } catch (error) {
+      console.error("Unable to sign in", error);
+      setErrorMessage(
+        "Unable to reach the authentication service. Please try again.",
+      );
+    } finally {
+      setIsSigningIn(false);
     }
-
-    setIsSigningIn(false);
   }
 
   if (isPending) {

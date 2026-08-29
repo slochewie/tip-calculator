@@ -5,9 +5,21 @@ import {
   CalculatorIcon,
   LogOutIcon,
   ReceiptTextIcon,
+  Trash2Icon,
   UserRoundIcon,
 } from "lucide-react";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "#/components/ui/alert-dialog.tsx";
 import { Badge } from "#/components/ui/badge.tsx";
 import { Button } from "#/components/ui/button.tsx";
 import {
@@ -26,6 +38,7 @@ import {
 } from "#/components/ui/select.tsx";
 import { authBaseURL, authClient } from "#/lib/auth-client.ts";
 import {
+  deleteTipClaimShift,
   listTipClaimShifts,
   type TipClaimShiftReport,
 } from "#/lib/tip-claim.ts";
@@ -73,6 +86,8 @@ function TipClaimReports() {
   const [shifts, setShifts] = useState<TipClaimShiftReport[]>([]);
   const [reportsPending, setReportsPending] = useState(false);
   const [reportsError, setReportsError] = useState<string | null>(null);
+  const [deletingShiftId, setDeletingShiftId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isPending || session) {
@@ -111,6 +126,8 @@ function TipClaimReports() {
       setShifts([]);
       setReportsError(null);
       setReportsPending(false);
+      setDeleteError(null);
+      setDeletingShiftId(null);
       return;
     }
 
@@ -119,6 +136,7 @@ function TipClaimReports() {
     async function loadReports() {
       setReportsPending(true);
       setReportsError(null);
+      setDeleteError(null);
 
       try {
         const result = await listTipClaimShifts(activeOrganization.id);
@@ -146,6 +164,26 @@ function TipClaimReports() {
       cancelled = true;
     };
   }, [activeOrganization?.id, session]);
+
+  async function handleDeleteShift(shift: TipClaimShiftReport) {
+    if (!activeOrganization?.id || deletingShiftId) {
+      return;
+    }
+
+    setDeletingShiftId(shift.id);
+    setDeleteError(null);
+
+    try {
+      await deleteTipClaimShift(activeOrganization.id, shift.id);
+      setShifts((current) => current.filter((item) => item.id !== shift.id));
+    } catch (error) {
+      setDeleteError(
+        error instanceof Error ? error.message : "Unable to delete shift.",
+      );
+    } finally {
+      setDeletingShiftId(null);
+    }
+  }
 
   if (isPending || !session) {
     return (
@@ -283,6 +321,15 @@ function TipClaimReports() {
           </Card>
         ) : null}
 
+        {deleteError ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>Unable to delete shift</CardTitle>
+              <CardDescription>{deleteError}</CardDescription>
+            </CardHeader>
+          </Card>
+        ) : null}
+
         {!reportsPending && !reportsError && activeOrganization && shifts.length === 0 ? (
           <Card>
             <CardHeader>
@@ -303,6 +350,7 @@ function TipClaimReports() {
                   register.name,
                 ]),
               );
+              const isDeleting = deletingShiftId === shift.id;
 
               return (
                 <Card key={shift.id}>
@@ -315,15 +363,53 @@ function TipClaimReports() {
                           {shift.registers.length === 1 ? "register" : "registers"}
                         </CardDescription>
                       </div>
-                      <div className="grid grid-cols-2 gap-x-5 gap-y-1 text-sm sm:text-right">
-                        <span className="text-muted-foreground">Sales</span>
-                        <span className="font-medium">
-                          {formatMoney(shift.totalSalesCents)}
-                        </span>
-                        <span className="text-muted-foreground">Claim</span>
-                        <span className="font-medium">
-                          {formatMoney(shift.requiredClaimCents)} ({shift.claimPercent}%)
-                        </span>
+                      <div className="flex flex-col gap-3 sm:items-end">
+                        <div className="grid grid-cols-2 gap-x-5 gap-y-1 text-sm sm:text-right">
+                          <span className="text-muted-foreground">Sales</span>
+                          <span className="font-medium">
+                            {formatMoney(shift.totalSalesCents)}
+                          </span>
+                          <span className="text-muted-foreground">Claim</span>
+                          <span className="font-medium">
+                            {formatMoney(shift.requiredClaimCents)} ({shift.claimPercent}%)
+                          </span>
+                        </div>
+
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              disabled={deletingShiftId !== null}
+                            >
+                              <Trash2Icon data-icon="inline-start" />
+                              {isDeleting ? "Deleting…" : "Delete shift"}
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete saved shift?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Delete the {formatDate(shift.completedAt)} shift with{" "}
+                                {formatMoney(shift.totalSalesCents)} in sales? This cannot
+                                be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel disabled={isDeleting}>
+                                Cancel
+                              </AlertDialogCancel>
+                              <AlertDialogAction
+                                variant="destructive"
+                                disabled={isDeleting}
+                                onClick={() => void handleDeleteShift(shift)}
+                              >
+                                {isDeleting ? "Deleting…" : "Delete shift"}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </div>
                   </CardHeader>

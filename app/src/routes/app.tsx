@@ -1,7 +1,9 @@
 import { useEffect } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { LogOutIcon, UserRoundIcon } from "lucide-react";
 
 import { TipClaimCalculator } from "#/components/tip-claim-calculator.tsx";
+import { Badge } from "#/components/ui/badge.tsx";
 import { Button } from "#/components/ui/button.tsx";
 import {
   Card,
@@ -43,22 +45,44 @@ function AuthenticatedTipCalculator() {
     );
   }
 
+  const displayName = session.user.name || session.user.email;
+  const showEmail = Boolean(session.user.name && session.user.email);
+
   return (
     <>
-      <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-3 px-4 pt-4 md:px-6 md:pt-6 lg:px-8 lg:pt-8">
-        <p className="text-sm text-muted-foreground">
-          Signed in as {session.user.name || session.user.email}.
-        </p>
+      <header className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 pt-4 md:flex-row md:items-center md:justify-between md:px-6 md:pt-6 lg:px-8 lg:pt-8">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-sm">
+            <UserRoundIcon className="size-5" />
+          </div>
 
-        <div className="flex flex-wrap gap-2">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="truncate text-sm font-medium">{displayName}</p>
+              <Badge variant="secondary">Signed in</Badge>
+            </div>
+            {showEmail ? (
+              <p className="truncate text-sm text-muted-foreground">
+                {session.user.email}
+              </p>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-2 md:justify-end">
           <Button variant="outline" asChild>
             <Link to="/">Public calculator</Link>
           </Button>
-          <Button type="button" onClick={() => authClient.signOut()}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => authClient.signOut()}
+          >
+            <LogOutIcon data-icon="inline-start" />
             Sign out
           </Button>
         </div>
-      </div>
+      </header>
 
       <TipClaimCalculator />
     </>

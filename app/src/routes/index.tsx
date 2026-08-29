@@ -240,7 +240,7 @@ function Home() {
 	}
 
 	return (
-		<main className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 md:p-8">
+		<main className="mx-auto flex w-full max-w-6xl flex-col gap-5 p-4 md:p-6 lg:p-8">
 			<div className="flex flex-col gap-2">
 				<div className="flex flex-wrap items-center gap-2">
 					<h1 className="font-heading text-3xl font-semibold tracking-tight">
@@ -256,8 +256,8 @@ function Home() {
 				</p>
 			</div>
 
-			<div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
-				<div className="flex min-w-0 flex-col gap-6">
+			<div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
+				<div className="flex min-w-0 flex-col gap-5">
 					<Card>
 						<CardHeader>
 							<CardTitle>Sales and claim target</CardTitle>
@@ -380,7 +380,7 @@ function Home() {
 						</CardHeader>
 
 						<CardContent>
-							<FieldGroup>
+							<FieldGroup className="gap-3">
 								{ROLE_ORDER.map((role) => (
 									<Field key={role} orientation="responsive">
 										<FieldLabel htmlFor={`staff-${role}`}>
@@ -444,7 +444,7 @@ function Home() {
 					</Card>
 				</div>
 
-				<div className="flex min-w-0 flex-col gap-6">
+				<div className="flex min-w-0 flex-col gap-5 lg:sticky lg:top-6 lg:self-start">
 					<Card>
 						<CardHeader>
 							<CardTitle>Required claim</CardTitle>

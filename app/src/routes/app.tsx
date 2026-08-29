@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Building2Icon, LogOutIcon, UserRoundIcon } from "lucide-react";
+import {
+  Building2Icon,
+  LogOutIcon,
+  ReceiptTextIcon,
+  UserRoundIcon,
+} from "lucide-react";
 
 import {
   TipClaimCalculator,
@@ -247,6 +252,12 @@ function AuthenticatedTipCalculator() {
         </div>
 
         <div className="flex flex-wrap gap-2 md:justify-end">
+          <Button variant="outline" asChild>
+            <Link to="/reports">
+              <ReceiptTextIcon data-icon="inline-start" />
+              Reports
+            </Link>
+          </Button>
           <Button variant="outline" asChild>
             <Link to="/">Public calculator</Link>
           </Button>

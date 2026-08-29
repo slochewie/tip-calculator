@@ -1,12 +1,11 @@
 import { useEffect } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 
+import { TipClaimCalculator } from "#/components/tip-claim-calculator.tsx";
 import { Button } from "#/components/ui/button.tsx";
 import {
   Card,
-  CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "#/components/ui/card.tsx";
@@ -26,7 +25,6 @@ function AuthenticatedTipCalculator() {
 
     const redirectTo = encodeURIComponent(window.location.href);
     const signInURL = `${authBaseURL.replace(/\/$/, "")}/auth/sign-in?redirectTo=${redirectTo}`;
-
     window.location.replace(signInURL);
   }, [isPending, session]);
 
@@ -46,30 +44,23 @@ function AuthenticatedTipCalculator() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-col gap-5 p-4 md:p-6 lg:p-8">
-      <Card>
-        <CardHeader>
-          <CardTitle>Authenticated Tip Claim Calculator</CardTitle>
-          <CardDescription>
-            Signed in as {session.user.name || session.user.email}.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Authentication is connected. The next step is to place the existing
-            calculator UI behind this session gate without changing the public
-            calculator at /.
-          </p>
-        </CardContent>
-        <CardFooter className="flex flex-wrap gap-2">
-          <Button type="button" onClick={() => authClient.signOut()}>
-            Sign out
-          </Button>
+    <>
+      <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-3 px-4 pt-4 md:px-6 md:pt-6 lg:px-8 lg:pt-8">
+        <p className="text-sm text-muted-foreground">
+          Signed in as {session.user.name || session.user.email}.
+        </p>
+
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" asChild>
             <Link to="/">Public calculator</Link>
           </Button>
-        </CardFooter>
-      </Card>
-    </main>
+          <Button type="button" onClick={() => authClient.signOut()}>
+            Sign out
+          </Button>
+        </div>
+      </div>
+
+      <TipClaimCalculator />
+    </>
   );
 }

@@ -24,10 +24,10 @@ function AuthenticatedTipCalculator() {
       return;
     }
 
-    const redirectTo = window.location.href;
-    const signInURL = new URL("/auth/sign-in", authBaseURL);
-    signInURL.searchParams.set("redirectTo", redirectTo);
-    window.location.replace(signInURL.toString());
+    const redirectTo = encodeURIComponent(window.location.href);
+    const signInURL = `${authBaseURL.replace(/\/$/, "")}/auth/sign-in?redirectTo=${redirectTo}`;
+
+    window.location.replace(signInURL);
   }, [isPending, session]);
 
   if (isPending || !session) {

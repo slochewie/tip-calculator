@@ -342,6 +342,16 @@ a {
   background: color-mix(in oklab, var(--header-bg) 84%, transparent 16%);
 }
 
+input[id^="staff-"] {
+  -moz-appearance: textfield;
+}
+
+input[id^="staff-"]::-webkit-inner-spin-button,
+input[id^="staff-"]::-webkit-outer-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

@@ -150,7 +150,7 @@ function AuthenticatedTipCalculator() {
           );
         }
 
-        setMembers(readEligibleMembers(result));
+        setMembers(readEligibleMembers(result?.members));
         setAreMembersPending(false);
       } catch (error) {
         if (cancelled) {

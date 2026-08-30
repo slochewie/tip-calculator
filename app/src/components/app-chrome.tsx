@@ -238,6 +238,12 @@ export function AppChrome({ children }: { children: ReactNode }) {
           <header className="flex min-h-16 items-center gap-3 border-b bg-[var(--header-bg)] px-4 backdrop-blur md:px-6">
             <SidebarTrigger />
 
+            <img
+              src={`${consoleBaseURL}/branding/niteowl.dev/niteowl-icon.png`}
+              alt=""
+              className="size-7 shrink-0 object-contain"
+            />
+
             <div className="min-w-0 shrink-0">
               <p className="truncate text-sm font-semibold">Tip Claim Calculator</p>
               <p className="hidden truncate text-xs text-muted-foreground sm:block">

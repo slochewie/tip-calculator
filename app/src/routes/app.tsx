@@ -20,6 +20,14 @@ import {
   CardTitle,
 } from "#/components/ui/card.tsx";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "#/components/ui/dropdown-menu.tsx";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -210,42 +218,24 @@ function AuthenticatedTipCalculator() {
   return (
     <>
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-        <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-4 py-3 md:px-6 lg:px-8">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="flex min-w-0 items-center gap-3">
-              <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-card text-primary shadow-sm">
-                <CalculatorIcon className="size-4" />
-              </div>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold">Tip Claim Calculator</p>
-                <p className="hidden truncate text-xs text-muted-foreground sm:block">
-                  NiteOwl.dev
-                </p>
-              </div>
+        <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center gap-3 px-4 py-3 md:px-6 lg:flex-nowrap lg:px-8">
+          <div className="flex min-w-0 shrink-0 items-center gap-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-card text-primary shadow-sm">
+              <CalculatorIcon className="size-4" />
             </div>
-
-            <div className="ml-auto flex shrink-0 items-center gap-2">
-              <ThemeSwitcher inline />
-              <div
-                className="flex size-9 items-center justify-center overflow-hidden rounded-full border bg-muted text-xs font-medium text-muted-foreground shadow-sm"
-                title={`${displayName}${session.user.email && session.user.email !== displayName ? ` · ${session.user.email}` : ""}`}
-                aria-label={`Signed in as ${displayName}`}
-              >
-                {session.user.image ? (
-                  <img
-                    src={session.user.image}
-                    alt=""
-                    className="size-full object-cover"
-                  />
-                ) : (
-                  avatarLabel
-                )}
-              </div>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold">Tip Claim Calculator</p>
+              <p className="hidden truncate text-xs text-muted-foreground sm:block">
+                NiteOwl.dev
+              </p>
             </div>
           </div>
 
-          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-            <div className="flex min-w-0 items-center gap-2">
+          <nav
+            className="order-3 flex w-full min-w-0 flex-wrap items-center gap-2 lg:order-none lg:ml-auto lg:w-auto lg:flex-nowrap"
+            aria-label="Tip claim navigation"
+          >
+            <div className="flex min-w-0 flex-1 items-center gap-2 lg:flex-none">
               <Building2Icon className="size-4 shrink-0 text-muted-foreground" />
               <Select
                 value={activeOrganization?.id}
@@ -254,7 +244,7 @@ function AuthenticatedTipCalculator() {
                   void authClient.organization.setActive({ organizationId });
                 }}
               >
-                <SelectTrigger className="w-full min-w-0 md:w-64">
+                <SelectTrigger className="min-w-0 flex-1 lg:w-64 lg:flex-none">
                   <SelectValue
                     placeholder={
                       organizationsPending
@@ -275,25 +265,70 @@ function AuthenticatedTipCalculator() {
               </Select>
             </div>
 
-            <nav className="flex flex-wrap gap-2 md:justify-end" aria-label="Tip claim navigation">
-              <Button variant="outline" asChild>
-                <Link to="/reports">
-                  <ReceiptTextIcon data-icon="inline-start" />
-                  Reports
-                </Link>
-              </Button>
-              <Button variant="outline" asChild>
-                <Link to="/">Public calculator</Link>
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => authClient.signOut()}
-              >
-                <LogOutIcon data-icon="inline-start" />
-                Sign out
-              </Button>
-            </nav>
+            <Button variant="outline" asChild>
+              <Link to="/reports">
+                <ReceiptTextIcon data-icon="inline-start" />
+                Reports
+              </Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link to="/">Public calculator</Link>
+            </Button>
+          </nav>
+
+          <div className="ml-auto flex shrink-0 items-center gap-2 lg:ml-0">
+            <ThemeSwitcher inline />
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="flex size-9 items-center justify-center overflow-hidden rounded-full border bg-muted text-xs font-medium text-muted-foreground shadow-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                  aria-label={`Open account menu for ${displayName}`}
+                >
+                  {session.user.image ? (
+                    <img
+                      src={session.user.image}
+                      alt=""
+                      className="size-full object-cover"
+                    />
+                  ) : (
+                    avatarLabel
+                  )}
+                </button>
+              </DropdownMenuTrigger>
+
+              <DropdownMenuContent align="end" className="w-64">
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex items-center gap-3">
+                    <div className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-muted text-xs font-medium text-muted-foreground">
+                      {session.user.image ? (
+                        <img
+                          src={session.user.image}
+                          alt=""
+                          className="size-full object-cover"
+                        />
+                      ) : (
+                        avatarLabel
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">{displayName}</p>
+                      {session.user.email ? (
+                        <p className="truncate text-xs text-muted-foreground">
+                          {session.user.email}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={() => void authClient.signOut()}>
+                  <LogOutIcon />
+                  Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </header>

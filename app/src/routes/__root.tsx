@@ -5,6 +5,7 @@ import {
   useLocation,
 } from '@tanstack/react-router'
 
+import { AppChrome } from '../components/app-chrome'
 import { ThemeSwitcher } from '../components/theme-switcher'
 
 import appCss from '../styles.css?url'
@@ -41,7 +42,8 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   const location = useLocation()
-  const appOwnsThemeSwitcher = location.pathname === '/app'
+  const usesAuthenticatedChrome =
+    location.pathname === '/app' || location.pathname === '/reports'
 
   return (
     <html lang="en">
@@ -49,8 +51,14 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        {appOwnsThemeSwitcher ? null : <ThemeSwitcher />}
-        {children}
+        {usesAuthenticatedChrome ? (
+          <AppChrome>{children}</AppChrome>
+        ) : (
+          <>
+            <ThemeSwitcher />
+            {children}
+          </>
+        )}
         <Scripts />
       </body>
     </html>

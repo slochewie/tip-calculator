@@ -179,7 +179,7 @@ export function AppChrome({ children }: { children: ReactNode }) {
                   }
                 }}
               >
-                <SelectTrigger className="hidden w-56 sm:flex">
+                <SelectTrigger className="w-28 min-w-0 sm:w-56">
                   <SelectValue
                     placeholder={
                       organizationsPending

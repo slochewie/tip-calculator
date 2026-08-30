@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "#/components/ui/select.tsx";
+import { Skeleton } from "#/components/ui/skeleton.tsx";
 import { authBaseURL, authClient } from "#/lib/auth-client.ts";
 
 export const Route = createFileRoute("/app")({
@@ -60,6 +61,69 @@ function readEligibleMembers(value: unknown): TipClaimMember[] {
       },
     ];
   });
+}
+
+function CalculatorSessionSkeleton() {
+  return (
+    <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 p-4 md:p-6 lg:p-8">
+      <div className="flex flex-col gap-2">
+        <Skeleton className="h-7 w-56" />
+        <Skeleton className="h-4 w-full max-w-2xl" />
+      </div>
+
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
+        <div className="flex min-w-0 flex-col gap-5">
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-5 w-28" />
+              <Skeleton className="h-4 w-52" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-9 w-full" />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-5 w-44" />
+              <Skeleton className="h-4 w-64 max-w-full" />
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              <Skeleton className="h-9 w-full" />
+              <Skeleton className="h-px w-full" />
+              <Skeleton className="h-9 w-full" />
+              <Skeleton className="h-9 w-36" />
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="flex min-w-0 flex-col gap-5">
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-5 w-32" />
+              <Skeleton className="h-4 w-40" />
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 gap-4">
+              <Skeleton className="h-14 w-full" />
+              <Skeleton className="h-14 w-full" />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-5 w-36" />
+              <Skeleton className="h-4 w-56 max-w-full" />
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3">
+              <Skeleton className="h-8 w-full" />
+              <Skeleton className="h-8 w-full" />
+              <Skeleton className="h-8 w-full" />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </main>
+  );
 }
 
 function AuthenticatedTipCalculator() {
@@ -170,7 +234,11 @@ function AuthenticatedTipCalculator() {
     };
   }, [activeOrganization?.id, session]);
 
-  if (isPending || !session) {
+  if (isPending) {
+    return <CalculatorSessionSkeleton />;
+  }
+
+  if (!session) {
     return null;
   }
 

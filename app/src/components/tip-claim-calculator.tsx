@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import {
 	CheckCircle2Icon,
 	ChevronDownIcon,
@@ -88,6 +88,7 @@ export type TipClaimMember = {
 type TipClaimCalculatorProps = {
 	organizationId?: string;
 	organizationName?: string;
+	organizationSelector?: ReactNode;
 	members?: TipClaimMember[];
 	membersPending?: boolean;
 	membersError?: string | null;
@@ -189,6 +190,7 @@ function allocateClaims(
 export function TipClaimCalculator({
 	organizationId,
 	organizationName,
+	organizationSelector,
 	members,
 	membersPending = false,
 	membersError = null,
@@ -549,6 +551,8 @@ export function TipClaimCalculator({
 
 			<div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
 				<div className="flex min-w-0 flex-col gap-5">
+					{organizationSelector}
+
 					<Card>
 						<CardHeader>
 							<CardTitle>Sales and claim target</CardTitle>

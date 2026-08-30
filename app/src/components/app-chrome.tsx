@@ -158,8 +158,8 @@ export function AppChrome({ children }: { children: ReactNode }) {
           </SidebarContent>
         </Sidebar>
 
-        <SidebarInset>
-          <header className="flex min-h-16 items-center gap-3 border-b px-4 md:px-6">
+        <SidebarInset className="bg-transparent">
+          <header className="flex min-h-16 items-center gap-3 border-b bg-[var(--header-bg)] px-4 backdrop-blur md:px-6">
             <SidebarTrigger />
 
             <div className="min-w-0 shrink-0">

@@ -2,6 +2,7 @@ import {
   HeadContent,
   Scripts,
   createRootRouteWithContext,
+  useLocation,
 } from '@tanstack/react-router'
 
 import { ThemeSwitcher } from '../components/theme-switcher'
@@ -39,13 +40,16 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  const location = useLocation()
+  const appOwnsThemeSwitcher = location.pathname === '/app'
+
   return (
     <html lang="en">
       <head>
         <HeadContent />
       </head>
       <body>
-        <ThemeSwitcher />
+        {appOwnsThemeSwitcher ? null : <ThemeSwitcher />}
         {children}
         <Scripts />
       </body>

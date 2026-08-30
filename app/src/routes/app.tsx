@@ -7,10 +7,18 @@ import {
 } from "#/components/tip-claim-calculator.tsx";
 import {
   Card,
+  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "#/components/ui/card.tsx";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "#/components/ui/select.tsx";
 import { authBaseURL, authClient } from "#/lib/auth-client.ts";
 
 export const Route = createFileRoute("/app")({
@@ -177,10 +185,54 @@ function AuthenticatedTipCalculator() {
     );
   }
 
+  const organizationList = organizations ?? [];
+  const organizationsPending =
+    areOrganizationsPending || isActiveOrganizationPending;
+
   return (
     <TipClaimCalculator
       organizationId={activeOrganization?.id}
       organizationName={activeOrganization?.name}
+      organizationSelector={
+        <Card>
+          <CardHeader>
+            <CardTitle>Organization</CardTitle>
+            <CardDescription>
+              Choose the organization for this shift.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Select
+              value={activeOrganization?.id ?? ""}
+              disabled={organizationsPending || organizationList.length === 0}
+              onValueChange={(organizationId) => {
+                if (organizationId) {
+                  void authClient.organization.setActive({ organizationId });
+                }
+              }}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue
+                  placeholder={
+                    organizationsPending
+                      ? "Loading organizations…"
+                      : organizationList.length === 0
+                        ? "No organizations"
+                        : "Select organization"
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {organizationList.map((organization) => (
+                  <SelectItem key={organization.id} value={organization.id}>
+                    {organization.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </CardContent>
+        </Card>
+      }
       members={members}
       membersPending={areMembersPending}
       membersError={membersError}

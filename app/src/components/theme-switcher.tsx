@@ -26,7 +26,7 @@ function applyTheme(theme: Theme) {
   root.style.colorScheme = dark ? "dark" : "light"
 }
 
-export function ThemeSwitcher() {
+export function ThemeSwitcher({ inline = false }: { inline?: boolean }) {
   const [theme, setTheme] = useState<Theme>("system")
 
   useEffect(() => {
@@ -62,7 +62,13 @@ export function ThemeSwitcher() {
     theme === "light" ? SunIcon : theme === "dark" ? MoonIcon : MonitorIcon
 
   return (
-    <div className="fixed top-4 right-4 z-50 md:top-6 md:right-6 lg:top-8 lg:right-8">
+    <div
+      className={
+        inline
+          ? "shrink-0"
+          : "fixed top-4 right-4 z-50 md:top-6 md:right-6 lg:top-8 lg:right-8"
+      }
+    >
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button

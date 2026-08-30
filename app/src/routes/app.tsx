@@ -2,16 +2,16 @@ import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Building2Icon,
+  CalculatorIcon,
   LogOutIcon,
   ReceiptTextIcon,
-  UserRoundIcon,
 } from "lucide-react";
 
 import {
   TipClaimCalculator,
   type TipClaimMember,
 } from "#/components/tip-claim-calculator.tsx";
-import { Badge } from "#/components/ui/badge.tsx";
+import { ThemeSwitcher } from "#/components/theme-switcher.tsx";
 import { Button } from "#/components/ui/button.tsx";
 import {
   Card,
@@ -67,6 +67,15 @@ function readEligibleMembers(value: unknown): TipClaimMember[] {
       },
     ];
   });
+}
+
+function getInitials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+
+  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
 }
 
 function AuthenticatedTipCalculator() {
@@ -193,82 +202,99 @@ function AuthenticatedTipCalculator() {
   }
 
   const displayName = session.user.name || session.user.email;
-  const showEmail = Boolean(session.user.name && session.user.email);
   const organizationList = organizations ?? [];
   const organizationsPending =
     areOrganizationsPending || isActiveOrganizationPending;
+  const avatarLabel = getInitials(displayName);
 
   return (
     <>
-      <header className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 pr-16 pt-4 md:flex-row md:items-center md:justify-between md:px-6 md:pr-20 md:pt-6 lg:px-8 lg:pr-24 lg:pt-8">
-        <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
+      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-4 py-3 md:px-6 lg:px-8">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-sm">
-              <UserRoundIcon className="size-5" />
-            </div>
-
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="truncate text-sm font-medium">{displayName}</p>
-                <Badge variant="secondary">Signed in</Badge>
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-card text-primary shadow-sm">
+                <CalculatorIcon className="size-4" />
               </div>
-              {showEmail ? (
-                <p className="truncate text-sm text-muted-foreground">
-                  {session.user.email}
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold">Tip Claim Calculator</p>
+                <p className="hidden truncate text-xs text-muted-foreground sm:block">
+                  NiteOwl.dev
                 </p>
-              ) : null}
+              </div>
+            </div>
+
+            <div className="ml-auto flex shrink-0 items-center gap-2">
+              <ThemeSwitcher inline />
+              <div
+                className="flex size-9 items-center justify-center overflow-hidden rounded-full border bg-muted text-xs font-medium text-muted-foreground shadow-sm"
+                title={`${displayName}${session.user.email && session.user.email !== displayName ? ` · ${session.user.email}` : ""}`}
+                aria-label={`Signed in as ${displayName}`}
+              >
+                {session.user.image ? (
+                  <img
+                    src={session.user.image}
+                    alt=""
+                    className="size-full object-cover"
+                  />
+                ) : (
+                  avatarLabel
+                )}
+              </div>
             </div>
           </div>
 
-          <div className="flex min-w-0 items-center gap-2 sm:border-l sm:pl-3">
-            <Building2Icon className="size-4 shrink-0 text-muted-foreground" />
-            <Select
-              value={activeOrganization?.id}
-              disabled={organizationsPending || organizationList.length === 0}
-              onValueChange={(organizationId) => {
-                void authClient.organization.setActive({ organizationId });
-              }}
-            >
-              <SelectTrigger className="w-full min-w-48 sm:w-auto">
-                <SelectValue
-                  placeholder={
-                    organizationsPending
-                      ? "Loading organizations…"
-                      : organizationList.length === 0
-                        ? "No organizations"
-                        : "Select organization"
-                  }
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {organizationList.map((organization) => (
-                  <SelectItem key={organization.id} value={organization.id}>
-                    {organization.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div className="flex min-w-0 items-center gap-2">
+              <Building2Icon className="size-4 shrink-0 text-muted-foreground" />
+              <Select
+                value={activeOrganization?.id}
+                disabled={organizationsPending || organizationList.length === 0}
+                onValueChange={(organizationId) => {
+                  void authClient.organization.setActive({ organizationId });
+                }}
+              >
+                <SelectTrigger className="w-full min-w-0 md:w-64">
+                  <SelectValue
+                    placeholder={
+                      organizationsPending
+                        ? "Loading organizations…"
+                        : organizationList.length === 0
+                          ? "No organizations"
+                          : "Select organization"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {organizationList.map((organization) => (
+                    <SelectItem key={organization.id} value={organization.id}>
+                      {organization.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-        <div className="flex flex-wrap gap-2 md:justify-end">
-          <Button variant="outline" asChild>
-            <Link to="/reports">
-              <ReceiptTextIcon data-icon="inline-start" />
-              Reports
-            </Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link to="/">Public calculator</Link>
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => authClient.signOut()}
-          >
-            <LogOutIcon data-icon="inline-start" />
-            Sign out
-          </Button>
+            <nav className="flex flex-wrap gap-2 md:justify-end" aria-label="Tip claim navigation">
+              <Button variant="outline" asChild>
+                <Link to="/reports">
+                  <ReceiptTextIcon data-icon="inline-start" />
+                  Reports
+                </Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link to="/">Public calculator</Link>
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => authClient.signOut()}
+              >
+                <LogOutIcon data-icon="inline-start" />
+                Sign out
+              </Button>
+            </nav>
+          </div>
         </div>
       </header>
 

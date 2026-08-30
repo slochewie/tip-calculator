@@ -171,10 +171,12 @@ export function AppChrome({ children }: { children: ReactNode }) {
 
             <div className="ml-auto flex min-w-0 items-center gap-2">
               <Select
-                value={activeOrganization?.id}
+                value={activeOrganization?.id ?? ""}
                 disabled={organizationsPending || organizationList.length === 0}
                 onValueChange={(organizationId) => {
-                  void authClient.organization.setActive({ organizationId });
+                  if (organizationId) {
+                    void authClient.organization.setActive({ organizationId });
+                  }
                 }}
               >
                 <SelectTrigger className="hidden w-56 sm:flex">

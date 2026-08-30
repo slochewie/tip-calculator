@@ -171,18 +171,7 @@ function AuthenticatedTipCalculator() {
   }, [activeOrganization?.id, session]);
 
   if (isPending || !session) {
-    return (
-      <main className="mx-auto flex w-full max-w-md p-4 md:p-6 lg:p-8">
-        <Card className="w-full">
-          <CardHeader>
-            <CardTitle>Tip Claim Calculator</CardTitle>
-            <CardDescription>
-              {isPending ? "Checking your session…" : "Redirecting to sign in…"}
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </main>
-    );
+    return null;
   }
 
   const organizationList = organizations ?? [];

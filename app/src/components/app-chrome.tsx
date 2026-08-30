@@ -241,7 +241,10 @@ export function AppChrome({ children }: { children: ReactNode }) {
             <img
               src={`${consoleBaseURL}/branding/niteowl.dev/niteowl-icon.png`}
               alt=""
-              className="size-7 shrink-0 object-contain"
+              width={28}
+              height={28}
+              className="h-7 w-7 max-w-7 shrink-0 object-contain"
+              style={{ width: 28, height: 28 }}
             />
 
             <div className="min-w-0 shrink-0">

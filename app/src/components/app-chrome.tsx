@@ -57,6 +57,11 @@ function getInitials(name: string) {
   return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
 }
 
+const sidebarButtonClassName =
+  "text-base [&>svg]:size-5 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-2";
+const sidebarLabelClassName =
+  "truncate group-data-[collapsible=icon]:hidden";
+
 export function AppChrome({ children }: { children: ReactNode }) {
   const location = useLocation();
   const { data: session } = authClient.useSession();
@@ -85,7 +90,7 @@ export function AppChrome({ children }: { children: ReactNode }) {
       <SidebarProvider>
         <Sidebar collapsible="icon">
           <SidebarHeader className="px-3 py-4">
-            <div className="text-sm font-medium group-data-[collapsible=icon]:hidden">
+            <div className="text-base font-semibold group-data-[collapsible=icon]:hidden">
               NiteOwl
             </div>
           </SidebarHeader>
@@ -97,24 +102,26 @@ export function AppChrome({ children }: { children: ReactNode }) {
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       asChild
+                      className={sidebarButtonClassName}
                       isActive={location.pathname === "/app"}
                       tooltip="Tip Calculator"
                     >
                       <Link to="/app">
                         <CalculatorIcon />
-                        <span>Tip Calculator</span>
+                        <span className={sidebarLabelClassName}>Tip Calculator</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       asChild
+                      className={sidebarButtonClassName}
                       isActive={location.pathname === "/reports"}
                       tooltip="Reports"
                     >
                       <Link to="/reports">
                         <ReceiptTextIcon />
-                        <span>Reports</span>
+                        <span className={sidebarLabelClassName}>Reports</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -125,30 +132,42 @@ export function AppChrome({ children }: { children: ReactNode }) {
             <SidebarSeparator />
 
             <SidebarGroup>
-              <SidebarGroupLabel>Settings</SidebarGroupLabel>
+              <SidebarGroupLabel className="text-sm">Settings</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
                   <SidebarMenuItem>
-                    <SidebarMenuButton asChild tooltip="Account">
+                    <SidebarMenuButton
+                      asChild
+                      className={sidebarButtonClassName}
+                      tooltip="Account"
+                    >
                       <a href={`${consoleBaseURL}/settings/account`}>
                         <UserCircleIcon />
-                        <span>Account</span>
+                        <span className={sidebarLabelClassName}>Account</span>
                       </a>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
-                    <SidebarMenuButton asChild tooltip="Security">
+                    <SidebarMenuButton
+                      asChild
+                      className={sidebarButtonClassName}
+                      tooltip="Security"
+                    >
                       <a href={`${consoleBaseURL}/settings/security`}>
                         <ShieldCheckIcon />
-                        <span>Security</span>
+                        <span className={sidebarLabelClassName}>Security</span>
                       </a>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
-                    <SidebarMenuButton asChild tooltip="Organizations">
+                    <SidebarMenuButton
+                      asChild
+                      className={sidebarButtonClassName}
+                      tooltip="Organizations"
+                    >
                       <a href={`${consoleBaseURL}/settings/organizations`}>
                         <Building2Icon />
-                        <span>Organizations</span>
+                        <span className={sidebarLabelClassName}>Organizations</span>
                       </a>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -158,7 +177,7 @@ export function AppChrome({ children }: { children: ReactNode }) {
           </SidebarContent>
         </Sidebar>
 
-        <SidebarInset className="bg-transparent">
+        <SidebarInset className="bg-transparent [&_h1]:text-lg sm:[&_h1]:text-xl">
           <header className="flex min-h-16 items-center gap-3 border-b bg-[var(--header-bg)] px-4 backdrop-blur md:px-6">
             <SidebarTrigger />
 

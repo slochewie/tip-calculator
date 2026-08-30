@@ -45,6 +45,7 @@ import {
   SidebarSeparator,
   SidebarTrigger,
 } from "#/components/ui/sidebar.tsx";
+import { TooltipProvider } from "#/components/ui/tooltip.tsx";
 import { authBaseURL, authClient } from "#/lib/auth-client.ts";
 
 function getInitials(name: string) {
@@ -80,172 +81,174 @@ export function AppChrome({ children }: { children: ReactNode }) {
   const consoleBaseURL = authBaseURL.replace(/\/$/, "");
 
   return (
-    <SidebarProvider>
-      <Sidebar collapsible="icon">
-        <SidebarHeader className="px-3 py-4">
-          <div className="text-sm font-medium group-data-[collapsible=icon]:hidden">
-            NiteOwl
-          </div>
-        </SidebarHeader>
+    <TooltipProvider>
+      <SidebarProvider>
+        <Sidebar collapsible="icon">
+          <SidebarHeader className="px-3 py-4">
+            <div className="text-sm font-medium group-data-[collapsible=icon]:hidden">
+              NiteOwl
+            </div>
+          </SidebarHeader>
 
-        <SidebarContent>
-          <SidebarGroup>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={location.pathname === "/app"}
-                    tooltip="Tip Calculator"
+          <SidebarContent>
+            <SidebarGroup>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={location.pathname === "/app"}
+                      tooltip="Tip Calculator"
+                    >
+                      <Link to="/app">
+                        <CalculatorIcon />
+                        <span>Tip Calculator</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={location.pathname === "/reports"}
+                      tooltip="Reports"
+                    >
+                      <Link to="/reports">
+                        <ReceiptTextIcon />
+                        <span>Reports</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+
+            <SidebarSeparator />
+
+            <SidebarGroup>
+              <SidebarGroupLabel>Settings</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild tooltip="Account">
+                      <a href={`${consoleBaseURL}/settings/account`}>
+                        <UserCircleIcon />
+                        <span>Account</span>
+                      </a>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild tooltip="Security">
+                      <a href={`${consoleBaseURL}/settings/security`}>
+                        <ShieldCheckIcon />
+                        <span>Security</span>
+                      </a>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild tooltip="Organizations">
+                      <a href={`${consoleBaseURL}/settings/organizations`}>
+                        <Building2Icon />
+                        <span>Organizations</span>
+                      </a>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </SidebarContent>
+        </Sidebar>
+
+        <SidebarInset>
+          <header className="flex min-h-16 items-center gap-3 border-b px-4 md:px-6">
+            <SidebarTrigger />
+
+            <div className="min-w-0 shrink-0">
+              <p className="truncate text-sm font-semibold">Tip Claim Calculator</p>
+              <p className="hidden truncate text-xs text-muted-foreground sm:block">
+                NiteOwl.dev
+              </p>
+            </div>
+
+            <div className="ml-auto flex min-w-0 items-center gap-2">
+              <Select
+                value={activeOrganization?.id}
+                disabled={organizationsPending || organizationList.length === 0}
+                onValueChange={(organizationId) => {
+                  void authClient.organization.setActive({ organizationId });
+                }}
+              >
+                <SelectTrigger className="hidden w-56 sm:flex">
+                  <SelectValue
+                    placeholder={
+                      organizationsPending
+                        ? "Loading organizations…"
+                        : organizationList.length === 0
+                          ? "No organizations"
+                          : "Select organization"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {organizationList.map((organization) => (
+                    <SelectItem key={organization.id} value={organization.id}>
+                      {organization.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <ThemeSwitcher inline />
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    aria-label={`Open account menu for ${displayName}`}
                   >
-                    <Link to="/app">
-                      <CalculatorIcon />
-                      <span>Tip Calculator</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={location.pathname === "/reports"}
-                    tooltip="Reports"
-                  >
-                    <Link to="/reports">
-                      <ReceiptTextIcon />
-                      <span>Reports</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-
-          <SidebarSeparator />
-
-          <SidebarGroup>
-            <SidebarGroupLabel>Settings</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild tooltip="Account">
-                    <a href={`${consoleBaseURL}/settings/account`}>
-                      <UserCircleIcon />
-                      <span>Account</span>
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild tooltip="Security">
-                    <a href={`${consoleBaseURL}/settings/security`}>
-                      <ShieldCheckIcon />
-                      <span>Security</span>
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild tooltip="Organizations">
-                    <a href={`${consoleBaseURL}/settings/organizations`}>
-                      <Building2Icon />
-                      <span>Organizations</span>
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        </SidebarContent>
-      </Sidebar>
-
-      <SidebarInset>
-        <header className="flex min-h-16 items-center gap-3 border-b px-4 md:px-6">
-          <SidebarTrigger />
-
-          <div className="min-w-0 shrink-0">
-            <p className="truncate text-sm font-semibold">Tip Claim Calculator</p>
-            <p className="hidden truncate text-xs text-muted-foreground sm:block">
-              NiteOwl.dev
-            </p>
-          </div>
-
-          <div className="ml-auto flex min-w-0 items-center gap-2">
-            <Select
-              value={activeOrganization?.id}
-              disabled={organizationsPending || organizationList.length === 0}
-              onValueChange={(organizationId) => {
-                void authClient.organization.setActive({ organizationId });
-              }}
-            >
-              <SelectTrigger className="hidden w-56 sm:flex">
-                <SelectValue
-                  placeholder={
-                    organizationsPending
-                      ? "Loading organizations…"
-                      : organizationList.length === 0
-                        ? "No organizations"
-                        : "Select organization"
-                  }
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {organizationList.map((organization) => (
-                  <SelectItem key={organization.id} value={organization.id}>
-                    {organization.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <ThemeSwitcher inline />
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  aria-label={`Open account menu for ${displayName}`}
-                >
-                  <Avatar>
-                    {session.user.image ? (
-                      <AvatarImage src={session.user.image} alt="" />
-                    ) : null}
-                    <AvatarFallback>{avatarLabel}</AvatarFallback>
-                  </Avatar>
-                </button>
-              </DropdownMenuTrigger>
-
-              <DropdownMenuContent align="end" className="w-64">
-                <DropdownMenuLabel className="font-normal">
-                  <div className="flex items-center gap-3">
                     <Avatar>
                       {session.user.image ? (
                         <AvatarImage src={session.user.image} alt="" />
                       ) : null}
                       <AvatarFallback>{avatarLabel}</AvatarFallback>
                     </Avatar>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium">{displayName}</p>
-                      {session.user.email ? (
-                        <p className="truncate text-xs text-muted-foreground">
-                          {session.user.email}
-                        </p>
-                      ) : null}
-                    </div>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={() => void authClient.signOut()}>
-                  <LogOutIcon />
-                  Sign out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </header>
+                  </button>
+                </DropdownMenuTrigger>
 
-        <div className="flex flex-1 flex-col [&>header:first-child]:hidden">
-          {children}
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
+                <DropdownMenuContent align="end" className="w-64">
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex items-center gap-3">
+                      <Avatar>
+                        {session.user.image ? (
+                          <AvatarImage src={session.user.image} alt="" />
+                        ) : null}
+                        <AvatarFallback>{avatarLabel}</AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium">{displayName}</p>
+                        {session.user.email ? (
+                          <p className="truncate text-xs text-muted-foreground">
+                            {session.user.email}
+                          </p>
+                        ) : null}
+                      </div>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={() => void authClient.signOut()}>
+                    <LogOutIcon />
+                    Sign out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </header>
+
+          <div className="flex flex-1 flex-col [&>header:first-child]:hidden">
+            {children}
+          </div>
+        </SidebarInset>
+      </SidebarProvider>
+    </TooltipProvider>
   );
 }

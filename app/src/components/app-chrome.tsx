@@ -12,6 +12,7 @@ import {
   ShieldCheckIcon,
   SquareTerminalIcon,
   UserCircleIcon,
+  UsersIcon,
 } from "lucide-react";
 
 import { AccountSwitcherSubmenu } from "#/components/account-switcher-submenu.tsx";
@@ -144,6 +145,19 @@ export function AppChrome({ children }: { children: ReactNode }) {
                       <Link to="/reports">
                         <ReceiptTextIcon />
                         <span className={sidebarLabelClassName}>Reports</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      className={sidebarButtonClassName}
+                      isActive={location.pathname === "/assignments"}
+                      tooltip="Assignments"
+                    >
+                      <Link to="/assignments">
+                        <UsersIcon />
+                        <span className={sidebarLabelClassName}>Assignments</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

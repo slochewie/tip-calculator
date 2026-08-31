@@ -40,7 +40,6 @@ import { Input } from "#/components/ui/input.tsx";
 import {
 	Select,
 	SelectContent,
-	SelectGroup,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
@@ -62,7 +61,7 @@ type Register = {
 	sales: string;
 };
 
-type RoleKey = "bartender" | "barback" | "door";
+type RoleKey = "bartender" | "manager" | "barback" | "door";
 
 type RoleState = Record<RoleKey, number>;
 type WeightState = Record<RoleKey, number>;
@@ -96,11 +95,13 @@ type TipClaimCalculatorProps = {
 
 const ROLE_LABELS: Record<RoleKey, string> = {
 	bartender: "Bartender",
+	manager: "Manager",
 	barback: "Barback",
 	door: "Door",
 };
 
-const ROLE_ORDER: RoleKey[] = ["bartender", "barback", "door"];
+const ROLE_ORDER: RoleKey[] = ["bartender", "manager", "barback", "door"];
+const REGISTER_ROLE_ORDER: RoleKey[] = ["bartender", "manager"];
 
 const currency = new Intl.NumberFormat("en-US", {
 	style: "currency",
@@ -115,27 +116,6 @@ function parseMoney(value: string) {
 function clampInteger(value: number, min = 0, max = 50) {
 	if (!Number.isFinite(value)) return min;
 	return Math.min(max, Math.max(min, Math.trunc(value)));
-}
-
-function findAvailableRegisterId(
-	assignments: StaffAssignment[],
-	registers: Register[],
-	excludeIndex?: number,
-) {
-	const assignedRegisterIds = new Set(
-		assignments.flatMap((assignment, index) =>
-			index === excludeIndex ||
-			assignment.role !== "bartender" ||
-			assignment.registerId === null
-				? []
-				: [assignment.registerId],
-		),
-	);
-
-	return (
-		registers.find((register) => !assignedRegisterIds.has(register.id))?.id ??
-		null
-	);
 }
 
 function allocateClaims(
@@ -197,23 +177,21 @@ export function TipClaimCalculator({
 }: TipClaimCalculatorProps = {}) {
 	const [claimPercent, setClaimPercent] = useState("8");
 	const [nextRegisterId, setNextRegisterId] = useState(2);
-
 	const [registers, setRegisters] = useState<Register[]>([
 		{ id: 1, name: "Register A", sales: "0" },
 	]);
-
 	const [staff, setStaff] = useState<RoleState>({
 		bartender: 1,
+		manager: 0,
 		barback: 0,
 		door: 0,
 	});
-
 	const [memberAssignments, setMemberAssignments] = useState<StaffAssignment[]>(
 		[],
 	);
-
 	const [weights, setWeights] = useState<WeightState>({
 		bartender: 5,
+		manager: 5,
 		barback: 3,
 		door: 1,
 	});
@@ -244,6 +222,7 @@ export function TipClaimCalculator({
 			}),
 			{
 				bartender: 0,
+				manager: 0,
 				barback: 0,
 				door: 0,
 			},
@@ -259,31 +238,25 @@ export function TipClaimCalculator({
 		[registers],
 	);
 	const totalSales = totalSalesCents / 100;
-
 	const normalizedPercent = Math.min(
 		100,
 		Math.max(0, Number.parseFloat(claimPercent) || 0),
 	);
-
 	const requiredClaimCents = Math.round(
 		totalSalesCents * (normalizedPercent / 100),
 	);
-
 	const allocations = useMemo(
 		() => allocateClaims(requiredClaimCents, effectiveStaff, weights),
 		[effectiveStaff, requiredClaimCents, weights],
 	);
-
 	const totalWeight = ROLE_ORDER.reduce(
 		(sum, role) => sum + effectiveStaff[role] * Math.max(0, weights[role]),
 		0,
 	);
-
 	const allocatedClaimCents = allocations.reduce(
 		(sum, allocation) => sum + allocation.cents,
 		0,
 	);
-
 	const roleBreakdown = ROLE_ORDER.map((role) => {
 		const entries = allocations.filter((entry) => entry.role === role);
 		const totalCents = entries.reduce((sum, entry) => sum + entry.cents, 0);
@@ -317,31 +290,14 @@ export function TipClaimCalculator({
 
 	function addRegister() {
 		const letter = String.fromCharCode(65 + registers.length);
-		const register: Register = {
-			id: nextRegisterId,
-			name: `Register ${letter}`,
-			sales: "",
-		};
-
-		setRegisters((current) => [...current, register]);
-
-		setMemberAssignments((current) => {
-			const bartenderIndex = current.findIndex(
-				(assignment) =>
-					assignment.role === "bartender" && assignment.registerId === null,
-			);
-
-			if (bartenderIndex === -1) {
-				return current;
-			}
-
-			return current.map((assignment, index) =>
-				index === bartenderIndex
-					? { ...assignment, registerId: register.id }
-					: assignment,
-			);
-		});
-
+		setRegisters((current) => [
+			...current,
+			{
+				id: nextRegisterId,
+				name: `Register ${letter}`,
+				sales: "",
+			},
+		]);
 		setNextRegisterId((current) => current + 1);
 	}
 
@@ -372,17 +328,14 @@ export function TipClaimCalculator({
 
 	function addMemberAssignment() {
 		const member = unassignedMembers[0];
-
-		if (!member) {
-			return;
-		}
+		if (!member) return;
 
 		setMemberAssignments((current) => [
 			...current,
 			{
 				userId: member.id,
 				role: "bartender",
-				registerId: findAvailableRegisterId(current, registers),
+				registerId: null,
 			},
 		]);
 	}
@@ -393,10 +346,7 @@ export function TipClaimCalculator({
 	) {
 		setMemberAssignments((current) => {
 			const assignment = current[index];
-
-			if (!assignment) {
-				return current;
-			}
+			if (!assignment) return current;
 
 			const role = changes.role ?? assignment.role;
 			let registerId =
@@ -404,13 +354,8 @@ export function TipClaimCalculator({
 					? changes.registerId
 					: assignment.registerId;
 
-			if (role !== "bartender") {
+			if (role !== "bartender" && role !== "manager") {
 				registerId = null;
-			} else if (
-				assignment.role !== "bartender" &&
-				changes.registerId === undefined
-			) {
-				registerId = findAvailableRegisterId(current, registers, index);
 			}
 
 			return current.map((currentAssignment, assignmentIndex) => {
@@ -427,14 +372,63 @@ export function TipClaimCalculator({
 					registerId !== null &&
 					currentAssignment.registerId === registerId
 				) {
-					return {
-						...currentAssignment,
-						registerId: null,
-					};
+					return { ...currentAssignment, registerId: null };
 				}
 
 				return currentAssignment;
 			});
+		});
+	}
+
+	function assignRegisterEmployee(registerId: number, userId: string | null) {
+		setMemberAssignments((current) => {
+			const currentRegisterIndex = current.findIndex(
+				(assignment) => assignment.registerId === registerId,
+			);
+
+			if (userId === null) {
+				return current.map((assignment, index) =>
+					index === currentRegisterIndex
+						? { ...assignment, registerId: null }
+						: assignment,
+				);
+			}
+
+			const userIndex = current.findIndex(
+				(assignment) => assignment.userId === userId,
+			);
+
+			if (userIndex >= 0) {
+				return current.map((assignment, index) => {
+					if (index === userIndex) {
+						return {
+							...assignment,
+							role:
+								assignment.role === "manager" ? "manager" : "bartender",
+							registerId,
+						};
+					}
+
+					if (assignment.registerId === registerId) {
+						return { ...assignment, registerId: null };
+					}
+
+					return assignment;
+				});
+			}
+
+			return [
+				...current.map((assignment) =>
+					assignment.registerId === registerId
+						? { ...assignment, registerId: null }
+						: assignment,
+				),
+				{
+					userId,
+					role: "bartender",
+					registerId,
+				},
+			];
 		});
 	}
 
@@ -474,13 +468,13 @@ export function TipClaimCalculator({
 
 		const roleIndexes: RoleState = {
 			bartender: 0,
+			manager: 0,
 			barback: 0,
 			door: 0,
 		};
 
 		const savedStaff = memberAssignments.map((assignment) => {
 			const member = members.find((candidate) => candidate.id === assignment.userId);
-
 			if (!member) {
 				throw new Error("One of the assigned staff members is no longer available.");
 			}
@@ -542,7 +536,6 @@ export function TipClaimCalculator({
 					</h1>
 					<Badge variant="secondary">Weighted roles</Badge>
 				</div>
-
 				<p className="max-w-3xl text-sm text-muted-foreground md:text-base">
 					Calculate the minimum tip claim from combined register sales, then
 					split it across on-duty staff using role weights.
@@ -557,18 +550,15 @@ export function TipClaimCalculator({
 						<CardHeader>
 							<CardTitle>Sales and claim target</CardTitle>
 							<CardDescription>
-								Add every register used during the shift and enter its sales
-								total.
+								Add every register used during the shift, enter its sales total,
+								and assign the employee working that register.
 							</CardDescription>
 						</CardHeader>
 
 						<CardContent className="gap-5">
 							<FieldGroup>
 								<Field>
-									<FieldLabel htmlFor="claim-percent">
-										Claim percentage
-									</FieldLabel>
-
+									<FieldLabel htmlFor="claim-percent">Claim percentage</FieldLabel>
 									<InputGroup>
 										<InputGroupInput
 											id="claim-percent"
@@ -584,7 +574,6 @@ export function TipClaimCalculator({
 											<InputGroupText>% of total sales</InputGroupText>
 										</InputGroupAddon>
 									</InputGroup>
-
 									<FieldDescription>
 										Typical minimum target is 8–10% of combined sales.
 									</FieldDescription>
@@ -593,63 +582,135 @@ export function TipClaimCalculator({
 
 							<Separator />
 
-							<div className="flex flex-col gap-3">
-								{registers.map((register) => (
-									<div
-										key={register.id}
-										className="grid min-w-0 gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
-									>
-										<Field>
-											<FieldLabel htmlFor={`register-name-${register.id}`}>
-												Register
-											</FieldLabel>
-											<Input
-												id={`register-name-${register.id}`}
-												value={register.name}
-												onChange={(event) =>
-													updateRegister(register.id, {
-														name: event.target.value,
-													})
-												}
-											/>
-										</Field>
+							<div className="flex flex-col gap-4">
+								{registers.map((register) => {
+									const assignmentIndex = memberAssignments.findIndex(
+										(assignment) => assignment.registerId === register.id,
+									);
+									const assignment =
+										assignmentIndex >= 0 ? memberAssignments[assignmentIndex] : undefined;
+									const registerAssignedUserIds = new Set(
+										memberAssignments.flatMap((candidate) =>
+											candidate.registerId !== null &&
+											candidate.registerId !== register.id
+												? [candidate.userId]
+												: [],
+										),
+									);
+									const availableMembers =
+										members?.filter(
+											(member) => !registerAssignedUserIds.has(member.id),
+										) ?? [];
 
-										<Field>
-											<FieldLabel htmlFor={`register-sales-${register.id}`}>
-												Sales
-											</FieldLabel>
-											<InputGroup>
-												<InputGroupAddon>$</InputGroupAddon>
-												<InputGroupInput
-													id={`register-sales-${register.id}`}
-													type="number"
-													inputMode="decimal"
-													min="0"
-													step="0.01"
-													value={register.sales}
+									return (
+										<div
+											key={register.id}
+											className="grid min-w-0 gap-3 rounded-lg border p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
+										>
+											<Field>
+												<FieldLabel htmlFor={`register-name-${register.id}`}>
+													Register
+												</FieldLabel>
+												<Input
+													id={`register-name-${register.id}`}
+													value={register.name}
 													onChange={(event) =>
-														updateRegister(register.id, {
-															sales: event.target.value,
-														})
+														updateRegister(register.id, { name: event.target.value })
 													}
 												/>
-											</InputGroup>
-										</Field>
+											</Field>
 
-										<div className="flex items-end">
-											<Button
-												type="button"
-												variant="ghost"
-												size="icon"
-												aria-label={`Remove ${register.name}`}
-												disabled={registers.length === 1}
-												onClick={() => removeRegister(register.id)}
-											>
-												<Trash2Icon />
-											</Button>
+											<Field>
+												<FieldLabel htmlFor={`register-sales-${register.id}`}>
+													Sales
+												</FieldLabel>
+												<InputGroup>
+													<InputGroupAddon>$</InputGroupAddon>
+													<InputGroupInput
+														id={`register-sales-${register.id}`}
+														type="number"
+														inputMode="decimal"
+														min="0"
+														step="0.01"
+														value={register.sales}
+														onChange={(event) =>
+															updateRegister(register.id, { sales: event.target.value })
+														}
+													/>
+												</InputGroup>
+											</Field>
+
+											<div className="flex items-end">
+												<Button
+													type="button"
+													variant="ghost"
+													size="icon"
+													aria-label={`Remove ${register.name}`}
+													disabled={registers.length === 1}
+													onClick={() => removeRegister(register.id)}
+												>
+													<Trash2Icon />
+												</Button>
+											</div>
+
+											{usesOrganizationMembers ? (
+												<div className="grid gap-3 sm:col-span-3 sm:grid-cols-2">
+													<Field>
+														<FieldLabel>Employee</FieldLabel>
+														<Select
+															value={assignment?.userId ?? "none"}
+															disabled={!organizationId || membersPending || Boolean(membersError)}
+															onValueChange={(value) =>
+																assignRegisterEmployee(
+																	register.id,
+																	value === "none" ? null : value,
+																)
+															}
+														>
+															<SelectTrigger className="w-full">
+																<SelectValue placeholder="Select employee" />
+															</SelectTrigger>
+															<SelectContent>
+																<SelectItem value="none">No employee</SelectItem>
+																{availableMembers.map((member) => (
+																	<SelectItem key={member.id} value={member.id}>
+																		{member.name || member.email}
+																	</SelectItem>
+																))}
+															</SelectContent>
+														</Select>
+													</Field>
+
+													<Field>
+														<FieldLabel>Role</FieldLabel>
+														<Select
+															value={assignment?.role ?? "bartender"}
+															disabled={assignmentIndex < 0}
+															onValueChange={(role) => {
+																if (assignmentIndex >= 0) {
+																	updateMemberAssignment(assignmentIndex, {
+																		role: role as RoleKey,
+																	});
+																}
+															}}
+														>
+															<SelectTrigger className="w-full">
+																<SelectValue />
+															</SelectTrigger>
+															<SelectContent>
+																{REGISTER_ROLE_ORDER.map((role) => (
+																	<SelectItem key={role} value={role}>
+																		{ROLE_LABELS[role]}
+																	</SelectItem>
+																))}
+															</SelectContent>
+														</Select>
+													</Field>
+												</div>
+											) : null}
 										</div>
-									</div>
-								))}
+									);
+								})}
 
 								<Button type="button" variant="outline" onClick={addRegister}>
 									<PlusIcon data-icon="inline-start" />
@@ -665,7 +726,7 @@ export function TipClaimCalculator({
 							<CardDescription>
 								{usesOrganizationMembers
 									? organizationName
-										? `Select the ${organizationName} members working this shift, assign each person a claim role, and optionally match bartenders to registers.`
+										? `Select the ${organizationName} members working this shift and assign each person a claim role.`
 										: "Select an organization, then assign its members to claim roles."
 									: "Enter how many people in each role are sharing the required claim."}
 							</CardDescription>
@@ -704,26 +765,10 @@ export function TipClaimCalculator({
 															!assignedUserIds.has(member.id),
 													) ?? [];
 
-												const otherRegisterIds = new Set(
-													memberAssignments.flatMap(
-														(otherAssignment, assignmentIndex) =>
-															assignmentIndex === index ||
-															otherAssignment.registerId === null
-																? []
-																: [otherAssignment.registerId],
-													),
-												);
-
-												const availableRegisters = registers.filter(
-													(register) =>
-														register.id === assignment.registerId ||
-														!otherRegisterIds.has(register.id),
-												);
-
 												return (
 													<div
 														key={`${assignment.userId}-${index}`}
-														className="grid min-w-0 gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(140px,0.45fr)_minmax(150px,0.55fr)_auto]"
+														className="grid min-w-0 gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(140px,0.45fr)_auto]"
 													>
 														<Select
 															value={assignment.userId}
@@ -763,39 +808,6 @@ export function TipClaimCalculator({
 															</SelectContent>
 														</Select>
 
-														{assignment.role === "bartender" ? (
-															<Select
-																value={assignment.registerId?.toString() ?? "none"}
-																onValueChange={(value) =>
-																	updateMemberAssignment(index, {
-																		registerId:
-																			value === "none" ? null : Number(value),
-																	})
-																}
-															>
-																<SelectTrigger className="w-full">
-																	<SelectValue placeholder="Register" />
-																</SelectTrigger>
-																<SelectContent>
-																	<SelectGroup>
-																		<SelectItem value="none">No register</SelectItem>
-																		{availableRegisters.map((register) => (
-																			<SelectItem
-																				key={register.id}
-																				value={register.id.toString()}
-																			>
-																				{register.name}
-																			</SelectItem>
-																		))}
-																	</SelectGroup>
-																</SelectContent>
-															</Select>
-														) : (
-															<Button type="button" variant="outline" disabled>
-																No register
-															</Button>
-														)}
-
 														<Button
 															type="button"
 															variant="ghost"
@@ -828,7 +840,6 @@ export function TipClaimCalculator({
 											<FieldLabel htmlFor={`staff-${role}`}>
 												{ROLE_LABELS[role]}
 											</FieldLabel>
-
 											<InputGroup className="sm:max-w-32">
 												<InputGroupInput
 													id={`staff-${role}`}
@@ -838,14 +849,9 @@ export function TipClaimCalculator({
 													max="50"
 													step="1"
 													value={staff[role]}
-													onChange={(event) =>
-														updateStaff(role, event.target.value)
-													}
+													onChange={(event) => updateStaff(role, event.target.value)}
 												/>
-												<InputGroupAddon
-													align="inline-end"
-													className="gap-0"
-												>
+												<InputGroupAddon align="inline-end" className="gap-0">
 													<InputGroupButton
 														size="icon-xs"
 														aria-label={`Decrease ${ROLE_LABELS[role]} count`}
@@ -874,10 +880,9 @@ export function TipClaimCalculator({
 									<AccordionTrigger>Allocation settings</AccordionTrigger>
 									<AccordionContent className="flex flex-col gap-4">
 										<p className="text-muted-foreground">
-											Higher weights receive a larger share. Defaults reproduce
-											the example split: Bartender 5, Barback 3, Door 1.
+											Higher weights receive a larger share. Defaults are Bartender 5,
+											Manager 5, Barback 3, Door 1.
 										</p>
-
 										<FieldGroup>
 											{ROLE_ORDER.map((role) => (
 												<Field key={role} orientation="responsive">
@@ -893,9 +898,7 @@ export function TipClaimCalculator({
 														max="100"
 														step="1"
 														value={weights[role]}
-														onChange={(event) =>
-															updateWeight(role, event.target.value)
-														}
+														onChange={(event) => updateWeight(role, event.target.value)}
 													/>
 												</Field>
 											))}
@@ -918,34 +921,24 @@ export function TipClaimCalculator({
 								% of combined register sales
 							</CardDescription>
 						</CardHeader>
-
 						<CardContent className="gap-4">
 							<div className="grid grid-cols-2 gap-4">
 								<div className="flex flex-col gap-1">
-									<span className="text-sm text-muted-foreground">
-										Total sales
-									</span>
+									<span className="text-sm text-muted-foreground">Total sales</span>
 									<span className="text-2xl font-semibold tabular-nums">
 										{currency.format(totalSales)}
 									</span>
 								</div>
-
 								<div className="flex flex-col gap-1">
-									<span className="text-sm text-muted-foreground">
-										Minimum claim
-									</span>
+									<span className="text-sm text-muted-foreground">Minimum claim</span>
 									<span className="text-2xl font-semibold tabular-nums">
 										{currency.format(requiredClaimCents / 100)}
 									</span>
 								</div>
 							</div>
-
 							<Separator />
-
 							<div className="flex items-center justify-between gap-4 text-sm">
-								<span className="text-muted-foreground">
-									Active weight units
-								</span>
+								<span className="text-muted-foreground">Active weight units</span>
 								<span className="font-medium tabular-nums">{totalWeight}</span>
 							</div>
 						</CardContent>
@@ -955,11 +948,9 @@ export function TipClaimCalculator({
 						<CardHeader>
 							<CardTitle>Claim breakdown</CardTitle>
 							<CardDescription>
-								Amount each role should claim based on the active staff and
-								weights.
+								Amount each role should claim based on the active staff and weights.
 							</CardDescription>
 						</CardHeader>
-
 						<CardContent>
 							<Table>
 								<TableHeader>
@@ -970,7 +961,6 @@ export function TipClaimCalculator({
 										<TableHead className="text-right">Role total</TableHead>
 									</TableRow>
 								</TableHeader>
-
 								<TableBody>
 									{roleBreakdown.map((row) => {
 										const each =
@@ -978,26 +968,20 @@ export function TipClaimCalculator({
 												? "—"
 												: row.minimum === row.maximum
 													? currency.format(row.minimum / 100)
-													: `${currency.format(
-															row.minimum / 100,
-														)}–${currency.format(row.maximum / 100)}`;
+													: `${currency.format(row.minimum / 100)}–${currency.format(
+															row.maximum / 100,
+														)}`;
 
 										return (
 											<TableRow key={row.role}>
 												<TableCell>
 													<div className="flex items-center gap-2">
-														<span className="font-medium">
-															{ROLE_LABELS[row.role]}
-														</span>
+														<span className="font-medium">{ROLE_LABELS[row.role]}</span>
 														<Badge variant="outline">{row.weight}×</Badge>
 													</div>
 												</TableCell>
-												<TableCell className="text-right tabular-nums">
-													{row.count}
-												</TableCell>
-												<TableCell className="text-right tabular-nums">
-													{each}
-												</TableCell>
+												<TableCell className="text-right tabular-nums">{row.count}</TableCell>
+												<TableCell className="text-right tabular-nums">{each}</TableCell>
 												<TableCell className="text-right font-medium tabular-nums">
 													{currency.format(row.totalCents / 100)}
 												</TableCell>
@@ -1007,7 +991,7 @@ export function TipClaimCalculator({
 								</TableBody>
 							</Table>
 
-							{allocations.length > 0 && (
+							{allocations.length > 0 ? (
 								<>
 									<Separator />
 									<div className="flex items-center justify-between gap-4">
@@ -1017,14 +1001,14 @@ export function TipClaimCalculator({
 										</span>
 									</div>
 								</>
-							)}
+							) : null}
 
-							{requiredClaimCents > 0 && allocations.length === 0 && (
+							{requiredClaimCents > 0 && allocations.length === 0 ? (
 								<p className="text-sm text-muted-foreground">
-									Add at least one staff member with a weight above zero to
-									allocate the required claim.
+									Add at least one staff member with a weight above zero to allocate
+									the required claim.
 								</p>
-							)}
+							) : null}
 						</CardContent>
 					</Card>
 
@@ -1046,7 +1030,8 @@ export function TipClaimCalculator({
 										Boolean(savedShiftId) ||
 										!organizationId ||
 										memberAssignments.length === 0 ||
-										(requiredClaimCents > 0 && allocatedClaimCents !== requiredClaimCents)
+										(requiredClaimCents > 0 &&
+											allocatedClaimCents !== requiredClaimCents)
 									}
 									onClick={() => void saveEndOfShift()}
 								>

@@ -70,6 +70,7 @@ function formatRole(role: string) {
   if (role === "barback") return "Barback";
   if (role === "door") return "Door";
   if (role === "bartender") return "Bartender";
+  if (role === "manager") return "Manager";
   return role;
 }
 
@@ -469,7 +470,7 @@ function TipClaimReports() {
                         </section>
                       </div>
 
-                      <div className="grid gap-2 border-t px-4 py-3 text-sm sm:grid-cols-3">
+                      <div className="grid gap-2 border-t px-4 py-3 text-sm sm:grid-cols-4">
                         <div>
                           <span className="text-muted-foreground">Weight units: </span>
                           <span className="font-medium">{shift.totalWeightUnits}</span>
@@ -477,6 +478,10 @@ function TipClaimReports() {
                         <div>
                           <span className="text-muted-foreground">Bartender: </span>
                           <span className="font-medium">{shift.bartenderWeight}×</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Manager: </span>
+                          <span className="font-medium">{shift.managerWeight}×</span>
                         </div>
                         <div>
                           <span className="text-muted-foreground">

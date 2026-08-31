@@ -21,47 +21,11 @@ import {
 } from "#/components/ui/select.tsx";
 import { Skeleton } from "#/components/ui/skeleton.tsx";
 import { authBaseURL, authClient } from "#/lib/auth-client.ts";
+import { listTipClaimAssignments } from "#/lib/tip-claim.ts";
 
 export const Route = createFileRoute("/app")({
   component: AuthenticatedTipCalculator,
 });
-
-type EligibleOrganizationMember = {
-  memberId: string;
-  userId: string;
-  name: string;
-  email: string;
-};
-
-function readEligibleMembers(value: unknown): TipClaimMember[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  return value.flatMap((member) => {
-    if (!member || typeof member !== "object") {
-      return [];
-    }
-
-    const candidate = member as Partial<EligibleOrganizationMember>;
-
-    if (
-      typeof candidate.userId !== "string" ||
-      typeof candidate.name !== "string" ||
-      typeof candidate.email !== "string"
-    ) {
-      return [];
-    }
-
-    return [
-      {
-        id: candidate.userId,
-        name: candidate.name,
-        email: candidate.email,
-      },
-    ];
-  });
-}
 
 function CalculatorSessionSkeleton() {
   return (
@@ -187,32 +151,23 @@ function AuthenticatedTipCalculator() {
       setMembersError(null);
 
       try {
-        const url = new URL(
-          "/api/auth/organization-member-status/eligible",
-          authBaseURL,
-        );
-
-        url.searchParams.set("organizationId", activeOrganization.id);
-
-        const response = await fetch(url, {
-          credentials: "include",
-        });
-
-        const result = await response.json();
+        const assignments = await listTipClaimAssignments(activeOrganization.id);
 
         if (cancelled) {
           return;
         }
 
-        if (!response.ok) {
-          throw new Error(
-            typeof result?.error === "string"
-              ? result.error
-              : "Unable to load members.",
-          );
-        }
-
-        setMembers(readEligibleMembers(result?.members));
+        setMembers(
+          assignments.map((assignment) => ({
+            id: assignment.userId,
+            name: assignment.name,
+            email: assignment.email,
+            bartenderEnabled: assignment.bartenderEnabled,
+            managerEnabled: assignment.managerEnabled,
+            barbackEnabled: assignment.barbackEnabled,
+            doorEnabled: assignment.doorEnabled,
+          })),
+        );
         setAreMembersPending(false);
       } catch (error) {
         if (cancelled) {

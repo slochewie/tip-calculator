@@ -5,6 +5,7 @@ import {
   CalculatorIcon,
   GaugeIcon,
   LogOutIcon,
+  NetworkIcon,
   ReceiptTextIcon,
   ShieldCheckIcon,
   SquareTerminalIcon,
@@ -62,12 +63,14 @@ function getAppLinks() {
     return {
       console: "https://console.mccarthysirishpub.com/",
       counter: "https://counter.mccarthysirishpub.com",
+      networkStatus: "https://unifi.mccarthysirishpub.com",
     };
   }
 
   return {
     console: "https://console.niteowl.dev",
     counter: "https://counter.niteowl.dev",
+    networkStatus: "https://unifi.niteowl.dev",
   };
 }
 
@@ -174,6 +177,19 @@ export function AppChrome({ children }: { children: ReactNode }) {
                     >
                       <GaugeIcon />
                       <span className={sidebarLabelClassName}>Counter</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      className={sidebarButtonClassName}
+                      tooltip="Network Status"
+                      onClick={() => {
+                        const links = getAppLinks();
+                        window.location.assign(links.networkStatus);
+                      }}
+                    >
+                      <NetworkIcon />
+                      <span className={sidebarLabelClassName}>Network Status</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </SidebarMenu>

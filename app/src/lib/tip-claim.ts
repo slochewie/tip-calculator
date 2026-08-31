@@ -54,6 +54,7 @@ export type TipClaimShiftReport = {
   requiredClaimCents: number;
   totalWeightUnits: number;
   bartenderWeight: number;
+  managerWeight: number;
   barbackWeight: number;
   doorWeight: number;
   completedAt: string;

@@ -82,6 +82,10 @@ export type TipClaimMember = {
 	id: string;
 	name: string;
 	email: string;
+	bartenderEnabled: boolean;
+	managerEnabled: boolean;
+	barbackEnabled: boolean;
+	doorEnabled: boolean;
 };
 
 type TipClaimCalculatorProps = {
@@ -103,10 +107,25 @@ const ROLE_LABELS: Record<RoleKey, string> = {
 const ROLE_ORDER: RoleKey[] = ["bartender", "manager", "barback", "door"];
 const REGISTER_ROLE_ORDER: RoleKey[] = ["bartender", "manager"];
 
+const ROLE_ENABLED_FIELDS: Record<RoleKey, keyof Pick<TipClaimMember, "bartenderEnabled" | "managerEnabled" | "barbackEnabled" | "doorEnabled">> = {
+	bartender: "bartenderEnabled",
+	manager: "managerEnabled",
+	barback: "barbackEnabled",
+	door: "doorEnabled",
+};
+
 const currency = new Intl.NumberFormat("en-US", {
 	style: "currency",
 	currency: "USD",
 });
+
+function isRoleEnabled(member: TipClaimMember, role: RoleKey) {
+	return member[ROLE_ENABLED_FIELDS[role]];
+}
+
+function enabledRoles(member: TipClaimMember, roles = ROLE_ORDER) {
+	return roles.filter((role) => isRoleEnabled(member, role));
+}
 
 function parseMoney(value: string) {
 	const parsed = Number.parseFloat(value);
@@ -274,11 +293,17 @@ export function TipClaimCalculator({
 		};
 	});
 
+	const eligibleMembers =
+		members?.filter((member) => enabledRoles(member).length > 0) ?? [];
+	const registerMembers = eligibleMembers.filter(
+		(member) => enabledRoles(member, REGISTER_ROLE_ORDER).length > 0,
+	);
 	const assignedUserIds = new Set(
 		memberAssignments.map((assignment) => assignment.userId),
 	);
-	const unassignedMembers =
-		members?.filter((member) => !assignedUserIds.has(member.id)) ?? [];
+	const unassignedMembers = eligibleMembers.filter(
+		(member) => !assignedUserIds.has(member.id),
+	);
 
 	function updateRegister(id: number, changes: Partial<Register>) {
 		setRegisters((current) =>
@@ -330,11 +355,14 @@ export function TipClaimCalculator({
 		const member = unassignedMembers[0];
 		if (!member) return;
 
+		const role = enabledRoles(member)[0];
+		if (!role) return;
+
 		setMemberAssignments((current) => [
 			...current,
 			{
 				userId: member.id,
-				role: "bartender",
+				role,
 				registerId: null,
 			},
 		]);
@@ -348,7 +376,17 @@ export function TipClaimCalculator({
 			const assignment = current[index];
 			if (!assignment) return current;
 
-			const role = changes.role ?? assignment.role;
+			const userId = changes.userId ?? assignment.userId;
+			const member = members?.find((candidate) => candidate.id === userId);
+			if (usesOrganizationMembers && !member) return current;
+
+			let role = changes.role ?? assignment.role;
+			if (member && !isRoleEnabled(member, role)) {
+				const fallbackRole = enabledRoles(member)[0];
+				if (!fallbackRole) return current;
+				role = fallbackRole;
+			}
+
 			let registerId =
 				changes.registerId !== undefined
 					? changes.registerId
@@ -363,6 +401,7 @@ export function TipClaimCalculator({
 					return {
 						...currentAssignment,
 						...changes,
+						userId,
 						role,
 						registerId,
 					};
@@ -394,6 +433,10 @@ export function TipClaimCalculator({
 				);
 			}
 
+			const member = registerMembers.find((candidate) => candidate.id === userId);
+			if (!member) return current;
+
+			const allowedRegisterRoles = enabledRoles(member, REGISTER_ROLE_ORDER);
 			const userIndex = current.findIndex(
 				(assignment) => assignment.userId === userId,
 			);
@@ -401,10 +444,15 @@ export function TipClaimCalculator({
 			if (userIndex >= 0) {
 				return current.map((assignment, index) => {
 					if (index === userIndex) {
+						const role = allowedRegisterRoles.includes(assignment.role)
+							? assignment.role
+							: allowedRegisterRoles[0];
+
+						if (!role) return assignment;
+
 						return {
 							...assignment,
-							role:
-								assignment.role === "manager" ? "manager" : "bartender",
+							role,
 							registerId,
 						};
 					}
@@ -417,6 +465,9 @@ export function TipClaimCalculator({
 				});
 			}
 
+			const role = allowedRegisterRoles[0];
+			if (!role) return current;
+
 			return [
 				...current.map((assignment) =>
 					assignment.registerId === registerId
@@ -425,7 +476,7 @@ export function TipClaimCalculator({
 				),
 				{
 					userId,
-					role: "bartender",
+					role,
 					registerId,
 				},
 			];
@@ -477,6 +528,10 @@ export function TipClaimCalculator({
 			const member = members.find((candidate) => candidate.id === assignment.userId);
 			if (!member) {
 				throw new Error("One of the assigned staff members is no longer available.");
+			}
+
+			if (!isRoleEnabled(member, assignment.role)) {
+				throw new Error(`${member.name || member.email} is not assigned to the ${ROLE_LABELS[assignment.role]} role.`);
 			}
 
 			const allocation = allocations.filter(
@@ -589,6 +644,9 @@ export function TipClaimCalculator({
 									);
 									const assignment =
 										assignmentIndex >= 0 ? memberAssignments[assignmentIndex] : undefined;
+									const assignedMember = assignment
+										? members?.find((member) => member.id === assignment.userId)
+										: undefined;
 									const registerAssignedUserIds = new Set(
 										memberAssignments.flatMap((candidate) =>
 											candidate.registerId !== null &&
@@ -597,10 +655,12 @@ export function TipClaimCalculator({
 												: [],
 										),
 									);
-									const availableMembers =
-										members?.filter(
-											(member) => !registerAssignedUserIds.has(member.id),
-										) ?? [];
+									const availableMembers = registerMembers.filter(
+										(member) => !registerAssignedUserIds.has(member.id),
+									);
+									const availableRegisterRoles = assignedMember
+										? enabledRoles(assignedMember, REGISTER_ROLE_ORDER)
+										: [];
 
 									return (
 										<div
@@ -684,7 +744,7 @@ export function TipClaimCalculator({
 													<Field>
 														<FieldLabel>Role</FieldLabel>
 														<Select
-															value={assignment?.role ?? "bartender"}
+															value={assignment?.role ?? availableRegisterRoles[0] ?? "bartender"}
 															disabled={assignmentIndex < 0}
 															onValueChange={(role) => {
 																if (assignmentIndex >= 0) {
@@ -698,7 +758,7 @@ export function TipClaimCalculator({
 																<SelectValue />
 															</SelectTrigger>
 															<SelectContent>
-																{REGISTER_ROLE_ORDER.map((role) => (
+																{availableRegisterRoles.map((role) => (
 																	<SelectItem key={role} value={role}>
 																		{ROLE_LABELS[role]}
 																	</SelectItem>
@@ -745,9 +805,9 @@ export function TipClaimCalculator({
 										</p>
 									) : membersError ? (
 										<p className="text-sm text-destructive">{membersError}</p>
-									) : members?.length === 0 ? (
+									) : eligibleMembers.length === 0 ? (
 										<p className="text-sm text-muted-foreground">
-											No organization members are available.
+											No employees are enabled for Tip Calculator roles.
 										</p>
 									) : (
 										<>
@@ -758,12 +818,17 @@ export function TipClaimCalculator({
 											) : null}
 
 											{memberAssignments.map((assignment, index) => {
-												const availableMembers =
-													members?.filter(
-														(member) =>
-															member.id === assignment.userId ||
-															!assignedUserIds.has(member.id),
-													) ?? [];
+												const assignedMember = members?.find(
+													(member) => member.id === assignment.userId,
+												);
+												const availableMembers = eligibleMembers.filter(
+													(member) =>
+														member.id === assignment.userId ||
+														!assignedUserIds.has(member.id),
+												);
+												const availableRoles = assignedMember
+													? enabledRoles(assignedMember)
+													: [];
 
 												return (
 													<div
@@ -800,7 +865,7 @@ export function TipClaimCalculator({
 																<SelectValue />
 															</SelectTrigger>
 															<SelectContent>
-																{ROLE_ORDER.map((role) => (
+																{availableRoles.map((role) => (
 																	<SelectItem key={role} value={role}>
 																		{ROLE_LABELS[role]}
 																	</SelectItem>

@@ -671,7 +671,7 @@ export function TipClaimCalculator({
 																<SelectValue placeholder="Select employee" />
 															</SelectTrigger>
 															<SelectContent>
-																<SelectItem value="none">No employee</SelectItem>
+																<SelectItem value="none">Select employee</SelectItem>
 																{availableMembers.map((member) => (
 																	<SelectItem key={member.id} value={member.id}>
 																		{member.name || member.email}

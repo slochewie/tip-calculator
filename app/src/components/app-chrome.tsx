@@ -1,18 +1,21 @@
 import type { ReactNode } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import {
+  ArrowRightLeftIcon,
   Building2Icon,
   CalculatorIcon,
   GaugeIcon,
   LogOutIcon,
   NetworkIcon,
+  PaletteIcon,
   ReceiptTextIcon,
+  SettingsIcon,
   ShieldCheckIcon,
   SquareTerminalIcon,
   UserCircleIcon,
 } from "lucide-react";
 
-import { ThemeSwitcher } from "#/components/theme-switcher.tsx";
+import { ThemeMenuControl } from "#/components/theme-switcher.tsx";
 import {
   Avatar,
   AvatarFallback,
@@ -21,6 +24,7 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -265,8 +269,6 @@ export function AppChrome({ children }: { children: ReactNode }) {
             </div>
 
             <div className="ml-auto flex min-w-0 items-center gap-2">
-              <ThemeSwitcher inline />
-
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
@@ -284,29 +286,68 @@ export function AppChrome({ children }: { children: ReactNode }) {
                 </DropdownMenuTrigger>
 
                 <DropdownMenuContent align="end" className="w-64">
-                  <DropdownMenuLabel className="font-normal">
-                    <div className="flex items-center gap-3">
-                      <Avatar>
-                        {session.user.image ? (
-                          <AvatarImage src={session.user.image} alt="" />
-                        ) : null}
-                        <AvatarFallback>{avatarLabel}</AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium">{displayName}</p>
-                        {session.user.email ? (
-                          <p className="truncate text-xs text-muted-foreground">
-                            {session.user.email}
-                          </p>
-                        ) : null}
+                  <DropdownMenuGroup>
+                    <DropdownMenuLabel className="font-normal">
+                      <div className="flex items-center gap-3">
+                        <Avatar>
+                          {session.user.image ? (
+                            <AvatarImage src={session.user.image} alt="" />
+                          ) : null}
+                          <AvatarFallback>{avatarLabel}</AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium">{displayName}</p>
+                          {session.user.email ? (
+                            <p className="truncate text-xs text-muted-foreground">
+                              {session.user.email}
+                            </p>
+                          ) : null}
+                        </div>
+                      </div>
+                    </DropdownMenuLabel>
+                  </DropdownMenuGroup>
+
+                  <DropdownMenuSeparator />
+
+                  <DropdownMenuGroup>
+                    <DropdownMenuItem
+                      onSelect={() =>
+                        window.location.assign(`${consoleBaseURL}/settings/account`)
+                      }
+                    >
+                      <SettingsIcon className="text-muted-foreground" />
+                      Settings
+                    </DropdownMenuItem>
+
+                    <div className="relative">
+                      <PaletteIcon className="pointer-events-none absolute left-2 top-1/2 z-10 size-4 -translate-y-1/2 text-muted-foreground" />
+                      <div className="pl-6">
+                        <ThemeMenuControl />
                       </div>
                     </div>
-                  </DropdownMenuLabel>
+
+                    <DropdownMenuItem
+                      onSelect={() =>
+                        window.location.assign(`${consoleBaseURL}/auth/select-account`)
+                      }
+                    >
+                      <ArrowRightLeftIcon className="text-muted-foreground" />
+                      Switch Account
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
+
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onSelect={() => void authClient.signOut()}>
-                    <LogOutIcon />
-                    Sign out
-                  </DropdownMenuItem>
+
+                  <DropdownMenuGroup>
+                    <DropdownMenuItem
+                      onSelect={() =>
+                        window.location.assign(`${consoleBaseURL}/auth/sign-out`)
+                      }
+                    >
+                      <LogOutIcon className="text-muted-foreground" />
+                      Sign Out
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>

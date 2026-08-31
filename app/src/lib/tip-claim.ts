@@ -1,5 +1,7 @@
 import { authBaseURL } from "#/lib/auth-client.ts";
 
+export type TipClaimRole = "bartender" | "manager" | "barback" | "door";
+
 export type TipClaimSaveRegister = {
   registerKey: string;
   name: string;
@@ -10,7 +12,7 @@ export type TipClaimSaveStaff = {
   userId: string;
   name: string;
   email: string;
-  role: "bartender" | "manager" | "barback" | "door";
+  role: TipClaimRole;
   registerKey: string | null;
   weight: number;
   claimCents: number;
@@ -63,6 +65,17 @@ export type TipClaimShiftReport = {
   staff: TipClaimReportStaff[];
 };
 
+export type TipClaimEmployeeAssignment = {
+  memberId: string;
+  userId: string;
+  name: string;
+  email: string;
+  bartenderEnabled: boolean;
+  managerEnabled: boolean;
+  barbackEnabled: boolean;
+  doorEnabled: boolean;
+};
+
 type TipClaimSaveResponse = {
   shiftId?: string;
   error?: string;
@@ -75,6 +88,16 @@ type TipClaimReportsResponse = {
 
 type TipClaimDeleteResponse = {
   shiftId?: string;
+  error?: string;
+};
+
+type TipClaimAssignmentsResponse = {
+  assignments?: TipClaimEmployeeAssignment[];
+  error?: string;
+};
+
+type TipClaimAssignmentUpdateResponse = {
+  assignment?: TipClaimEmployeeAssignment;
   error?: string;
 };
 
@@ -165,4 +188,64 @@ export async function deleteTipClaimShift(
   return {
     shiftId: result.shiftId,
   };
+}
+
+export async function listTipClaimAssignments(organizationId: string) {
+  const url = new URL("/api/auth/tip-claim/assignments", authBaseURL);
+  url.searchParams.set("organizationId", organizationId);
+
+  const response = await fetch(url, {
+    credentials: "include",
+  });
+
+  const result = (await response.json()) as TipClaimAssignmentsResponse;
+
+  if (!response.ok) {
+    throw new Error(
+      typeof result.error === "string"
+        ? result.error
+        : "Unable to load employee assignments.",
+    );
+  }
+
+  return Array.isArray(result.assignments) ? result.assignments : [];
+}
+
+export async function updateTipClaimAssignment(
+  organizationId: string,
+  userId: string,
+  role: TipClaimRole,
+  enabled: boolean,
+) {
+  const url = new URL("/api/auth/tip-claim/assignments", authBaseURL);
+
+  const response = await fetch(url, {
+    method: "PATCH",
+    credentials: "include",
+    headers: {
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      organizationId,
+      userId,
+      role,
+      enabled,
+    }),
+  });
+
+  const result = (await response.json()) as TipClaimAssignmentUpdateResponse;
+
+  if (!response.ok) {
+    throw new Error(
+      typeof result.error === "string"
+        ? result.error
+        : "Unable to update employee assignment.",
+    );
+  }
+
+  if (!result.assignment) {
+    throw new Error("Assignment update completed without an assignment.");
+  }
+
+  return result.assignment;
 }

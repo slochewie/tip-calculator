@@ -10,7 +10,7 @@ export type TipClaimSaveStaff = {
   userId: string;
   name: string;
   email: string;
-  role: "bartender" | "barback" | "door";
+  role: "bartender" | "manager" | "barback" | "door";
   registerKey: string | null;
   weight: number;
   claimCents: number;
@@ -24,6 +24,7 @@ export type TipClaimSavePayload = {
   totalWeightUnits: number;
   weights: {
     bartender: number;
+    manager: number;
     barback: number;
     door: number;
   };

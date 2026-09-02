@@ -39,6 +39,7 @@ import {
   type TipClaimRole,
   updateTipClaimAccess,
   updateTipClaimAssignment,
+  updateTipClaimManager,
 } from "#/lib/tip-claim.ts";
 
 export const Route = createFileRoute("/assignments")({
@@ -75,7 +76,6 @@ function TipClaimAssignments() {
 
   useEffect(() => {
     if (isPending || session) return;
-
     const redirectTo = encodeURIComponent(window.location.href);
     const signInURL = `${authBaseURL.replace(/\/$/, "")}/auth/sign-in?redirectTo=${redirectTo}`;
     window.location.replace(signInURL);
@@ -88,20 +88,10 @@ function TipClaimAssignments() {
       isActiveOrganizationPending ||
       activeOrganization ||
       organizations?.length !== 1
-    ) {
-      return;
-    }
+    ) return;
 
-    void authClient.organization.setActive({
-      organizationId: organizations[0].id,
-    });
-  }, [
-    activeOrganization,
-    areOrganizationsPending,
-    isActiveOrganizationPending,
-    organizations,
-    session,
-  ]);
+    void authClient.organization.setActive({ organizationId: organizations[0].id });
+  }, [activeOrganization, areOrganizationsPending, isActiveOrganizationPending, organizations, session]);
 
   useEffect(() => {
     if (!session || !activeOrganization?.id) {
@@ -112,11 +102,9 @@ function TipClaimAssignments() {
     }
 
     let cancelled = false;
-
     async function loadAssignments() {
       setAssignmentsPending(true);
       setAssignmentsError(null);
-
       try {
         const result = await listTipClaimAssignments(activeOrganization.id);
         if (!cancelled) {
@@ -126,57 +114,54 @@ function TipClaimAssignments() {
       } catch (error) {
         if (!cancelled) {
           setAssignments([]);
-          setAssignmentsError(
-            error instanceof Error
-              ? error.message
-              : "Unable to load employee assignments.",
-          );
+          setAssignmentsError(error instanceof Error ? error.message : "Unable to load employee assignments.");
           setAssignmentsPending(false);
         }
       }
     }
-
     void loadAssignments();
-
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [activeOrganization?.id, session]);
 
   const filteredAssignments = useMemo(() => {
     const query = search.trim().toLowerCase();
     if (!query) return assignments;
-
-    return assignments.filter(
-      (assignment) =>
-        assignment.name.toLowerCase().includes(query) ||
-        assignment.email.toLowerCase().includes(query),
+    return assignments.filter((assignment) =>
+      assignment.name.toLowerCase().includes(query) || assignment.email.toLowerCase().includes(query),
     );
   }, [assignments, search]);
 
-  async function handleAccessToggle(assignment: TipClaimEmployeeAssignment) {
-    if (!activeOrganization?.id || updatingKey) return;
+  function mergeAssignment(updated: TipClaimEmployeeAssignment) {
+    setAssignments((current) =>
+      current.map((item) =>
+        item.userId === updated.userId ? { ...item, ...updated } : item,
+      ),
+    );
+  }
 
+  async function handleAccessToggle(assignment: TipClaimEmployeeAssignment) {
+    if (!activeOrganization?.id || updatingKey || !assignment.canUpdateAccess) return;
     const key = `${assignment.userId}:access`;
     setUpdatingKey(key);
     setAssignmentsError(null);
-
     try {
-      const updated = await updateTipClaimAccess(
-        activeOrganization.id,
-        assignment.userId,
-        !assignment.accessEnabled,
-      );
-
-      setAssignments((current) =>
-        current.map((item) => (item.userId === updated.userId ? updated : item)),
-      );
+      mergeAssignment(await updateTipClaimAccess(activeOrganization.id, assignment.userId, !assignment.accessEnabled));
     } catch (error) {
-      setAssignmentsError(
-        error instanceof Error
-          ? error.message
-          : "Unable to update Tip Calculator access.",
-      );
+      setAssignmentsError(error instanceof Error ? error.message : "Unable to update Tip Calculator access.");
+    } finally {
+      setUpdatingKey(null);
+    }
+  }
+
+  async function handleManagerToggle(assignment: TipClaimEmployeeAssignment) {
+    if (!activeOrganization?.id || updatingKey || !assignment.canUpdateManager) return;
+    const key = `${assignment.userId}:assignment-manager`;
+    setUpdatingKey(key);
+    setAssignmentsError(null);
+    try {
+      mergeAssignment(await updateTipClaimManager(activeOrganization.id, assignment.userId, !assignment.assignmentManagerEnabled));
+    } catch (error) {
+      setAssignmentsError(error instanceof Error ? error.message : "Unable to update Tip Calculator manager.");
     } finally {
       setUpdatingKey(null);
     }
@@ -187,30 +172,14 @@ function TipClaimAssignments() {
     role: TipClaimRole,
     field: (typeof ROLE_OPTIONS)[number]["key"],
   ) {
-    if (!activeOrganization?.id || updatingKey) return;
-
+    if (!activeOrganization?.id || updatingKey || !assignment.canUpdateRoles) return;
     const key = `${assignment.userId}:${role}`;
-    const enabled = !assignment[field];
     setUpdatingKey(key);
     setAssignmentsError(null);
-
     try {
-      const updated = await updateTipClaimAssignment(
-        activeOrganization.id,
-        assignment.userId,
-        role,
-        enabled,
-      );
-
-      setAssignments((current) =>
-        current.map((item) => (item.userId === updated.userId ? updated : item)),
-      );
+      mergeAssignment(await updateTipClaimAssignment(activeOrganization.id, assignment.userId, role, !assignment[field]));
     } catch (error) {
-      setAssignmentsError(
-        error instanceof Error
-          ? error.message
-          : "Unable to update employee assignment.",
-      );
+      setAssignmentsError(error instanceof Error ? error.message : "Unable to update employee assignment.");
     } finally {
       setUpdatingKey(null);
     }
@@ -227,9 +196,7 @@ function TipClaimAssignments() {
   }
 
   const organizationList = organizations ?? [];
-  const organizationsPending =
-    areOrganizationsPending || isActiveOrganizationPending;
-
+  const organizationsPending = areOrganizationsPending || isActiveOrganizationPending;
   const employeeTableState = assignmentsPending ? (
     <div className="flex flex-col gap-2">
       <Skeleton className="h-10 w-full" />
@@ -238,9 +205,7 @@ function TipClaimAssignments() {
       <Skeleton className="h-10 w-full" />
     </div>
   ) : !activeOrganization ? null : assignments.length === 0 ? (
-    <p className="text-sm text-muted-foreground">
-      No eligible organization employees are available.
-    </p>
+    <p className="text-sm text-muted-foreground">No eligible organization employees are available.</p>
   ) : filteredAssignments.length === 0 ? (
     <p className="text-sm text-muted-foreground">No employees match your search.</p>
   ) : null;
@@ -248,51 +213,31 @@ function TipClaimAssignments() {
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 md:p-6 lg:p-8">
       <div className="flex items-start gap-3">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-sm">
-          <UsersIcon />
-        </div>
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-sm"><UsersIcon /></div>
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Assignments</h1>
-          <p className="text-sm text-muted-foreground">
-            Manage Tip Calculator access and employee role eligibility.
-          </p>
+          <p className="text-sm text-muted-foreground">Manage Tip Calculator access and employee role eligibility.</p>
         </div>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle>Organization</CardTitle>
-          <CardDescription>
-            Assignments are stored separately for each organization.
-          </CardDescription>
+          <CardDescription>Assignments are stored separately for each organization.</CardDescription>
         </CardHeader>
         <CardContent>
           <Select
             value={activeOrganization?.id ?? ""}
             disabled={organizationsPending || organizationList.length === 0}
             onValueChange={(organizationId) => {
-              if (organizationId) {
-                void authClient.organization.setActive({ organizationId });
-              }
+              if (organizationId) void authClient.organization.setActive({ organizationId });
             }}
           >
             <SelectTrigger className="w-full sm:max-w-sm">
-              <SelectValue
-                placeholder={
-                  organizationsPending
-                    ? "Loading organizations…"
-                    : organizationList.length === 0
-                      ? "No organizations"
-                      : "Select organization"
-                }
-              />
+              <SelectValue placeholder={organizationsPending ? "Loading organizations…" : organizationList.length === 0 ? "No organizations" : "Select organization"} />
             </SelectTrigger>
             <SelectContent>
-              {organizationList.map((organization) => (
-                <SelectItem key={organization.id} value={organization.id}>
-                  {organization.name}
-                </SelectItem>
-              ))}
+              {organizationList.map((organization) => <SelectItem key={organization.id} value={organization.id}>{organization.name}</SelectItem>)}
             </SelectContent>
           </Select>
         </CardContent>
@@ -300,17 +245,10 @@ function TipClaimAssignments() {
 
       <div className="relative sm:max-w-sm">
         <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search employees"
-          className="pl-9"
-        />
+        <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search employees" className="pl-9" />
       </div>
 
-      {assignmentsError ? (
-        <p className="text-sm text-destructive">{assignmentsError}</p>
-      ) : null}
+      {assignmentsError ? <p className="text-sm text-destructive">{assignmentsError}</p> : null}
 
       <Collapsible open={accessOpen} onOpenChange={setAccessOpen}>
         <Card>
@@ -318,13 +256,9 @@ function TipClaimAssignments() {
             <button type="button" className="flex w-full items-center text-left">
               <CardHeader className="flex-1">
                 <CardTitle>Access</CardTitle>
-                <CardDescription>
-                  Choose which organization users can open and use the Tip Calculator.
-                </CardDescription>
+                <CardDescription>Choose who can use the Tip Calculator and who can manage its assignments.</CardDescription>
               </CardHeader>
-              <ChevronDownIcon
-                className={`mr-6 size-5 shrink-0 text-muted-foreground transition-transform ${accessOpen ? "rotate-180" : ""}`}
-              />
+              <ChevronDownIcon className={`mr-6 size-5 shrink-0 text-muted-foreground transition-transform ${accessOpen ? "rotate-180" : ""}`} />
             </button>
           </CollapsibleTrigger>
           <CollapsibleContent>
@@ -333,43 +267,42 @@ function TipClaimAssignments() {
               {!assignmentsPending && filteredAssignments.length > 0 ? (
                 <div className="overflow-x-auto rounded-md border">
                   <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Employee</TableHead>
-                        <TableHead>Access</TableHead>
-                      </TableRow>
-                    </TableHeader>
+                    <TableHeader><TableRow><TableHead>Employee</TableHead><TableHead>Access</TableHead><TableHead>Manager</TableHead></TableRow></TableHeader>
                     <TableBody>
                       {filteredAssignments.map((assignment) => {
-                        const isUpdating =
-                          updatingKey === `${assignment.userId}:access`;
+                        const accessUpdating = updatingKey === `${assignment.userId}:access`;
+                        const managerUpdating = updatingKey === `${assignment.userId}:assignment-manager`;
                         return (
                           <TableRow key={assignment.userId}>
                             <TableCell>
                               <div className="min-w-44">
                                 <p className="font-medium">{assignment.name}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {assignment.email}
-                                </p>
+                                <p className="text-xs text-muted-foreground">{assignment.email}</p>
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Badge
-                                asChild
-                                variant={assignment.accessEnabled ? "default" : "outline"}
-                              >
+                              <Badge asChild variant={assignment.accessEnabled ? "default" : "outline"}>
                                 <button
                                   type="button"
-                                  disabled={updatingKey !== null}
+                                  disabled={updatingKey !== null || !assignment.canUpdateAccess}
                                   aria-pressed={assignment.accessEnabled}
                                   onClick={() => void handleAccessToggle(assignment)}
-                                  className={
-                                    assignment.accessEnabled
-                                      ? "cursor-pointer"
-                                      : "cursor-pointer opacity-45"
-                                  }
+                                  className={assignment.canUpdateAccess ? (assignment.accessEnabled ? "cursor-pointer" : "cursor-pointer opacity-45") : "cursor-not-allowed opacity-45"}
                                 >
-                                  {isUpdating ? "Saving…" : "Tip Calculator"}
+                                  {accessUpdating ? "Saving…" : "Tip Calculator"}
+                                </button>
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge asChild variant={assignment.assignmentManagerEnabled ? "default" : "outline"}>
+                                <button
+                                  type="button"
+                                  disabled={updatingKey !== null || !assignment.canUpdateManager}
+                                  aria-pressed={assignment.assignmentManagerEnabled}
+                                  onClick={() => void handleManagerToggle(assignment)}
+                                  className={assignment.canUpdateManager ? (assignment.assignmentManagerEnabled ? "cursor-pointer" : "cursor-pointer opacity-45") : "cursor-not-allowed opacity-45"}
+                                >
+                                  {managerUpdating ? "Saving…" : "Manager"}
                                 </button>
                               </Badge>
                             </TableCell>
@@ -391,13 +324,9 @@ function TipClaimAssignments() {
             <button type="button" className="flex w-full items-center text-left">
               <CardHeader className="flex-1">
                 <CardTitle>Roles</CardTitle>
-                <CardDescription>
-                  Active roles appear in the calculator. Employees with every role disabled are hidden from its employee selectors.
-                </CardDescription>
+                <CardDescription>Active roles appear in the calculator. Employees with every role disabled are hidden from its employee selectors.</CardDescription>
               </CardHeader>
-              <ChevronDownIcon
-                className={`mr-6 size-5 shrink-0 text-muted-foreground transition-transform ${rolesOpen ? "rotate-180" : ""}`}
-              />
+              <ChevronDownIcon className={`mr-6 size-5 shrink-0 text-muted-foreground transition-transform ${rolesOpen ? "rotate-180" : ""}`} />
             </button>
           </CollapsibleTrigger>
           <CollapsibleContent>
@@ -406,50 +335,31 @@ function TipClaimAssignments() {
               {!assignmentsPending && filteredAssignments.length > 0 ? (
                 <div className="overflow-x-auto rounded-md border">
                   <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Employee</TableHead>
-                        <TableHead>Roles</TableHead>
-                      </TableRow>
-                    </TableHeader>
+                    <TableHeader><TableRow><TableHead>Employee</TableHead><TableHead>Roles</TableHead></TableRow></TableHeader>
                     <TableBody>
                       {filteredAssignments.map((assignment) => (
                         <TableRow key={assignment.userId}>
                           <TableCell>
                             <div className="min-w-44">
                               <p className="font-medium">{assignment.name}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {assignment.email}
-                              </p>
+                              <p className="text-xs text-muted-foreground">{assignment.email}</p>
                             </div>
                           </TableCell>
                           <TableCell>
                             <div className="flex min-w-max flex-wrap gap-2">
                               {ROLE_OPTIONS.map(({ role, label, key }) => {
                                 const enabled = assignment[key];
-                                const isUpdating =
-                                  updatingKey === `${assignment.userId}:${role}`;
-
+                                const roleUpdating = updatingKey === `${assignment.userId}:${role}`;
                                 return (
-                                  <Badge
-                                    key={role}
-                                    asChild
-                                    variant={enabled ? "default" : "outline"}
-                                  >
+                                  <Badge key={role} asChild variant={enabled ? "default" : "outline"}>
                                     <button
                                       type="button"
-                                      disabled={updatingKey !== null}
+                                      disabled={updatingKey !== null || !assignment.canUpdateRoles}
                                       aria-pressed={enabled}
-                                      onClick={() =>
-                                        void handleRoleToggle(assignment, role, key)
-                                      }
-                                      className={
-                                        enabled
-                                          ? "cursor-pointer"
-                                          : "cursor-pointer opacity-45"
-                                      }
+                                      onClick={() => void handleRoleToggle(assignment, role, key)}
+                                      className={assignment.canUpdateRoles ? (enabled ? "cursor-pointer" : "cursor-pointer opacity-45") : "cursor-not-allowed opacity-45"}
                                     >
-                                      {isUpdating ? "Saving…" : label}
+                                      {roleUpdating ? "Saving…" : label}
                                     </button>
                                   </Badge>
                                 );

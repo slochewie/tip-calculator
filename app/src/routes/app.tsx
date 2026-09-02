@@ -21,7 +21,7 @@ import {
 } from "#/components/ui/select.tsx";
 import { Skeleton } from "#/components/ui/skeleton.tsx";
 import { authBaseURL, authClient } from "#/lib/auth-client.ts";
-import { listTipClaimAssignments } from "#/lib/tip-claim.ts";
+import { getTipClaimAccess, listTipClaimEmployees } from "#/lib/tip-claim.ts";
 
 export const Route = createFileRoute("/app")({
   component: AuthenticatedTipCalculator,
@@ -92,22 +92,17 @@ function CalculatorSessionSkeleton() {
 
 function AuthenticatedTipCalculator() {
   const { data: session, isPending } = authClient.useSession();
-  const {
-    data: organizations,
-    isPending: areOrganizationsPending,
-  } = authClient.useListOrganizations();
-  const {
-    data: activeOrganization,
-    isPending: isActiveOrganizationPending,
-  } = authClient.useActiveOrganization();
+  const { data: organizations, isPending: areOrganizationsPending } =
+    authClient.useListOrganizations();
+  const { data: activeOrganization, isPending: isActiveOrganizationPending } =
+    authClient.useActiveOrganization();
   const [members, setMembers] = useState<TipClaimMember[]>([]);
+  const [accessAllowed, setAccessAllowed] = useState<boolean | null>(null);
   const [areMembersPending, setAreMembersPending] = useState(false);
   const [membersError, setMembersError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isPending || session) {
-      return;
-    }
+    if (isPending || session) return;
 
     const redirectTo = encodeURIComponent(window.location.href);
     const signInURL = `${authBaseURL.replace(/\/$/, "")}/auth/sign-in?redirectTo=${redirectTo}`;
@@ -139,6 +134,7 @@ function AuthenticatedTipCalculator() {
   useEffect(() => {
     if (!session || !activeOrganization?.id) {
       setMembers([]);
+      setAccessAllowed(null);
       setMembersError(null);
       setAreMembersPending(false);
       return;
@@ -146,43 +142,51 @@ function AuthenticatedTipCalculator() {
 
     let cancelled = false;
 
-    async function loadMembers() {
+    async function loadCalculator() {
       setAreMembersPending(true);
+      setAccessAllowed(null);
       setMembersError(null);
 
       try {
-        const assignments = await listTipClaimAssignments(activeOrganization.id);
+        const allowed = await getTipClaimAccess(activeOrganization.id);
+        if (cancelled) return;
 
-        if (cancelled) {
+        setAccessAllowed(allowed);
+
+        if (!allowed) {
+          setMembers([]);
+          setAreMembersPending(false);
           return;
         }
 
+        const employees = await listTipClaimEmployees(activeOrganization.id);
+        if (cancelled) return;
+
         setMembers(
-          assignments.map((assignment) => ({
-            id: assignment.userId,
-            name: assignment.name,
-            email: assignment.email,
-            bartenderEnabled: assignment.bartenderEnabled,
-            managerEnabled: assignment.managerEnabled,
-            barbackEnabled: assignment.barbackEnabled,
-            doorEnabled: assignment.doorEnabled,
+          employees.map((employee) => ({
+            id: employee.userId,
+            name: employee.name,
+            email: employee.email,
+            bartenderEnabled: employee.bartenderEnabled,
+            managerEnabled: employee.managerEnabled,
+            barbackEnabled: employee.barbackEnabled,
+            doorEnabled: employee.doorEnabled,
           })),
         );
         setAreMembersPending(false);
       } catch (error) {
-        if (cancelled) {
-          return;
-        }
+        if (cancelled) return;
 
         setMembers([]);
+        setAccessAllowed(false);
         setMembersError(
-          error instanceof Error ? error.message : "Unable to load members.",
+          error instanceof Error ? error.message : "Unable to load Tip Calculator.",
         );
         setAreMembersPending(false);
       }
     }
 
-    void loadMembers();
+    void loadCalculator();
 
     return () => {
       cancelled = true;
@@ -201,50 +205,75 @@ function AuthenticatedTipCalculator() {
   const organizationsPending =
     areOrganizationsPending || isActiveOrganizationPending;
 
+  const organizationSelector = (
+    <Card>
+      <CardHeader>
+        <CardTitle>Organization</CardTitle>
+        <CardDescription>Choose the organization for this shift.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Select
+          value={activeOrganization?.id ?? ""}
+          disabled={organizationsPending || organizationList.length === 0}
+          onValueChange={(organizationId) => {
+            if (organizationId) {
+              void authClient.organization.setActive({ organizationId });
+            }
+          }}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue
+              placeholder={
+                organizationsPending
+                  ? "Loading organizations…"
+                  : organizationList.length === 0
+                    ? "No organizations"
+                    : "Select organization"
+              }
+            />
+          </SelectTrigger>
+          <SelectContent>
+            {organizationList.map((organization) => (
+              <SelectItem key={organization.id} value={organization.id}>
+                {organization.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </CardContent>
+    </Card>
+  );
+
+  if (activeOrganization?.id && accessAllowed === false && !areMembersPending) {
+    return (
+      <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 p-4 md:p-6 lg:p-8">
+        {organizationSelector}
+        <Card>
+          <CardHeader>
+            <CardTitle>Tip Calculator access required</CardTitle>
+            <CardDescription>
+              Your account does not have access to the Tip Calculator for this organization.
+            </CardDescription>
+          </CardHeader>
+          {membersError ? (
+            <CardContent>
+              <p className="text-sm text-destructive">{membersError}</p>
+            </CardContent>
+          ) : null}
+        </Card>
+      </main>
+    );
+  }
+
+  if (activeOrganization?.id && accessAllowed === null) {
+    return <CalculatorSessionSkeleton />;
+  }
+
   return (
     <TipClaimCalculator
       organizationId={activeOrganization?.id}
       organizationName={activeOrganization?.name}
-      organizationSelector={
-        <Card>
-          <CardHeader>
-            <CardTitle>Organization</CardTitle>
-            <CardDescription>
-              Choose the organization for this shift.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Select
-              value={activeOrganization?.id ?? ""}
-              disabled={organizationsPending || organizationList.length === 0}
-              onValueChange={(organizationId) => {
-                if (organizationId) {
-                  void authClient.organization.setActive({ organizationId });
-                }
-              }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue
-                  placeholder={
-                    organizationsPending
-                      ? "Loading organizations…"
-                      : organizationList.length === 0
-                        ? "No organizations"
-                        : "Select organization"
-                  }
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {organizationList.map((organization) => (
-                  <SelectItem key={organization.id} value={organization.id}>
-                    {organization.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </CardContent>
-        </Card>
-      }
+      organizationSelector={organizationSelector}
       members={members}
       membersPending={areMembersPending}
       membersError={membersError}

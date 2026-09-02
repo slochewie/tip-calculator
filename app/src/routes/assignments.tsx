@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { SearchIcon, UsersIcon } from "lucide-react";
+import { ChevronDownIcon, SearchIcon, UsersIcon } from "lucide-react";
 
 import { Badge } from "#/components/ui/badge.tsx";
 import {
@@ -10,6 +10,11 @@ import {
   CardHeader,
   CardTitle,
 } from "#/components/ui/card.tsx";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "#/components/ui/collapsible.tsx";
 import { Input } from "#/components/ui/input.tsx";
 import {
   Select,
@@ -32,6 +37,7 @@ import {
   listTipClaimAssignments,
   type TipClaimEmployeeAssignment,
   type TipClaimRole,
+  updateTipClaimAccess,
   updateTipClaimAssignment,
 } from "#/lib/tip-claim.ts";
 
@@ -55,19 +61,17 @@ const ROLE_OPTIONS: Array<{
 
 function TipClaimAssignments() {
   const { data: session, isPending } = authClient.useSession();
-  const {
-    data: organizations,
-    isPending: areOrganizationsPending,
-  } = authClient.useListOrganizations();
-  const {
-    data: activeOrganization,
-    isPending: isActiveOrganizationPending,
-  } = authClient.useActiveOrganization();
+  const { data: organizations, isPending: areOrganizationsPending } =
+    authClient.useListOrganizations();
+  const { data: activeOrganization, isPending: isActiveOrganizationPending } =
+    authClient.useActiveOrganization();
   const [assignments, setAssignments] = useState<TipClaimEmployeeAssignment[]>([]);
   const [assignmentsPending, setAssignmentsPending] = useState(false);
   const [assignmentsError, setAssignmentsError] = useState<string | null>(null);
   const [updatingKey, setUpdatingKey] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [accessOpen, setAccessOpen] = useState(false);
+  const [rolesOpen, setRolesOpen] = useState(true);
 
   useEffect(() => {
     if (isPending || session) return;
@@ -150,6 +154,34 @@ function TipClaimAssignments() {
     );
   }, [assignments, search]);
 
+  async function handleAccessToggle(assignment: TipClaimEmployeeAssignment) {
+    if (!activeOrganization?.id || updatingKey) return;
+
+    const key = `${assignment.userId}:access`;
+    setUpdatingKey(key);
+    setAssignmentsError(null);
+
+    try {
+      const updated = await updateTipClaimAccess(
+        activeOrganization.id,
+        assignment.userId,
+        !assignment.accessEnabled,
+      );
+
+      setAssignments((current) =>
+        current.map((item) => (item.userId === updated.userId ? updated : item)),
+      );
+    } catch (error) {
+      setAssignmentsError(
+        error instanceof Error
+          ? error.message
+          : "Unable to update Tip Calculator access.",
+      );
+    } finally {
+      setUpdatingKey(null);
+    }
+  }
+
   async function handleRoleToggle(
     assignment: TipClaimEmployeeAssignment,
     role: TipClaimRole,
@@ -198,6 +230,21 @@ function TipClaimAssignments() {
   const organizationsPending =
     areOrganizationsPending || isActiveOrganizationPending;
 
+  const employeeTableState = assignmentsPending ? (
+    <div className="flex flex-col gap-2">
+      <Skeleton className="h-10 w-full" />
+      <Skeleton className="h-10 w-full" />
+      <Skeleton className="h-10 w-full" />
+      <Skeleton className="h-10 w-full" />
+    </div>
+  ) : !activeOrganization ? null : assignments.length === 0 ? (
+    <p className="text-sm text-muted-foreground">
+      No eligible organization employees are available.
+    </p>
+  ) : filteredAssignments.length === 0 ? (
+    <p className="text-sm text-muted-foreground">No employees match your search.</p>
+  ) : null;
+
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 md:p-6 lg:p-8">
       <div className="flex items-start gap-3">
@@ -207,7 +254,7 @@ function TipClaimAssignments() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Assignments</h1>
           <p className="text-sm text-muted-foreground">
-            Choose which Tip Calculator roles each employee can work.
+            Manage Tip Calculator access and employee role eligibility.
           </p>
         </div>
       </div>
@@ -251,105 +298,174 @@ function TipClaimAssignments() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Employee roles</CardTitle>
-          <CardDescription>
-            Active roles appear in the calculator. Employees with every role disabled are hidden from its employee selectors.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <div className="relative sm:max-w-sm">
-            <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search employees"
-              className="pl-9"
-            />
-          </div>
+      <div className="relative sm:max-w-sm">
+        <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Search employees"
+          className="pl-9"
+        />
+      </div>
 
-          {assignmentsError ? (
-            <p className="text-sm text-destructive">{assignmentsError}</p>
-          ) : null}
+      {assignmentsError ? (
+        <p className="text-sm text-destructive">{assignmentsError}</p>
+      ) : null}
 
-          {assignmentsPending ? (
-            <div className="flex flex-col gap-2">
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-            </div>
-          ) : null}
-
-          {!assignmentsPending && activeOrganization && assignments.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No eligible organization employees are available.
-            </p>
-          ) : null}
-
-          {!assignmentsPending && filteredAssignments.length > 0 ? (
-            <div className="overflow-x-auto rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Employee</TableHead>
-                    <TableHead>Roles</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredAssignments.map((assignment) => (
-                    <TableRow key={assignment.userId}>
-                      <TableCell>
-                        <div className="min-w-44">
-                          <p className="font-medium">{assignment.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {assignment.email}
-                          </p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex min-w-max flex-wrap gap-2">
-                          {ROLE_OPTIONS.map(({ role, label, key }) => {
-                            const enabled = assignment[key];
-                            const isUpdating = updatingKey === `${assignment.userId}:${role}`;
-
-                            return (
+      <Collapsible open={accessOpen} onOpenChange={setAccessOpen}>
+        <Card>
+          <CollapsibleTrigger asChild>
+            <button type="button" className="flex w-full items-center text-left">
+              <CardHeader className="flex-1">
+                <CardTitle>Access</CardTitle>
+                <CardDescription>
+                  Choose which organization users can open and use the Tip Calculator.
+                </CardDescription>
+              </CardHeader>
+              <ChevronDownIcon
+                className={`mr-6 size-5 shrink-0 text-muted-foreground transition-transform ${accessOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <CardContent>
+              {employeeTableState}
+              {!assignmentsPending && filteredAssignments.length > 0 ? (
+                <div className="overflow-x-auto rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Employee</TableHead>
+                        <TableHead>Access</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredAssignments.map((assignment) => {
+                        const isUpdating =
+                          updatingKey === `${assignment.userId}:access`;
+                        return (
+                          <TableRow key={assignment.userId}>
+                            <TableCell>
+                              <div className="min-w-44">
+                                <p className="font-medium">{assignment.name}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {assignment.email}
+                                </p>
+                              </div>
+                            </TableCell>
+                            <TableCell>
                               <Badge
-                                key={role}
                                 asChild
-                                variant={enabled ? "default" : "outline"}
+                                variant={assignment.accessEnabled ? "default" : "outline"}
                               >
                                 <button
                                   type="button"
                                   disabled={updatingKey !== null}
-                                  aria-pressed={enabled}
-                                  onClick={() =>
-                                    void handleRoleToggle(assignment, role, key)
+                                  aria-pressed={assignment.accessEnabled}
+                                  onClick={() => void handleAccessToggle(assignment)}
+                                  className={
+                                    assignment.accessEnabled
+                                      ? "cursor-pointer"
+                                      : "cursor-pointer opacity-45"
                                   }
-                                  className={enabled ? "cursor-pointer" : "cursor-pointer opacity-45"}
                                 >
-                                  {isUpdating ? "Saving…" : label}
+                                  {isUpdating ? "Saving…" : "Tip Calculator"}
                                 </button>
                               </Badge>
-                            );
-                          })}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          ) : null}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : null}
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
 
-          {!assignmentsPending && assignments.length > 0 && filteredAssignments.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No employees match your search.
-            </p>
-          ) : null}
-        </CardContent>
-      </Card>
+      <Collapsible open={rolesOpen} onOpenChange={setRolesOpen}>
+        <Card>
+          <CollapsibleTrigger asChild>
+            <button type="button" className="flex w-full items-center text-left">
+              <CardHeader className="flex-1">
+                <CardTitle>Roles</CardTitle>
+                <CardDescription>
+                  Active roles appear in the calculator. Employees with every role disabled are hidden from its employee selectors.
+                </CardDescription>
+              </CardHeader>
+              <ChevronDownIcon
+                className={`mr-6 size-5 shrink-0 text-muted-foreground transition-transform ${rolesOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <CardContent>
+              {employeeTableState}
+              {!assignmentsPending && filteredAssignments.length > 0 ? (
+                <div className="overflow-x-auto rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Employee</TableHead>
+                        <TableHead>Roles</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredAssignments.map((assignment) => (
+                        <TableRow key={assignment.userId}>
+                          <TableCell>
+                            <div className="min-w-44">
+                              <p className="font-medium">{assignment.name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {assignment.email}
+                              </p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex min-w-max flex-wrap gap-2">
+                              {ROLE_OPTIONS.map(({ role, label, key }) => {
+                                const enabled = assignment[key];
+                                const isUpdating =
+                                  updatingKey === `${assignment.userId}:${role}`;
+
+                                return (
+                                  <Badge
+                                    key={role}
+                                    asChild
+                                    variant={enabled ? "default" : "outline"}
+                                  >
+                                    <button
+                                      type="button"
+                                      disabled={updatingKey !== null}
+                                      aria-pressed={enabled}
+                                      onClick={() =>
+                                        void handleRoleToggle(assignment, role, key)
+                                      }
+                                      className={
+                                        enabled
+                                          ? "cursor-pointer"
+                                          : "cursor-pointer opacity-45"
+                                      }
+                                    >
+                                      {isUpdating ? "Saving…" : label}
+                                    </button>
+                                  </Badge>
+                                );
+                              })}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : null}
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
     </main>
   );
 }

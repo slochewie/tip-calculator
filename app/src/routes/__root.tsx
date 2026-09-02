@@ -59,7 +59,9 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 function RootDocument({ children }: { children: React.ReactNode }) {
   const location = useLocation()
   const usesAuthenticatedChrome =
-    location.pathname === '/app' || location.pathname === '/reports'
+    location.pathname === '/app' ||
+    location.pathname === '/reports' ||
+    location.pathname === '/assignments'
 
   return (
     <html lang="en" suppressHydrationWarning>

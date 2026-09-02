@@ -4,6 +4,9 @@ services:
 
   tip-calculator:
     image: 'node:26-trixie'
+    build:
+      context: .
+      dockerfile: Dockerfile
     working_dir: /app
 #    command:
 #      - sleep

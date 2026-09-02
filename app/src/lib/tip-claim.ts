@@ -70,6 +70,17 @@ export type TipClaimEmployeeAssignment = {
   userId: string;
   name: string;
   email: string;
+  accessEnabled: boolean;
+  bartenderEnabled: boolean;
+  managerEnabled: boolean;
+  barbackEnabled: boolean;
+  doorEnabled: boolean;
+};
+
+export type TipClaimEmployee = {
+  userId: string;
+  name: string;
+  email: string;
   bartenderEnabled: boolean;
   managerEnabled: boolean;
   barbackEnabled: boolean;
@@ -96,8 +107,18 @@ type TipClaimAssignmentsResponse = {
   error?: string;
 };
 
+type TipClaimEmployeesResponse = {
+  employees?: TipClaimEmployee[];
+  error?: string;
+};
+
 type TipClaimAssignmentUpdateResponse = {
   assignment?: TipClaimEmployeeAssignment;
+  error?: string;
+};
+
+type TipClaimAccessResponse = {
+  allowed?: boolean;
   error?: string;
 };
 
@@ -209,6 +230,81 @@ export async function listTipClaimAssignments(organizationId: string) {
   }
 
   return Array.isArray(result.assignments) ? result.assignments : [];
+}
+
+export async function listTipClaimEmployees(organizationId: string) {
+  const url = new URL("/api/auth/tip-claim/employees", authBaseURL);
+  url.searchParams.set("organizationId", organizationId);
+
+  const response = await fetch(url, {
+    credentials: "include",
+  });
+
+  const result = (await response.json()) as TipClaimEmployeesResponse;
+
+  if (!response.ok) {
+    throw new Error(
+      typeof result.error === "string"
+        ? result.error
+        : "Unable to load employees.",
+    );
+  }
+
+  return Array.isArray(result.employees) ? result.employees : [];
+}
+
+export async function getTipClaimAccess(organizationId: string) {
+  const url = new URL("/api/auth/tip-claim/access", authBaseURL);
+  url.searchParams.set("organizationId", organizationId);
+
+  const response = await fetch(url, {
+    credentials: "include",
+  });
+
+  const result = (await response.json()) as TipClaimAccessResponse;
+
+  if (!response.ok) {
+    throw new Error(
+      typeof result.error === "string"
+        ? result.error
+        : "Unable to check Tip Calculator access.",
+    );
+  }
+
+  return result.allowed === true;
+}
+
+export async function updateTipClaimAccess(
+  organizationId: string,
+  userId: string,
+  enabled: boolean,
+) {
+  const url = new URL("/api/auth/tip-claim/access", authBaseURL);
+
+  const response = await fetch(url, {
+    method: "PATCH",
+    credentials: "include",
+    headers: {
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ organizationId, userId, enabled }),
+  });
+
+  const result = (await response.json()) as TipClaimAssignmentUpdateResponse;
+
+  if (!response.ok) {
+    throw new Error(
+      typeof result.error === "string"
+        ? result.error
+        : "Unable to update Tip Calculator access.",
+    );
+  }
+
+  if (!result.assignment) {
+    throw new Error("Access update completed without an assignment.");
+  }
+
+  return result.assignment;
 }
 
 export async function updateTipClaimAssignment(

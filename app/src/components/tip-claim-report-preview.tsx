@@ -17,6 +17,7 @@ import {
 	DialogTitle,
 } from "#/components/ui/dialog.tsx";
 import { Field, FieldDescription, FieldLabel } from "#/components/ui/field.tsx";
+import { Input } from "#/components/ui/input.tsx";
 import { Separator } from "#/components/ui/separator.tsx";
 import { Slider } from "#/components/ui/slider.tsx";
 import {
@@ -60,22 +61,10 @@ const ROLE_COLORS: Record<TipClaimRoleKey, string> = {
 };
 
 const chartConfig = {
-	bartender: {
-		label: "Bartender",
-		color: "var(--chart-1)",
-	},
-	manager: {
-		label: "Manager",
-		color: "var(--chart-2)",
-	},
-	barback: {
-		label: "Barback",
-		color: "var(--chart-3)",
-	},
-	door: {
-		label: "Door",
-		color: "var(--chart-4)",
-	},
+	bartender: { label: "Bartender", color: "var(--chart-1)" },
+	manager: { label: "Manager", color: "var(--chart-2)" },
+	barback: { label: "Barback", color: "var(--chart-3)" },
+	door: { label: "Door", color: "var(--chart-4)" },
 } satisfies ChartConfig;
 
 const currency = new Intl.NumberFormat("en-US", {
@@ -85,21 +74,13 @@ const currency = new Intl.NumberFormat("en-US", {
 
 function clampWeight(value: number) {
 	if (!Number.isFinite(value)) return 0;
-	return Math.min(10, Math.max(0, Math.round(value)));
+	return Math.min(10, Math.max(0, Math.round(value * 10) / 10));
 }
 
 function getRoleCounts(staff: TipClaimPreviewStaff[]): TipClaimRoleState {
 	return staff.reduce<TipClaimRoleState>(
-		(counts, person) => ({
-			...counts,
-			[person.role]: counts[person.role] + 1,
-		}),
-		{
-			bartender: 0,
-			manager: 0,
-			barback: 0,
-			door: 0,
-		},
+		(counts, person) => ({ ...counts, [person.role]: counts[person.role] + 1 }),
+		{ bartender: 0, manager: 0, barback: 0, door: 0 },
 	);
 }
 
@@ -143,7 +124,6 @@ export function TipClaimReportPreview({
 
 	useEffect(() => {
 		if (!open) return;
-
 		setPreviewWeights(weights);
 		setInitialWeights(weights);
 	}, [open, weights]);
@@ -151,19 +131,16 @@ export function TipClaimReportPreview({
 	const activeRoles = TIP_CLAIM_ROLE_ORDER.filter((role) =>
 		staff.some((person) => person.role === role),
 	);
-
 	const allocations = useMemo(
 		() => allocatePreview(requiredClaimCents, staff, previewWeights),
 		[previewWeights, requiredClaimCents, staff],
 	);
-
 	const roleTotals = useMemo(
 		() =>
 			activeRoles.map((role) => {
 				const cents = allocations
 					.filter((allocation) => allocation.role === role)
 					.reduce((sum, allocation) => sum + allocation.cents, 0);
-
 				return {
 					role,
 					cents,
@@ -173,7 +150,6 @@ export function TipClaimReportPreview({
 			}),
 		[activeRoles, allocations, requiredClaimCents],
 	);
-
 	const chartData = allocations
 		.filter((allocation) => allocation.cents > 0)
 		.map((allocation) => ({
@@ -185,7 +161,6 @@ export function TipClaimReportPreview({
 					: 0,
 			fill: ROLE_COLORS[allocation.role],
 		}));
-
 	const allocatedCents = allocations.reduce(
 		(sum, allocation) => sum + allocation.cents,
 		0,
@@ -207,30 +182,20 @@ export function TipClaimReportPreview({
 				</DialogHeader>
 
 				<div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-					<div className="flex flex-col gap-1 rounded-lg border p-3">
-						<span className="text-xs text-muted-foreground">Total sales</span>
-						<span className="font-semibold tabular-nums">
-							{currency.format(totalSalesCents / 100)}
-						</span>
-					</div>
-					<div className="flex flex-col gap-1 rounded-lg border p-3">
-						<span className="text-xs text-muted-foreground">Claim</span>
-						<span className="font-semibold tabular-nums">
-							{claimPercent.toLocaleString("en-US", {
-								maximumFractionDigits: 2,
-							})}%
-						</span>
-					</div>
-					<div className="flex flex-col gap-1 rounded-lg border p-3">
-						<span className="text-xs text-muted-foreground">Tip pool</span>
-						<span className="font-semibold tabular-nums">
-							{currency.format(requiredClaimCents / 100)}
-						</span>
-					</div>
-					<div className="flex flex-col gap-1 rounded-lg border p-3">
-						<span className="text-xs text-muted-foreground">Staff</span>
-						<span className="font-semibold tabular-nums">{staff.length}</span>
-					</div>
+					{[
+						["Total sales", currency.format(totalSalesCents / 100)],
+						[
+							"Claim",
+							`${claimPercent.toLocaleString("en-US", { maximumFractionDigits: 2 })}%`,
+						],
+						["Tip pool", currency.format(requiredClaimCents / 100)],
+						["Staff", staff.length.toString()],
+					].map(([label, value]) => (
+						<div key={label} className="flex flex-col gap-1 rounded-lg border p-3">
+							<span className="text-xs text-muted-foreground">{label}</span>
+							<span className="font-semibold tabular-nums">{value}</span>
+						</div>
+					))}
 				</div>
 
 				<div className="grid min-w-0 gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.72fr)] xl:gap-6">
@@ -263,9 +228,7 @@ export function TipClaimReportPreview({
 																		{currency.format(Number(value) / 100)}
 																	</span>
 																	<span className="text-xs text-muted-foreground">
-																		{payload.percentage.toLocaleString("en-US", {
-																			maximumFractionDigits: 1,
-																		})}%
+																		{payload.percentage.toLocaleString("en-US", { maximumFractionDigits: 1 })}%
 																	</span>
 																</div>
 															</div>
@@ -285,9 +248,7 @@ export function TipClaimReportPreview({
 											strokeWidth={2}
 											label={({ percentage }) =>
 												percentage >= 4
-													? `${percentage.toLocaleString("en-US", {
-															maximumFractionDigits: 1,
-														})}%`
+													? `${percentage.toLocaleString("en-US", { maximumFractionDigits: 1 })}%`
 													: ""
 											}
 											labelLine={false}
@@ -299,7 +260,6 @@ export function TipClaimReportPreview({
 									Increase at least one active role weight to preview the allocation.
 								</div>
 							)}
-
 							{chartData.length > 0 ? (
 								<div className="pointer-events-none absolute inset-0 flex items-center justify-center">
 									<div className="flex flex-col items-center gap-0.5 text-center">
@@ -327,13 +287,9 @@ export function TipClaimReportPreview({
 									</div>
 									<div className="flex items-center justify-end gap-2 text-right tabular-nums">
 										<span className="font-semibold">
-											{percentage.toLocaleString("en-US", {
-												maximumFractionDigits: 1,
-											})}%
+											{percentage.toLocaleString("en-US", { maximumFractionDigits: 1 })}%
 										</span>
-										<span className="text-muted-foreground">
-											{currency.format(cents / 100)}
-										</span>
+										<span className="text-muted-foreground">{currency.format(cents / 100)}</span>
 									</div>
 								</div>
 							))}
@@ -347,32 +303,41 @@ export function TipClaimReportPreview({
 								Adjust only the roles being used for this shift. The preview updates immediately.
 							</p>
 						</div>
-
 						<Separator />
-
 						<div className="flex flex-col gap-5">
 							{activeRoles.map((role) => {
-								const roleCount = staff.filter(
-									(person) => person.role === role,
-								).length;
-								const roleTotal =
-									roleTotals.find((item) => item.role === role)?.cents ?? 0;
-
+								const roleCount = staff.filter((person) => person.role === role).length;
+								const roleTotal = roleTotals.find((item) => item.role === role)?.cents ?? 0;
 								return (
 									<Field key={role}>
 										<div className="flex items-center justify-between gap-3">
 											<FieldLabel htmlFor={`preview-weight-${role}`}>
 												{TIP_CLAIM_ROLE_LABELS[role]}
 											</FieldLabel>
-											<span className="font-medium tabular-nums">
-												{previewWeights[role]}
-											</span>
+											<Input
+												id={`preview-weight-${role}`}
+												type="number"
+												inputMode="decimal"
+												min={0}
+												max={10}
+												step={0.1}
+												value={previewWeights[role]}
+												className="w-20 text-right tabular-nums"
+												onChange={(event) => {
+													const value = event.currentTarget.valueAsNumber;
+													if (Number.isNaN(value)) return;
+													setPreviewWeights((current) => ({
+														...current,
+														[role]: clampWeight(value),
+													}));
+												}}
+											/>
 										</div>
 										<Slider
-											id={`preview-weight-${role}`}
+											aria-label={`${TIP_CLAIM_ROLE_LABELS[role]} weight`}
 											min={0}
 											max={10}
-											step={1}
+											step={0.1}
 											value={[previewWeights[role]]}
 											onValueChange={(value) => {
 												const nextValue = Array.isArray(value) ? value[0] : value;
@@ -383,14 +348,12 @@ export function TipClaimReportPreview({
 											}}
 										/>
 										<FieldDescription>
-											{roleCount} {roleCount === 1 ? "employee" : "employees"} ·{" "}
-											{currency.format(roleTotal / 100)} total
+											{roleCount} {roleCount === 1 ? "employee" : "employees"} · {currency.format(roleTotal / 100)} total
 										</FieldDescription>
 									</Field>
 								);
 							})}
 						</div>
-
 						{!hasAllocation ? (
 							<p className="text-sm text-destructive">
 								The active weights must allocate the full tip pool before saving.
@@ -409,23 +372,13 @@ export function TipClaimReportPreview({
 						Reset weights
 					</Button>
 					<div className="flex flex-col-reverse gap-2 sm:flex-row">
-						<Button
-							type="button"
-							variant="outline"
-							disabled={savePending}
-							onClick={() => onOpenChange(false)}
-						>
+						<Button type="button" variant="outline" disabled={savePending} onClick={() => onOpenChange(false)}>
 							Cancel
 						</Button>
 						<Button
 							type="button"
 							variant="secondary"
-							disabled={
-								savePending ||
-								!hasWeightChanges ||
-								!hasAllocation ||
-								staff.length === 0
-							}
+							disabled={savePending || !hasWeightChanges || !hasAllocation || staff.length === 0}
 							onClick={() => {
 								onApply(previewWeights);
 								onOpenChange(false);

@@ -15,6 +15,8 @@ type TipClaimEndOfShiftProps = {
 	savePending: boolean;
 	savedShiftId: string | null;
 	saveError: string | null;
+	draftStatus?: "saving" | "saved" | null;
+	draftUpdatedAt?: string | null;
 	onSave: () => void;
 	onPreview: () => void;
 };
@@ -25,10 +27,18 @@ export function TipClaimEndOfShift({
 	savePending,
 	savedShiftId,
 	saveError,
+	draftStatus = null,
+	draftUpdatedAt = null,
 	onSave,
 	onPreview,
 }: TipClaimEndOfShiftProps) {
 	const saved = Boolean(savedShiftId);
+	const draftTime = draftUpdatedAt
+		? new Date(draftUpdatedAt).toLocaleTimeString([], {
+				hour: "numeric",
+				minute: "2-digit",
+			})
+		: null;
 
 	return (
 		<Card>
@@ -76,6 +86,14 @@ export function TipClaimEndOfShift({
 				{savedShiftId ? (
 					<p className="text-sm text-muted-foreground">
 						Shift saved successfully. Editing any shift value will enable a new save.
+					</p>
+				) : draftStatus ? (
+					<p className="text-xs text-muted-foreground">
+						{draftStatus === "saving"
+							? "Saving draft…"
+							: draftTime
+								? `Draft saved at ${draftTime}`
+								: "Draft saved"}
 					</p>
 				) : null}
 			</CardContent>

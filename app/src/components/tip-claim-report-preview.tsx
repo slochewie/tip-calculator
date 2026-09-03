@@ -157,13 +157,19 @@ export function TipClaimReportPreview({
 
 	const roleTotals = useMemo(
 		() =>
-			activeRoles.map((role) => ({
-				role,
-				cents: allocations
+			activeRoles.map((role) => {
+				const cents = allocations
 					.filter((allocation) => allocation.role === role)
-					.reduce((sum, allocation) => sum + allocation.cents, 0),
-			})),
-		[activeRoles, allocations],
+					.reduce((sum, allocation) => sum + allocation.cents, 0);
+
+				return {
+					role,
+					cents,
+					percentage:
+						requiredClaimCents > 0 ? (cents / requiredClaimCents) * 100 : 0,
+				};
+			}),
+		[activeRoles, allocations, requiredClaimCents],
 	);
 
 	const chartData = allocations
@@ -171,6 +177,10 @@ export function TipClaimReportPreview({
 		.map((allocation) => ({
 			...allocation,
 			label: allocation.name || allocation.email,
+			percentage:
+				requiredClaimCents > 0
+					? (allocation.cents / requiredClaimCents) * 100
+					: 0,
 			fill: ROLE_COLORS[allocation.role],
 		}));
 
@@ -243,9 +253,16 @@ export function TipClaimReportPreview({
 																		{TIP_CLAIM_ROLE_LABELS[payload.role]}
 																	</span>
 																</div>
-																<span className="font-mono font-medium tabular-nums">
-																	{currency.format(Number(value) / 100)}
-																</span>
+																<div className="flex flex-col items-end">
+																	<span className="font-mono font-medium tabular-nums">
+																		{currency.format(Number(value) / 100)}
+																	</span>
+																	<span className="text-xs text-muted-foreground">
+																		{payload.percentage.toLocaleString("en-US", {
+																			maximumFractionDigits: 1,
+																		})}%
+																	</span>
+																</div>
 															</div>
 														);
 													}}
@@ -261,6 +278,14 @@ export function TipClaimReportPreview({
 											paddingAngle={0}
 											stroke="var(--background)"
 											strokeWidth={2}
+											label={({ percentage }) =>
+												percentage >= 4
+													? `${percentage.toLocaleString("en-US", {
+															maximumFractionDigits: 1,
+														})}%`
+													: ""
+											}
+											labelLine={false}
 										/>
 									</PieChart>
 								</ChartContainer>
@@ -283,7 +308,7 @@ export function TipClaimReportPreview({
 						</div>
 
 						<div className="grid gap-2 sm:grid-cols-2">
-							{roleTotals.map(({ role, cents }) => (
+							{roleTotals.map(({ role, cents, percentage }) => (
 								<div
 									key={role}
 									className="flex items-center justify-between gap-3 rounded-lg border p-3"
@@ -295,9 +320,16 @@ export function TipClaimReportPreview({
 										/>
 										<span className="font-medium">{TIP_CLAIM_ROLE_LABELS[role]}</span>
 									</div>
-									<span className="font-medium tabular-nums">
-										{currency.format(cents / 100)}
-									</span>
+									<div className="flex items-center gap-2 tabular-nums">
+										<span className="font-semibold">
+											{percentage.toLocaleString("en-US", {
+												maximumFractionDigits: 1,
+											})}%
+										</span>
+										<span className="text-muted-foreground">
+											{currency.format(cents / 100)}
+										</span>
+									</div>
 								</div>
 							))}
 						</div>

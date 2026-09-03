@@ -232,9 +232,37 @@ export function useTipClaimDraft({
 		setDraftUpdatedAt(null);
 	}, [organizationId]);
 
+	const resetDraft = useCallback(() => {
+		if (!organizationId) return;
+		if (autosaveTimeoutRef.current !== null) {
+			window.clearTimeout(autosaveTimeoutRef.current);
+			autosaveTimeoutRef.current = null;
+		}
+
+		skipNextAutosaveRef.current = true;
+		clearTipClaimDraft(organizationId);
+		setClaimPercent("8");
+		setNextRegisterId(2);
+		setRegisters(DEFAULT_REGISTERS.map((register) => ({ ...register })));
+		setStaff({ ...DEFAULT_STAFF });
+		setMemberAssignments([]);
+		setWeights({ ...DEFAULT_TIP_CLAIM_WEIGHTS });
+		setDraftStatus(null);
+		setDraftUpdatedAt(null);
+	}, [
+		organizationId,
+		setClaimPercent,
+		setMemberAssignments,
+		setNextRegisterId,
+		setRegisters,
+		setStaff,
+		setWeights,
+	]);
+
 	return {
 		draftStatus,
 		draftUpdatedAt,
 		clearDraft,
+		resetDraft,
 	};
 }

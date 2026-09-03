@@ -44,6 +44,7 @@ type TipClaimReportPreviewProps = {
 	staff: TipClaimPreviewStaff[];
 	weights: TipClaimWeightState;
 	savePending?: boolean;
+	onApply: (weights: TipClaimWeightState) => void;
 	onSave: (weights: TipClaimWeightState) => void | Promise<void>;
 };
 
@@ -134,6 +135,7 @@ export function TipClaimReportPreview({
 	staff,
 	weights,
 	savePending = false,
+	onApply,
 	onSave,
 }: TipClaimReportPreviewProps) {
 	const [previewWeights, setPreviewWeights] = useState<TipClaimWeightState>(weights);
@@ -190,6 +192,9 @@ export function TipClaimReportPreview({
 	);
 	const hasAllocation =
 		requiredClaimCents === 0 || allocatedCents === requiredClaimCents;
+	const hasWeightChanges = TIP_CLAIM_ROLE_ORDER.some(
+		(role) => previewWeights[role] !== initialWeights[role],
+	);
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
@@ -311,16 +316,16 @@ export function TipClaimReportPreview({
 							{roleTotals.map(({ role, cents, percentage }) => (
 								<div
 									key={role}
-									className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border p-3"
+									className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg border p-3"
 								>
-									<div className="flex items-center gap-2">
+									<div className="flex min-w-0 items-center gap-2">
 										<span
-											className="size-2.5 rounded-sm"
+											className="size-2.5 shrink-0 rounded-sm"
 											style={{ backgroundColor: ROLE_COLORS[role] }}
 										/>
-										<span className="font-medium">{TIP_CLAIM_ROLE_LABELS[role]}</span>
+										<span className="truncate font-medium">{TIP_CLAIM_ROLE_LABELS[role]}</span>
 									</div>
-									<div className="flex items-center gap-2 tabular-nums">
+									<div className="flex items-center justify-end gap-2 text-right tabular-nums">
 										<span className="font-semibold">
 											{percentage.toLocaleString("en-US", {
 												maximumFractionDigits: 1,
@@ -411,6 +416,22 @@ export function TipClaimReportPreview({
 							onClick={() => onOpenChange(false)}
 						>
 							Cancel
+						</Button>
+						<Button
+							type="button"
+							variant="secondary"
+							disabled={
+								savePending ||
+								!hasWeightChanges ||
+								!hasAllocation ||
+								staff.length === 0
+							}
+							onClick={() => {
+								onApply(previewWeights);
+								onOpenChange(false);
+							}}
+						>
+							Apply to draft
 						</Button>
 						<Button
 							type="button"

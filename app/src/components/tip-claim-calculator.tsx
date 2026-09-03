@@ -53,23 +53,27 @@ import {
 } from "#/components/ui/table.tsx";
 import { TipClaimEndOfShift } from "#/components/tip-claim-end-of-shift.tsx";
 import { TipClaimReportPreview } from "#/components/tip-claim-report-preview.tsx";
+import {
+	allocateTipClaims as allocateClaims,
+	DEFAULT_TIP_CLAIM_WEIGHTS,
+	getTipClaimTotalWeight,
+	TIP_CLAIM_REGISTER_ROLE_ORDER as REGISTER_ROLE_ORDER,
+	TIP_CLAIM_ROLE_LABELS as ROLE_LABELS,
+	TIP_CLAIM_ROLE_ORDER as ROLE_ORDER,
+	type TipClaimRoleKey as RoleKey,
+	type TipClaimRoleState as RoleState,
+	type TipClaimWeightState as WeightState,
+} from "#/lib/tip-claim-allocation.ts";
+import {
+	buildTipClaimShiftAllocation,
+	type TipClaimResolvedStaff,
+} from "#/lib/tip-claim-shift.ts";
 import { saveTipClaimShift } from "#/lib/tip-claim.ts";
 
 type Register = {
 	id: number;
 	name: string;
 	sales: string;
-};
-
-type RoleKey = "bartender" | "manager" | "barback" | "door";
-
-type RoleState = Record<RoleKey, number>;
-type WeightState = Record<RoleKey, number>;
-
-type Allocation = {
-	role: RoleKey;
-	person: number;
-	cents: number;
 };
 
 type StaffAssignment = {
@@ -96,16 +100,6 @@ type TipClaimCalculatorProps = {
 	membersPending?: boolean;
 	membersError?: string | null;
 };
-
-const ROLE_LABELS: Record<RoleKey, string> = {
-	bartender: "Bartender",
-	manager: "Manager",
-	barback: "Barback",
-	door: "Door",
-};
-
-const ROLE_ORDER: RoleKey[] = ["bartender", "manager", "barback", "door"];
-const REGISTER_ROLE_ORDER: RoleKey[] = ["bartender", "manager"];
 
 const ROLE_ENABLED_FIELDS: Record<RoleKey, keyof Pick<TipClaimMember, "bartenderEnabled" | "managerEnabled" | "barbackEnabled" | "doorEnabled">> = {
 	bartender: "bartenderEnabled",
@@ -137,55 +131,6 @@ function clampInteger(value: number, min = 0, max = 50) {
 	return Math.min(max, Math.max(min, Math.trunc(value)));
 }
 
-function allocateClaims(
-	totalCents: number,
-	staff: RoleState,
-	weights: WeightState,
-): Allocation[] {
-	const people = ROLE_ORDER.flatMap((role) =>
-		Array.from({ length: staff[role] }, (_, index) => ({
-			role,
-			person: index + 1,
-			weight: weights[role],
-		})),
-	).filter((person) => person.weight > 0);
-
-	const totalWeight = people.reduce((sum, person) => sum + person.weight, 0);
-
-	if (totalCents <= 0 || totalWeight <= 0 || people.length === 0) {
-		return [];
-	}
-
-	const provisional = people.map((person, index) => {
-		const exact = (totalCents * person.weight) / totalWeight;
-		const cents = Math.floor(exact);
-
-		return {
-			...person,
-			index,
-			cents,
-			remainder: exact - cents,
-		};
-	});
-
-	const remaining =
-		totalCents - provisional.reduce((sum, item) => sum + item.cents, 0);
-
-	const remainderOrder = [...provisional].sort(
-		(a, b) => b.remainder - a.remainder || a.index - b.index,
-	);
-
-	for (let index = 0; index < remaining; index += 1) {
-		remainderOrder[index % remainderOrder.length].cents += 1;
-	}
-
-	return provisional.map(({ role, person, cents }) => ({
-		role,
-		person,
-		cents,
-	}));
-}
-
 export function TipClaimCalculator({
 	organizationId,
 	organizationName,
@@ -209,10 +154,7 @@ export function TipClaimCalculator({
 		[],
 	);
 	const [weights, setWeights] = useState<WeightState>({
-		bartender: 5,
-		manager: 5,
-		barback: 3,
-		door: 1,
+		...DEFAULT_TIP_CLAIM_WEIGHTS,
 	});
 	const [savePending, setSavePending] = useState(false);
 	const [saveError, setSaveError] = useState<string | null>(null);
@@ -269,10 +211,7 @@ export function TipClaimCalculator({
 		() => allocateClaims(requiredClaimCents, effectiveStaff, weights),
 		[effectiveStaff, requiredClaimCents, weights],
 	);
-	const totalWeight = ROLE_ORDER.reduce(
-		(sum, role) => sum + effectiveStaff[role] * Math.max(0, weights[role]),
-		0,
-	);
+	const totalWeight = getTipClaimTotalWeight(effectiveStaff, weights);
 	const allocatedClaimCents = allocations.reduce(
 		(sum, allocation) => sum + allocation.cents,
 		0,
@@ -521,19 +460,42 @@ export function TipClaimCalculator({
 			return;
 		}
 
-		const saveAllocations = allocateClaims(
+		const resolvedStaff = memberAssignments.map<TipClaimResolvedStaff>(
+			(assignment) => {
+				const member = members.find(
+					(candidate) => candidate.id === assignment.userId,
+				);
+
+				if (!member) {
+					throw new Error(
+						"One of the assigned staff members is no longer available.",
+					);
+				}
+
+				if (!isRoleEnabled(member, assignment.role)) {
+					throw new Error(
+						`${member.name || member.email} is not assigned to the ${ROLE_LABELS[assignment.role]} role.`,
+					);
+				}
+
+				return {
+					userId: member.id,
+					name: member.name,
+					email: member.email,
+					role: assignment.role,
+					registerKey: assignment.registerId?.toString() ?? null,
+				};
+			},
+		);
+
+		const {
+			staff: savedStaff,
+			totalWeightUnits: saveTotalWeight,
+			allocatedClaimCents: saveAllocatedClaimCents,
+		} = buildTipClaimShiftAllocation(
 			requiredClaimCents,
-			effectiveStaff,
+			resolvedStaff,
 			saveWeights,
-		);
-		const saveAllocatedClaimCents = saveAllocations.reduce(
-			(sum, allocation) => sum + allocation.cents,
-			0,
-		);
-		const saveTotalWeight = ROLE_ORDER.reduce(
-			(sum, role) =>
-				sum + effectiveStaff[role] * Math.max(0, saveWeights[role]),
-			0,
 		);
 
 		if (
@@ -543,45 +505,6 @@ export function TipClaimCalculator({
 			setSaveError("The required claim must be fully allocated before saving.");
 			return;
 		}
-
-		const roleIndexes: RoleState = {
-			bartender: 0,
-			manager: 0,
-			barback: 0,
-			door: 0,
-		};
-
-		const savedStaff = memberAssignments.map((assignment) => {
-			const member = members.find(
-				(candidate) => candidate.id === assignment.userId,
-			);
-			if (!member) {
-				throw new Error(
-					"One of the assigned staff members is no longer available.",
-				);
-			}
-
-			if (!isRoleEnabled(member, assignment.role)) {
-				throw new Error(
-					`${member.name || member.email} is not assigned to the ${ROLE_LABELS[assignment.role]} role.`,
-				);
-			}
-
-			const allocation = saveAllocations.filter(
-				(candidate) => candidate.role === assignment.role,
-			)[roleIndexes[assignment.role]];
-			roleIndexes[assignment.role] += 1;
-
-			return {
-				userId: member.id,
-				name: member.name,
-				email: member.email,
-				role: assignment.role,
-				registerKey: assignment.registerId?.toString() ?? null,
-				weight: saveWeights[assignment.role],
-				claimCents: allocation?.cents ?? 0,
-			};
-		});
 
 		setSavePending(true);
 		setSaveError(null);

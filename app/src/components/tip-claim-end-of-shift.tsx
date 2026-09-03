@@ -1,5 +1,21 @@
-import { ChartPieIcon, CheckCircle2Icon, SaveIcon } from "lucide-react";
+import {
+	ChartPieIcon,
+	CheckCircle2Icon,
+	RotateCcwIcon,
+	SaveIcon,
+} from "lucide-react";
 
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+	AlertDialogTrigger,
+} from "#/components/ui/alert-dialog.tsx";
 import { Button } from "#/components/ui/button.tsx";
 import {
 	Card,
@@ -12,6 +28,7 @@ import {
 type TipClaimEndOfShiftProps = {
 	saveDisabled: boolean;
 	previewDisabled: boolean;
+	resetDisabled: boolean;
 	savePending: boolean;
 	savedShiftId: string | null;
 	saveError: string | null;
@@ -19,11 +36,13 @@ type TipClaimEndOfShiftProps = {
 	draftUpdatedAt?: string | null;
 	onSave: () => void;
 	onPreview: () => void;
+	onReset: () => void;
 };
 
 export function TipClaimEndOfShift({
 	saveDisabled,
 	previewDisabled,
+	resetDisabled,
 	savePending,
 	savedShiftId,
 	saveError,
@@ -31,6 +50,7 @@ export function TipClaimEndOfShift({
 	draftUpdatedAt = null,
 	onSave,
 	onPreview,
+	onReset,
 }: TipClaimEndOfShiftProps) {
 	const saved = Boolean(savedShiftId);
 	const draftTime = draftUpdatedAt
@@ -78,6 +98,35 @@ export function TipClaimEndOfShift({
 						Preview
 					</Button>
 				</div>
+
+				<AlertDialog>
+					<AlertDialogTrigger asChild>
+						<Button
+							type="button"
+							variant="ghost"
+							className="self-start text-destructive hover:text-destructive"
+							disabled={resetDisabled || savePending}
+						>
+							<RotateCcwIcon data-icon="inline-start" />
+							Reset calculator
+						</Button>
+					</AlertDialogTrigger>
+					<AlertDialogContent>
+						<AlertDialogHeader>
+							<AlertDialogTitle>Reset calculator?</AlertDialogTitle>
+							<AlertDialogDescription>
+								This permanently deletes the saved draft for this organization and
+								clears the current calculator. No report will be saved.
+							</AlertDialogDescription>
+						</AlertDialogHeader>
+						<AlertDialogFooter>
+							<AlertDialogCancel>Cancel</AlertDialogCancel>
+							<AlertDialogAction variant="destructive" onClick={onReset}>
+								Reset calculator
+							</AlertDialogAction>
+						</AlertDialogFooter>
+					</AlertDialogContent>
+				</AlertDialog>
 
 				{saveError ? (
 					<p className="text-sm text-destructive">{saveError}</p>

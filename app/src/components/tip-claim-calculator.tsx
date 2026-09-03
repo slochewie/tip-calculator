@@ -1062,11 +1062,14 @@ export function TipClaimCalculator({
 
 					{usesOrganizationMembers ? (
 						<TipClaimEndOfShift
-							disabled={
+							saveDisabled={
 								!organizationId ||
 								memberAssignments.length === 0 ||
 								(requiredClaimCents > 0 &&
 									allocatedClaimCents !== requiredClaimCents)
+							}
+							previewDisabled={
+								!organizationId || memberAssignments.length === 0
 							}
 							savePending={savePending}
 							savedShiftId={savedShiftId}

@@ -10,7 +10,8 @@ import {
 } from "#/components/ui/card.tsx";
 
 type TipClaimEndOfShiftProps = {
-	disabled: boolean;
+	saveDisabled: boolean;
+	previewDisabled: boolean;
 	savePending: boolean;
 	savedShiftId: string | null;
 	saveError: string | null;
@@ -19,14 +20,15 @@ type TipClaimEndOfShiftProps = {
 };
 
 export function TipClaimEndOfShift({
-	disabled,
+	saveDisabled,
+	previewDisabled,
 	savePending,
 	savedShiftId,
 	saveError,
 	onSave,
 	onPreview,
 }: TipClaimEndOfShiftProps) {
-	const actionsDisabled = disabled || savePending || Boolean(savedShiftId);
+	const saved = Boolean(savedShiftId);
 
 	return (
 		<Card>
@@ -41,7 +43,7 @@ export function TipClaimEndOfShift({
 				<div className="grid gap-2 sm:grid-cols-[1fr_auto]">
 					<Button
 						type="button"
-						disabled={actionsDisabled}
+						disabled={saveDisabled || savePending || saved}
 						onClick={onSave}
 					>
 						{savedShiftId ? (
@@ -59,7 +61,7 @@ export function TipClaimEndOfShift({
 					<Button
 						type="button"
 						variant="outline"
-						disabled={actionsDisabled}
+						disabled={previewDisabled || savePending || saved}
 						onClick={onPreview}
 					>
 						<ChartPieIcon data-icon="inline-start" />

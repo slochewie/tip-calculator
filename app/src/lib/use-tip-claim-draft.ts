@@ -112,6 +112,8 @@ export function useTipClaimDraft({
 	setWeights,
 }: UseTipClaimDraftOptions) {
 	const hydratedOrganizationRef = useRef<string | null>(null);
+	const skipNextAutosaveRef = useRef(false);
+	const autosaveTimeoutRef = useRef<number | null>(null);
 	const [draftStatus, setDraftStatus] = useState<"saving" | "saved" | null>(null);
 	const [draftUpdatedAt, setDraftUpdatedAt] = useState<string | null>(null);
 
@@ -119,8 +121,14 @@ export function useTipClaimDraft({
 		if (!organizationId || members === undefined || membersPending) return;
 		if (hydratedOrganizationRef.current === organizationId) return;
 
+		if (autosaveTimeoutRef.current !== null) {
+			window.clearTimeout(autosaveTimeoutRef.current);
+			autosaveTimeoutRef.current = null;
+		}
+
 		const draft = loadTipClaimDraft(organizationId);
 		hydratedOrganizationRef.current = organizationId;
+		skipNextAutosaveRef.current = true;
 
 		if (!draft) {
 			setClaimPercent("8");
@@ -170,9 +178,18 @@ export function useTipClaimDraft({
 		if (!organizationId || members === undefined || membersPending) return;
 		if (hydratedOrganizationRef.current !== organizationId) return;
 
+		if (skipNextAutosaveRef.current) {
+			skipNextAutosaveRef.current = false;
+			return;
+		}
+
+		if (autosaveTimeoutRef.current !== null) {
+			window.clearTimeout(autosaveTimeoutRef.current);
+		}
+
 		setDraftStatus("saving");
 
-		const timeout = window.setTimeout(() => {
+		autosaveTimeoutRef.current = window.setTimeout(() => {
 			saveTipClaimDraft(organizationId, {
 				claimPercent,
 				nextRegisterId,
@@ -181,11 +198,17 @@ export function useTipClaimDraft({
 				memberAssignments,
 				weights,
 			});
+			autosaveTimeoutRef.current = null;
 			setDraftStatus("saved");
 			setDraftUpdatedAt(new Date().toISOString());
 		}, 600);
 
-		return () => window.clearTimeout(timeout);
+		return () => {
+			if (autosaveTimeoutRef.current !== null) {
+				window.clearTimeout(autosaveTimeoutRef.current);
+				autosaveTimeoutRef.current = null;
+			}
+		};
 	}, [
 		claimPercent,
 		memberAssignments,
@@ -200,6 +223,10 @@ export function useTipClaimDraft({
 
 	const clearDraft = useCallback(() => {
 		if (!organizationId) return;
+		if (autosaveTimeoutRef.current !== null) {
+			window.clearTimeout(autosaveTimeoutRef.current);
+			autosaveTimeoutRef.current = null;
+		}
 		clearTipClaimDraft(organizationId);
 		setDraftStatus(null);
 		setDraftUpdatedAt(null);

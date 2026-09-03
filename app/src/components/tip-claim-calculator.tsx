@@ -1109,6 +1109,7 @@ export function TipClaimCalculator({
 					staff={previewStaff}
 					weights={weights}
 					savePending={savePending}
+					onApply={(previewWeights) => setWeights(previewWeights)}
 					onSave={(previewWeights) => saveEndOfShift(previewWeights)}
 				/>
 			) : null}

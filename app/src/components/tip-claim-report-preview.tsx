@@ -228,9 +228,9 @@ export function TipClaimReportPreview({
 					</div>
 				</div>
 
-				<div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.72fr)]">
-					<div className="flex min-w-0 flex-col gap-4">
-						<div className="relative min-h-72">
+				<div className="grid min-w-0 gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.72fr)] xl:gap-6">
+					<div className="flex min-w-0 flex-col gap-2 xl:gap-4">
+						<div className="relative min-h-0">
 							{chartData.length > 0 ? (
 								<ChartContainer
 									config={chartConfig}
@@ -307,11 +307,11 @@ export function TipClaimReportPreview({
 							) : null}
 						</div>
 
-						<div className="grid gap-2 sm:grid-cols-2">
+						<div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-2">
 							{roleTotals.map(({ role, cents, percentage }) => (
 								<div
 									key={role}
-									className="flex items-center justify-between gap-3 rounded-lg border p-3"
+									className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border p-3"
 								>
 									<div className="flex items-center gap-2">
 										<span

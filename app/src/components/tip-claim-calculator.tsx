@@ -69,6 +69,7 @@ import {
 	type TipClaimResolvedStaff,
 } from "#/lib/tip-claim-shift.ts";
 import { saveTipClaimShift } from "#/lib/tip-claim.ts";
+import { useTipClaimDraft } from "#/lib/use-tip-claim-draft.ts";
 
 type Register = {
 	id: number;
@@ -161,11 +162,25 @@ export function TipClaimCalculator({
 	const [savedShiftId, setSavedShiftId] = useState<string | null>(null);
 	const [previewOpen, setPreviewOpen] = useState(false);
 
-	const usesOrganizationMembers = members !== undefined;
+	const { draftStatus, draftUpdatedAt, clearDraft } = useTipClaimDraft({
+		organizationId,
+		members,
+		membersPending,
+		claimPercent,
+		setClaimPercent,
+		nextRegisterId,
+		setNextRegisterId,
+		registers,
+		setRegisters,
+		staff,
+		setStaff,
+		memberAssignments,
+		setMemberAssignments,
+		weights,
+		setWeights,
+	});
 
-	useEffect(() => {
-		setMemberAssignments([]);
-	}, [organizationId]);
+	const usesOrganizationMembers = members !== undefined;
 
 	useEffect(() => {
 		setSaveError(null);
@@ -527,6 +542,7 @@ export function TipClaimCalculator({
 			});
 
 			setPreviewOpen(false);
+			clearDraft();
 			setSavedShiftId(result.shiftId);
 		} catch (error) {
 			setSaveError(
@@ -1074,6 +1090,8 @@ export function TipClaimCalculator({
 							savePending={savePending}
 							savedShiftId={savedShiftId}
 							saveError={saveError}
+							draftStatus={draftStatus}
+							draftUpdatedAt={draftUpdatedAt}
 							onSave={() => void saveEndOfShift()}
 							onPreview={openReportPreview}
 						/>

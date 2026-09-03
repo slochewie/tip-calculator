@@ -1,10 +1,8 @@
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import {
-	CheckCircle2Icon,
 	ChevronDownIcon,
 	ChevronUpIcon,
 	PlusIcon,
-	SaveIcon,
 	Trash2Icon,
 } from "lucide-react";
 
@@ -53,6 +51,8 @@ import {
 	TableHeader,
 	TableRow,
 } from "#/components/ui/table.tsx";
+import { TipClaimEndOfShift } from "#/components/tip-claim-end-of-shift.tsx";
+import { TipClaimReportPreview } from "#/components/tip-claim-report-preview.tsx";
 import { saveTipClaimShift } from "#/lib/tip-claim.ts";
 
 type Register = {
@@ -217,6 +217,7 @@ export function TipClaimCalculator({
 	const [savePending, setSavePending] = useState(false);
 	const [saveError, setSaveError] = useState<string | null>(null);
 	const [savedShiftId, setSavedShiftId] = useState<string | null>(null);
+	const [previewOpen, setPreviewOpen] = useState(false);
 
 	const usesOrganizationMembers = members !== undefined;
 
@@ -496,23 +497,49 @@ export function TipClaimCalculator({
 		}));
 	}
 
-	async function saveEndOfShift() {
+	function validateEndOfShift() {
 		if (!organizationId || !members) {
 			setSaveError("Select an organization before saving the shift.");
-			return;
+			return false;
 		}
 
 		if (memberAssignments.length === 0) {
 			setSaveError("Add at least one on-duty staff member before saving.");
-			return;
+			return false;
 		}
 
 		if (registers.some((register) => register.name.trim().length === 0)) {
 			setSaveError("Every register needs a name before saving.");
+			return false;
+		}
+
+		return true;
+	}
+
+	async function saveEndOfShift(saveWeights: WeightState = weights) {
+		if (!validateEndOfShift() || !organizationId || !members) {
 			return;
 		}
 
-		if (requiredClaimCents > 0 && allocatedClaimCents !== requiredClaimCents) {
+		const saveAllocations = allocateClaims(
+			requiredClaimCents,
+			effectiveStaff,
+			saveWeights,
+		);
+		const saveAllocatedClaimCents = saveAllocations.reduce(
+			(sum, allocation) => sum + allocation.cents,
+			0,
+		);
+		const saveTotalWeight = ROLE_ORDER.reduce(
+			(sum, role) =>
+				sum + effectiveStaff[role] * Math.max(0, saveWeights[role]),
+			0,
+		);
+
+		if (
+			requiredClaimCents > 0 &&
+			saveAllocatedClaimCents !== requiredClaimCents
+		) {
 			setSaveError("The required claim must be fully allocated before saving.");
 			return;
 		}
@@ -525,16 +552,22 @@ export function TipClaimCalculator({
 		};
 
 		const savedStaff = memberAssignments.map((assignment) => {
-			const member = members.find((candidate) => candidate.id === assignment.userId);
+			const member = members.find(
+				(candidate) => candidate.id === assignment.userId,
+			);
 			if (!member) {
-				throw new Error("One of the assigned staff members is no longer available.");
+				throw new Error(
+					"One of the assigned staff members is no longer available.",
+				);
 			}
 
 			if (!isRoleEnabled(member, assignment.role)) {
-				throw new Error(`${member.name || member.email} is not assigned to the ${ROLE_LABELS[assignment.role]} role.`);
+				throw new Error(
+					`${member.name || member.email} is not assigned to the ${ROLE_LABELS[assignment.role]} role.`,
+				);
 			}
 
-			const allocation = allocations.filter(
+			const allocation = saveAllocations.filter(
 				(candidate) => candidate.role === assignment.role,
 			)[roleIndexes[assignment.role]];
 			roleIndexes[assignment.role] += 1;
@@ -545,7 +578,7 @@ export function TipClaimCalculator({
 				email: member.email,
 				role: assignment.role,
 				registerKey: assignment.registerId?.toString() ?? null,
-				weight: weights[assignment.role],
+				weight: saveWeights[assignment.role],
 				claimCents: allocation?.cents ?? 0,
 			};
 		});
@@ -559,8 +592,8 @@ export function TipClaimCalculator({
 				claimPercent: normalizedPercent,
 				totalSalesCents,
 				requiredClaimCents,
-				totalWeightUnits: totalWeight,
-				weights,
+				totalWeightUnits: saveTotalWeight,
+				weights: saveWeights,
 				completedAt: new Date(),
 				registers: registers.map((register) => ({
 					registerKey: register.id.toString(),
@@ -570,6 +603,7 @@ export function TipClaimCalculator({
 				staff: savedStaff,
 			});
 
+			setPreviewOpen(false);
 			setSavedShiftId(result.shiftId);
 		} catch (error) {
 			setSaveError(
@@ -581,6 +615,32 @@ export function TipClaimCalculator({
 			setSavePending(false);
 		}
 	}
+
+	function openReportPreview() {
+		if (!validateEndOfShift()) {
+			return;
+		}
+
+		setSaveError(null);
+		setPreviewOpen(true);
+	}
+
+	const previewStaff = memberAssignments.flatMap((assignment) => {
+		const member = members?.find(
+			(candidate) => candidate.id === assignment.userId,
+		);
+
+		return member
+			? [
+					{
+						userId: member.id,
+						name: member.name,
+						email: member.email,
+						role: assignment.role,
+					},
+				]
+			: [];
+	});
 
 	return (
 		<main className="mx-auto flex w-full max-w-6xl flex-col gap-5 p-4 md:p-6 lg:p-8">
@@ -1078,55 +1138,36 @@ export function TipClaimCalculator({
 					</Card>
 
 					{usesOrganizationMembers ? (
-						<Card>
-							<CardHeader>
-								<CardTitle>End of shift</CardTitle>
-								<CardDescription>
-									Save the current sales, staff assignments, register assignments,
-									weights, and calculated claims as a completed shift snapshot.
-								</CardDescription>
-							</CardHeader>
-							<CardContent className="gap-3">
-								<Button
-									type="button"
-									className="w-full"
-									disabled={
-										savePending ||
-										Boolean(savedShiftId) ||
-										!organizationId ||
-										memberAssignments.length === 0 ||
-										(requiredClaimCents > 0 &&
-											allocatedClaimCents !== requiredClaimCents)
-									}
-									onClick={() => void saveEndOfShift()}
-								>
-									{savedShiftId ? (
-										<CheckCircle2Icon data-icon="inline-start" />
-									) : (
-										<SaveIcon data-icon="inline-start" />
-									)}
-									{savePending
-										? "Saving…"
-										: savedShiftId
-											? "End of Shift Sales Saved"
-											: "Save End of Shift Sales"}
-								</Button>
-
-								{saveError ? (
-									<p className="text-sm text-destructive">{saveError}</p>
-								) : null}
-
-								{savedShiftId ? (
-									<p className="text-sm text-muted-foreground">
-										Shift saved successfully. Editing any shift value will enable a
-										new save.
-									</p>
-								) : null}
-							</CardContent>
-						</Card>
+						<TipClaimEndOfShift
+							disabled={
+								!organizationId ||
+								memberAssignments.length === 0 ||
+								(requiredClaimCents > 0 &&
+									allocatedClaimCents !== requiredClaimCents)
+							}
+							savePending={savePending}
+							savedShiftId={savedShiftId}
+							saveError={saveError}
+							onSave={() => void saveEndOfShift()}
+							onPreview={openReportPreview}
+						/>
 					) : null}
 				</div>
 			</div>
+
+			{usesOrganizationMembers ? (
+				<TipClaimReportPreview
+					open={previewOpen}
+					onOpenChange={setPreviewOpen}
+					totalSalesCents={totalSalesCents}
+					claimPercent={normalizedPercent}
+					requiredClaimCents={requiredClaimCents}
+					staff={previewStaff}
+					weights={weights}
+					savePending={savePending}
+					onSave={(previewWeights) => saveEndOfShift(previewWeights)}
+				/>
+			) : null}
 		</main>
 	);
 }

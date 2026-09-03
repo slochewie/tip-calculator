@@ -228,13 +228,13 @@ export function TipClaimReportPreview({
 					</div>
 				</div>
 
-				<div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.72fr)]">
+				<div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.72fr)]">
 					<div className="flex min-w-0 flex-col gap-4">
 						<div className="relative min-h-72">
 							{chartData.length > 0 ? (
 								<ChartContainer
 									config={chartConfig}
-									className="mx-auto aspect-square max-h-80 w-full"
+									className="mx-auto aspect-square h-[min(54vw,22rem)] max-h-88 w-auto max-w-full"
 									initialDimension={{ width: 320, height: 320 }}
 								>
 									<PieChart>

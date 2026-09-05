@@ -76,6 +76,7 @@ function Reports() {
   const { data: activeOrganization, isPending: isActiveOrganizationPending } =
     authClient.useActiveOrganization();
 
+  const [activeTab, setActiveTab] = useState<"claims" | "tips">("claims");
   const [claimShifts, setClaimShifts] = useState<TipClaimShiftReport[]>([]);
   const [poolShifts, setPoolShifts] = useState<TipPoolShiftReport[]>([]);
   const [reportsPending, setReportsPending] = useState(false);
@@ -213,7 +214,7 @@ function Reports() {
 
   const organizationsPending =
     areOrganizationsPending || isActiveOrganizationPending;
-  const noReports = claimShifts.length === 0 && poolShifts.length === 0;
+  const activeShifts = activeTab === "claims" ? claimShifts : poolShifts;
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 md:p-6 lg:p-8">
@@ -228,6 +229,39 @@ function Reports() {
             {activeOrganization?.name ? ` for ${activeOrganization.name}` : ""}.
           </p>
         </div>
+      </div>
+
+      <div
+        role="tablist"
+        aria-label="Report type"
+        className="inline-flex w-fit items-center rounded-lg bg-muted p-1"
+      >
+        <Button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "claims"}
+          variant={activeTab === "claims" ? "secondary" : "ghost"}
+          size="sm"
+          onClick={() => setActiveTab("claims")}
+        >
+          Claims
+          <Badge variant="secondary" className="ml-1">
+            {claimShifts.length}
+          </Badge>
+        </Button>
+        <Button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "tips"}
+          variant={activeTab === "tips" ? "secondary" : "ghost"}
+          size="sm"
+          onClick={() => setActiveTab("tips")}
+        >
+          Tips
+          <Badge variant="secondary" className="ml-1">
+            {poolShifts.length}
+          </Badge>
+        </Button>
       </div>
 
       {!activeOrganization && !organizationsPending ? (
@@ -268,18 +302,24 @@ function Reports() {
         </Card>
       ) : null}
 
-      {!reportsPending && !reportsError && activeOrganization && noReports ? (
+      {!reportsPending &&
+      !reportsError &&
+      activeOrganization &&
+      activeShifts.length === 0 ? (
         <Card>
           <CardHeader>
-            <CardTitle>No saved reports yet</CardTitle>
+            <CardTitle>
+              No saved {activeTab === "claims" ? "Tip Claim" : "Tip Pool"} reports yet
+            </CardTitle>
             <CardDescription>
-              Saved Tip Claim and Tip Pool reports will appear here.
+              Saved {activeTab === "claims" ? "Tip Claim" : "Tip Pool"} reports will
+              appear here.
             </CardDescription>
           </CardHeader>
         </Card>
       ) : null}
 
-      {!reportsPending && !reportsError && poolShifts.length > 0 ? (
+      {!reportsPending && !reportsError && activeTab === "tips" && poolShifts.length > 0 ? (
         <section className="space-y-3">
           <div>
             <h2 className="text-lg font-semibold">Tip Pool Reports</h2>
@@ -412,7 +452,7 @@ function Reports() {
         </section>
       ) : null}
 
-      {!reportsPending && !reportsError && claimShifts.length > 0 ? (
+      {!reportsPending && !reportsError && activeTab === "claims" && claimShifts.length > 0 ? (
         <section className="space-y-3">
           <div>
             <h2 className="text-lg font-semibold">Tip Claim Reports</h2>

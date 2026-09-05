@@ -80,6 +80,10 @@ function validPercentageTargets(value: unknown): value is TipPoolPercentageTarge
   );
 }
 
+function hasAnyPositiveWeight(weights: TipClaimWeightState) {
+  return TIP_CLAIM_ROLE_ORDER.some((role) => weights[role] > 0);
+}
+
 function loadDraft(organizationId: string): TipPoolDraft | null {
   try {
     const raw = window.localStorage.getItem(storageKey(organizationId));
@@ -219,12 +223,18 @@ export function useTipPoolDraft({
       return;
     }
 
+    const reconciledAssignments = reconcileAssignments(draft.assignments, members);
+    const restoredMode =
+      draft.allocationMode === "percentages" ? "percentages" : "weights";
+    const restoredWeights =
+      restoredMode === "weights" && !hasAnyPositiveWeight(draft.weights)
+        ? { ...DEFAULT_TIP_CLAIM_WEIGHTS }
+        : draft.weights;
+
     setTotalTips(draft.totalTips);
-    setAssignments(reconcileAssignments(draft.assignments, members));
-    setWeights(draft.weights);
-    setAllocationMode(
-      draft.allocationMode === "percentages" ? "percentages" : "weights",
-    );
+    setAssignments(reconciledAssignments);
+    setWeights(restoredWeights);
+    setAllocationMode(restoredMode);
     setPercentageTargets(
       validPercentageTargets(draft.percentageTargets)
         ? draft.percentageTargets

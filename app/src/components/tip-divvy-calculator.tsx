@@ -207,7 +207,7 @@ export function TipDivvyCalculator({
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 p-4 md:p-6 lg:p-8">
       <div className="flex flex-col gap-2">
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="font-heading text-3xl font-semibold tracking-tight">Tip Divvy</h1>
+          <h1 className="font-heading text-3xl font-semibold tracking-tight">Tip Pool Calculator</h1>
           <Badge variant="secondary">Weighted roles</Badge>
         </div>
         <p className="max-w-3xl text-sm text-muted-foreground md:text-base">

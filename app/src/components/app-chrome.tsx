@@ -108,7 +108,8 @@ export function AppChrome({ children }: { children: ReactNode }) {
   const avatarLabel = getInitials(displayName);
   const consoleBaseURL = authBaseURL.replace(/\/$/, "");
   const sidebarDefaultOpen = getSidebarDefaultOpen();
-  const appTitle = location.pathname === "/tips" ? "Tip Divvy" : "Tip Claim Calculator";
+  const appTitle =
+    location.pathname === "/tips" ? "Tip Pool Calculator" : "Tip Claim Calculator";
 
   return (
     <TooltipProvider>

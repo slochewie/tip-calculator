@@ -8,12 +8,18 @@ import {
 } from "react";
 
 import type { TipClaimMember } from "#/components/tip-claim-calculator.tsx";
+import type { TipPoolAllocationMode } from "#/components/tip-pool-allocation-settings.tsx";
 import {
   DEFAULT_TIP_CLAIM_WEIGHTS,
   TIP_CLAIM_ROLE_ORDER,
   type TipClaimRoleKey,
   type TipClaimWeightState,
 } from "#/lib/tip-claim-allocation.ts";
+import {
+  DEFAULT_TIP_POOL_PERCENTAGES,
+  getTipPoolActualPercentages,
+  type TipPoolPercentageTargets,
+} from "#/lib/tip-pool-percentage-allocation.ts";
 import type { TipPoolShiftReport } from "#/lib/tip-pool.ts";
 
 export type TipPoolStaffAssignment = {
@@ -28,6 +34,8 @@ type TipPoolDraft = {
   totalTips: string;
   assignments: TipPoolStaffAssignment[];
   weights: TipClaimWeightState;
+  allocationMode?: TipPoolAllocationMode;
+  percentageTargets?: TipPoolPercentageTargets;
   editingShiftId?: string | null;
   editingCompletedAt?: string | null;
 };
@@ -42,6 +50,10 @@ type UseTipPoolDraftOptions = {
   setAssignments: Dispatch<SetStateAction<TipPoolStaffAssignment[]>>;
   weights: TipClaimWeightState;
   setWeights: Dispatch<SetStateAction<TipClaimWeightState>>;
+  allocationMode: TipPoolAllocationMode;
+  setAllocationMode: Dispatch<SetStateAction<TipPoolAllocationMode>>;
+  percentageTargets: TipPoolPercentageTargets;
+  setPercentageTargets: Dispatch<SetStateAction<TipPoolPercentageTargets>>;
   editingShiftId: string | null;
   setEditingShiftId: Dispatch<SetStateAction<string | null>>;
   editingCompletedAt: string | null;
@@ -56,6 +68,16 @@ function storageKey(organizationId: string) {
 
 function isRoleEnabled(member: TipClaimMember, role: TipClaimRoleKey) {
   return member[`${role}Enabled` as keyof TipClaimMember] === true;
+}
+
+function validPercentageTargets(value: unknown): value is TipPoolPercentageTargets {
+  if (!value || typeof value !== "object") return false;
+  const targets = value as Partial<TipPoolPercentageTargets>;
+
+  return TIP_CLAIM_ROLE_ORDER.every(
+    (role) =>
+      typeof targets[role] === "number" && Number.isFinite(targets[role]),
+  );
 }
 
 function loadDraft(organizationId: string): TipPoolDraft | null {
@@ -119,6 +141,13 @@ export function saveTipPoolCorrectionDraft(shift: TipPoolShiftReport) {
     barback: shift.barbackWeightTenths / 10,
     door: shift.doorWeightTenths / 10,
   };
+  const staff = shift.staff.reduce(
+    (counts, staffMember) => ({
+      ...counts,
+      [staffMember.role]: counts[staffMember.role] + 1,
+    }),
+    { bartender: 0, manager: 0, barback: 0, door: 0 },
+  );
   const updatedAt = new Date().toISOString();
   const draft: TipPoolDraft = {
     version: DRAFT_VERSION,
@@ -130,6 +159,8 @@ export function saveTipPoolCorrectionDraft(shift: TipPoolShiftReport) {
       role: staffMember.role,
     })),
     weights,
+    allocationMode: "weights",
+    percentageTargets: getTipPoolActualPercentages(staff, weights),
     editingShiftId: shift.id,
     editingCompletedAt: shift.completedAt,
   };
@@ -147,6 +178,10 @@ export function useTipPoolDraft({
   setAssignments,
   weights,
   setWeights,
+  allocationMode,
+  setAllocationMode,
+  percentageTargets,
+  setPercentageTargets,
   editingShiftId,
   setEditingShiftId,
   editingCompletedAt,
@@ -175,6 +210,8 @@ export function useTipPoolDraft({
       setTotalTips("");
       setAssignments([]);
       setWeights({ ...DEFAULT_TIP_CLAIM_WEIGHTS });
+      setAllocationMode("weights");
+      setPercentageTargets({ ...DEFAULT_TIP_POOL_PERCENTAGES });
       setEditingShiftId(null);
       setEditingCompletedAt(null);
       setDraftStatus(null);
@@ -185,6 +222,14 @@ export function useTipPoolDraft({
     setTotalTips(draft.totalTips);
     setAssignments(reconcileAssignments(draft.assignments, members));
     setWeights(draft.weights);
+    setAllocationMode(
+      draft.allocationMode === "percentages" ? "percentages" : "weights",
+    );
+    setPercentageTargets(
+      validPercentageTargets(draft.percentageTargets)
+        ? draft.percentageTargets
+        : { ...DEFAULT_TIP_POOL_PERCENTAGES },
+    );
     setEditingShiftId(draft.editingShiftId ?? null);
     setEditingCompletedAt(draft.editingCompletedAt ?? null);
     setDraftStatus("saved");
@@ -193,9 +238,11 @@ export function useTipPoolDraft({
     members,
     membersPending,
     organizationId,
+    setAllocationMode,
     setAssignments,
     setEditingCompletedAt,
     setEditingShiftId,
+    setPercentageTargets,
     setTotalTips,
     setWeights,
   ]);
@@ -223,6 +270,8 @@ export function useTipPoolDraft({
         totalTips,
         assignments,
         weights,
+        allocationMode,
+        percentageTargets,
         editingShiftId,
         editingCompletedAt,
       };
@@ -239,11 +288,13 @@ export function useTipPoolDraft({
       }
     };
   }, [
+    allocationMode,
     assignments,
     editingCompletedAt,
     editingShiftId,
     membersPending,
     organizationId,
+    percentageTargets,
     totalTips,
     weights,
   ]);
@@ -261,15 +312,19 @@ export function useTipPoolDraft({
     setTotalTips("");
     setAssignments([]);
     setWeights({ ...DEFAULT_TIP_CLAIM_WEIGHTS });
+    setAllocationMode("weights");
+    setPercentageTargets({ ...DEFAULT_TIP_POOL_PERCENTAGES });
     setEditingShiftId(null);
     setEditingCompletedAt(null);
     setDraftStatus(null);
     setDraftUpdatedAt(null);
   }, [
     organizationId,
+    setAllocationMode,
     setAssignments,
     setEditingCompletedAt,
     setEditingShiftId,
+    setPercentageTargets,
     setTotalTips,
     setWeights,
   ]);

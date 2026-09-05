@@ -2,6 +2,7 @@ import type {
 	TipClaimRoleState,
 	TipClaimWeightState,
 } from "#/lib/tip-claim-allocation.ts";
+import type { TipClaimShiftReport } from "#/lib/tip-claim.ts";
 
 export type TipClaimDraftRegister = {
 	id: number;
@@ -24,6 +25,8 @@ export type TipClaimDraft = {
 	staff: TipClaimRoleState;
 	memberAssignments: TipClaimDraftStaffAssignment[];
 	weights: TipClaimWeightState;
+	editingShiftId?: string | null;
+	editingCompletedAt?: string | null;
 };
 
 const DRAFT_KEY_PREFIX = "niteowl:tip-claim:draft:v1:";
@@ -70,6 +73,64 @@ export function saveTipClaimDraft(
 	};
 
 	window.localStorage.setItem(draftKey(organizationId), JSON.stringify(stored));
+}
+
+export function saveTipClaimCorrectionDraft(shift: TipClaimShiftReport) {
+	const usedIds = new Set<number>();
+	const registerIds = new Map<string, number>();
+	let nextFallbackId = 1;
+
+	const registers = shift.registers.map((register) => {
+		const parsedId = Number.parseInt(register.registerKey, 10);
+		let id =
+			Number.isSafeInteger(parsedId) && parsedId > 0 && !usedIds.has(parsedId)
+				? parsedId
+				: nextFallbackId;
+
+		while (usedIds.has(id)) id += 1;
+		usedIds.add(id);
+		nextFallbackId = Math.max(nextFallbackId, id + 1);
+		registerIds.set(register.registerKey, id);
+
+		return {
+			id,
+			name: register.name,
+			sales: (register.salesCents / 100).toFixed(2),
+		};
+	});
+
+	const memberAssignments = shift.staff.map((staffMember) => ({
+		userId: staffMember.userId,
+		role: staffMember.role,
+		registerId:
+			staffMember.registerKey == null
+				? null
+				: (registerIds.get(staffMember.registerKey) ?? null),
+	}));
+
+	const staff = memberAssignments.reduce<TipClaimRoleState>(
+		(counts, assignment) => ({
+			...counts,
+			[assignment.role]: counts[assignment.role] + 1,
+		}),
+		{ bartender: 0, manager: 0, barback: 0, door: 0 },
+	);
+
+	saveTipClaimDraft(shift.organizationId, {
+		claimPercent: String(shift.claimPercent),
+		nextRegisterId: Math.max(1, ...registers.map((register) => register.id + 1)),
+		registers,
+		staff,
+		memberAssignments,
+		weights: {
+			bartender: shift.bartenderWeight,
+			manager: shift.managerWeight,
+			barback: shift.barbackWeight,
+			door: shift.doorWeight,
+		},
+		editingShiftId: shift.id,
+		editingCompletedAt: shift.completedAt,
+	});
 }
 
 export function clearTipClaimDraft(organizationId: string) {

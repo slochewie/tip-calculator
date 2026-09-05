@@ -68,7 +68,10 @@ import {
 	buildTipClaimShiftAllocation,
 	type TipClaimResolvedStaff,
 } from "#/lib/tip-claim-shift.ts";
-import { saveTipClaimShift } from "#/lib/tip-claim.ts";
+import {
+	correctTipClaimShift,
+	saveTipClaimShift,
+} from "#/lib/tip-claim.ts";
 import { useTipClaimDraft } from "#/lib/use-tip-claim-draft.ts";
 
 type Register = {
@@ -161,6 +164,8 @@ export function TipClaimCalculator({
 	const [saveError, setSaveError] = useState<string | null>(null);
 	const [savedShiftId, setSavedShiftId] = useState<string | null>(null);
 	const [previewOpen, setPreviewOpen] = useState(false);
+	const [editingShiftId, setEditingShiftId] = useState<string | null>(null);
+	const [editingCompletedAt, setEditingCompletedAt] = useState<string | null>(null);
 
 	const { draftStatus, draftUpdatedAt, clearDraft, resetDraft } = useTipClaimDraft({
 		organizationId,
@@ -178,6 +183,10 @@ export function TipClaimCalculator({
 		setMemberAssignments,
 		weights,
 		setWeights,
+		editingShiftId,
+		setEditingShiftId,
+		editingCompletedAt,
+		setEditingCompletedAt,
 	});
 
 	const usesOrganizationMembers = members !== undefined;
@@ -525,21 +534,27 @@ export function TipClaimCalculator({
 		setSaveError(null);
 
 		try {
-			const result = await saveTipClaimShift({
+			const payload = {
 				organizationId,
 				claimPercent: normalizedPercent,
 				totalSalesCents,
 				requiredClaimCents,
 				totalWeightUnits: saveTotalWeight,
 				weights: saveWeights,
-				completedAt: new Date(),
+				completedAt: editingCompletedAt
+					? new Date(editingCompletedAt)
+					: new Date(),
 				registers: registers.map((register) => ({
 					registerKey: register.id.toString(),
 					name: register.name.trim(),
 					salesCents: Math.round(parseMoney(register.sales) * 100),
 				})),
 				staff: savedStaff,
-			});
+			};
+
+			const result = editingShiftId
+				? await correctTipClaimShift(editingShiftId, payload)
+				: await saveTipClaimShift(payload);
 
 			setPreviewOpen(false);
 			clearDraft();
@@ -1097,6 +1112,7 @@ export function TipClaimCalculator({
 							savePending={savePending}
 							savedShiftId={savedShiftId}
 							saveError={saveError}
+							editingShiftId={editingShiftId}
 							draftStatus={draftStatus}
 							draftUpdatedAt={draftUpdatedAt}
 							resetDisabled={!organizationId}

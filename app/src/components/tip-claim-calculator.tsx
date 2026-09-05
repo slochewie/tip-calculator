@@ -162,7 +162,7 @@ export function TipClaimCalculator({
 	const [savedShiftId, setSavedShiftId] = useState<string | null>(null);
 	const [previewOpen, setPreviewOpen] = useState(false);
 
-	const { draftStatus, draftUpdatedAt, clearDraft } = useTipClaimDraft({
+	const { draftStatus, draftUpdatedAt, clearDraft, resetDraft } = useTipClaimDraft({
 		organizationId,
 		members,
 		membersPending,
@@ -562,6 +562,13 @@ export function TipClaimCalculator({
 
 		setSaveError(null);
 		setPreviewOpen(true);
+	}
+
+	function resetCalculator() {
+		setPreviewOpen(false);
+		setSaveError(null);
+		setSavedShiftId(null);
+		resetDraft();
 	}
 
 	const previewStaff = memberAssignments.flatMap((assignment) => {
@@ -1092,8 +1099,10 @@ export function TipClaimCalculator({
 							saveError={saveError}
 							draftStatus={draftStatus}
 							draftUpdatedAt={draftUpdatedAt}
+							resetDisabled={!organizationId}
 							onSave={() => void saveEndOfShift()}
 							onPreview={openReportPreview}
+							onReset={resetCalculator}
 						/>
 					) : null}
 				</div>

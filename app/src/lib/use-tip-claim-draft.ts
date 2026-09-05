@@ -45,6 +45,10 @@ type UseTipClaimDraftOptions = {
 	setMemberAssignments: Dispatch<SetStateAction<TipClaimDraftStaffAssignment[]>>;
 	weights: TipClaimWeightState;
 	setWeights: Dispatch<SetStateAction<TipClaimWeightState>>;
+	editingShiftId: string | null;
+	setEditingShiftId: Dispatch<SetStateAction<string | null>>;
+	editingCompletedAt: string | null;
+	setEditingCompletedAt: Dispatch<SetStateAction<string | null>>;
 };
 
 const DEFAULT_STAFF: TipClaimRoleState = {
@@ -110,6 +114,10 @@ export function useTipClaimDraft({
 	setMemberAssignments,
 	weights,
 	setWeights,
+	editingShiftId,
+	setEditingShiftId,
+	editingCompletedAt,
+	setEditingCompletedAt,
 }: UseTipClaimDraftOptions) {
 	const hydratedOrganizationRef = useRef<string | null>(null);
 	const skipNextAutosaveRef = useRef(false);
@@ -137,6 +145,8 @@ export function useTipClaimDraft({
 			setStaff({ ...DEFAULT_STAFF });
 			setMemberAssignments([]);
 			setWeights({ ...DEFAULT_TIP_CLAIM_WEIGHTS });
+			setEditingShiftId(null);
+			setEditingCompletedAt(null);
 			setDraftStatus(null);
 			setDraftUpdatedAt(null);
 			return;
@@ -160,6 +170,8 @@ export function useTipClaimDraft({
 			reconcileAssignments(draft.memberAssignments, members, restoredRegisters),
 		);
 		setWeights(draft.weights);
+		setEditingShiftId(draft.editingShiftId ?? null);
+		setEditingCompletedAt(draft.editingCompletedAt ?? null);
 		setDraftStatus("saved");
 		setDraftUpdatedAt(draft.updatedAt);
 	}, [
@@ -167,6 +179,8 @@ export function useTipClaimDraft({
 		membersPending,
 		organizationId,
 		setClaimPercent,
+		setEditingCompletedAt,
+		setEditingShiftId,
 		setMemberAssignments,
 		setNextRegisterId,
 		setRegisters,
@@ -197,6 +211,8 @@ export function useTipClaimDraft({
 				staff,
 				memberAssignments,
 				weights,
+				editingShiftId,
+				editingCompletedAt,
 			});
 			autosaveTimeoutRef.current = null;
 			setDraftStatus("saved");
@@ -211,6 +227,8 @@ export function useTipClaimDraft({
 		};
 	}, [
 		claimPercent,
+		editingCompletedAt,
+		editingShiftId,
 		memberAssignments,
 		members,
 		membersPending,
@@ -247,11 +265,15 @@ export function useTipClaimDraft({
 		setStaff({ ...DEFAULT_STAFF });
 		setMemberAssignments([]);
 		setWeights({ ...DEFAULT_TIP_CLAIM_WEIGHTS });
+		setEditingShiftId(null);
+		setEditingCompletedAt(null);
 		setDraftStatus(null);
 		setDraftUpdatedAt(null);
 	}, [
 		organizationId,
 		setClaimPercent,
+		setEditingCompletedAt,
+		setEditingShiftId,
 		setMemberAssignments,
 		setNextRegisterId,
 		setRegisters,

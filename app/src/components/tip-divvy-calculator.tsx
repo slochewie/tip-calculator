@@ -298,6 +298,12 @@ export function TipDivvyCalculator({
     );
   }
 
+  function handleCancelCorrection() {
+    setSaveError(null);
+    setSaveMessage(null);
+    resetDraft();
+  }
+
   async function handleSaveReport() {
     if (!organizationId || !canSaveReport || savingReport) return;
 
@@ -612,19 +618,33 @@ export function TipDivvyCalculator({
                 <p className="text-sm text-muted-foreground">{saveMessage}</p>
               ) : null}
 
-              <Button
-                type="button"
-                className="w-full"
-                disabled={!canSaveReport || savingReport}
-                onClick={() => void handleSaveReport()}
-              >
-                <SaveIcon data-icon="inline-start" />
-                {savingReport
-                  ? "Saving…"
-                  : editingShiftId
-                    ? "Save correction"
-                    : "Save report"}
-              </Button>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                {editingShiftId ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    disabled={savingReport}
+                    onClick={handleCancelCorrection}
+                  >
+                    Cancel correction
+                  </Button>
+                ) : null}
+
+                <Button
+                  type="button"
+                  className="w-full"
+                  disabled={!canSaveReport || savingReport}
+                  onClick={() => void handleSaveReport()}
+                >
+                  <SaveIcon data-icon="inline-start" />
+                  {savingReport
+                    ? "Saving…"
+                    : editingShiftId
+                      ? "Save correction"
+                      : "Save report"}
+                </Button>
+              </div>
             </CardContent>
           </Card>
 

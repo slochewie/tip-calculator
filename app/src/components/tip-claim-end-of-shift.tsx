@@ -32,6 +32,7 @@ type TipClaimEndOfShiftProps = {
 	savePending: boolean;
 	savedShiftId: string | null;
 	saveError: string | null;
+	editingShiftId?: string | null;
 	draftStatus?: "saving" | "saved" | null;
 	draftUpdatedAt?: string | null;
 	onSave: () => void;
@@ -46,6 +47,7 @@ export function TipClaimEndOfShift({
 	savePending,
 	savedShiftId,
 	saveError,
+	editingShiftId = null,
 	draftStatus = null,
 	draftUpdatedAt = null,
 	onSave,
@@ -53,6 +55,7 @@ export function TipClaimEndOfShift({
 	onReset,
 }: TipClaimEndOfShiftProps) {
 	const saved = Boolean(savedShiftId);
+	const correcting = Boolean(editingShiftId);
 	const draftTime = draftUpdatedAt
 		? new Date(draftUpdatedAt).toLocaleTimeString([], {
 				hour: "numeric",
@@ -63,10 +66,11 @@ export function TipClaimEndOfShift({
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>End of shift</CardTitle>
+				<CardTitle>{correcting ? "Correct saved report" : "End of shift"}</CardTitle>
 				<CardDescription>
-					Save immediately with the current role weights, or preview the report
-					to review and tune the allocation first.
+					{correcting
+						? "Review the reopened shift, make the correction, then update the existing saved report."
+						: "Save immediately with the current role weights, or preview the report to review and tune the allocation first."}
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="gap-3">
@@ -84,8 +88,12 @@ export function TipClaimEndOfShift({
 						{savePending
 							? "Saving…"
 							: savedShiftId
-								? "End of Shift Sales Saved"
-								: "Save End of Shift Sales"}
+								? correcting
+									? "Report Correction Saved"
+									: "End of Shift Sales Saved"
+								: correcting
+									? "Save Report Correction"
+									: "Save End of Shift Sales"}
 					</Button>
 
 					<Button
@@ -115,8 +123,9 @@ export function TipClaimEndOfShift({
 						<AlertDialogHeader>
 							<AlertDialogTitle>Reset calculator?</AlertDialogTitle>
 							<AlertDialogDescription>
-								This permanently deletes the saved draft for this organization and
-								clears the current calculator. No report will be saved.
+								{correcting
+									? "This discards the reopened report draft and clears the calculator. The existing saved report will not be changed."
+									: "This permanently deletes the saved draft for this organization and clears the current calculator. No report will be saved."}
 							</AlertDialogDescription>
 						</AlertDialogHeader>
 						<AlertDialogFooter>
@@ -134,7 +143,9 @@ export function TipClaimEndOfShift({
 
 				{savedShiftId ? (
 					<p className="text-sm text-muted-foreground">
-						Shift saved successfully. Editing any shift value will enable a new save.
+						{correcting
+							? "Report correction saved successfully."
+							: "Shift saved successfully. Editing any shift value will enable a new save."}
 					</p>
 				) : draftStatus ? (
 					<p className="text-xs text-muted-foreground">

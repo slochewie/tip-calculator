@@ -664,11 +664,11 @@ export function TipDivvyCalculator({
                 <p className="text-sm text-muted-foreground">{saveMessage}</p>
               ) : null}
 
-              <div className="flex flex-col gap-2 sm:flex-row">
+              <div className="grid gap-2 sm:grid-cols-2">
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full"
+                  className="w-full min-w-0"
                   disabled={!canSaveReport || savingReport}
                   onClick={() => setPreviewOpen(true)}
                 >
@@ -679,7 +679,7 @@ export function TipDivvyCalculator({
                   <Button
                     type="button"
                     variant="outline"
-                    className="w-full"
+                    className="w-full min-w-0"
                     disabled={savingReport}
                     onClick={handleCancelCorrection}
                   >
@@ -689,7 +689,7 @@ export function TipDivvyCalculator({
 
                 <Button
                   type="button"
-                  className="w-full"
+                  className={`w-full min-w-0 ${editingShiftId ? "sm:col-span-2" : ""}`}
                   disabled={!canSaveReport || savingReport}
                   onClick={() => void handleSaveReport()}
                 >

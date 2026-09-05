@@ -2,6 +2,12 @@ import { useMemo, useState, type ReactNode } from "react";
 import { PlusIcon, RotateCcwIcon, Trash2Icon } from "lucide-react";
 
 import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "#/components/ui/accordion.tsx";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -24,6 +30,7 @@ import {
 import {
   Field,
   FieldDescription,
+  FieldGroup,
   FieldLabel,
 } from "#/components/ui/field.tsx";
 import {
@@ -134,8 +141,12 @@ export function TipDivvyCalculator({
     setWeights,
   });
 
-  const eligibleMembers = members.filter((member) => enabledRoles(member).length > 0);
-  const assignedUserIds = new Set(assignments.map((assignment) => assignment.userId));
+  const eligibleMembers = members.filter(
+    (member) => enabledRoles(member).length > 0,
+  );
+  const assignedUserIds = new Set(
+    assignments.map((assignment) => assignment.userId),
+  );
   const unassignedMembers = eligibleMembers.filter(
     (member) => !assignedUserIds.has(member.id),
   );
@@ -174,7 +185,9 @@ export function TipDivvyCalculator({
           candidate.role === assignment.role &&
           candidate.person === roleIndexes[assignment.role],
       );
-      const member = members.find((candidate) => candidate.id === assignment.userId);
+      const member = members.find(
+        (candidate) => candidate.id === assignment.userId,
+      );
 
       return {
         ...assignment,
@@ -185,13 +198,28 @@ export function TipDivvyCalculator({
   }, [allocations, assignments, members]);
 
   const roleBreakdown = TIP_CLAIM_ROLE_ORDER.map((role) => {
-    const roleEmployees = employeeAllocations.filter((employee) => employee.role === role);
+    const roleEmployees = employeeAllocations.filter(
+      (employee) => employee.role === role,
+    );
+    const amounts = roleEmployees.map((employee) => employee.cents);
+
     return {
       role,
       count: roleEmployees.length,
-      totalCents: roleEmployees.reduce((sum, employee) => sum + employee.cents, 0),
+      weight: weights[role],
+      totalCents: roleEmployees.reduce(
+        (sum, employee) => sum + employee.cents,
+        0,
+      ),
+      minimum: amounts.length ? Math.min(...amounts) : 0,
+      maximum: amounts.length ? Math.max(...amounts) : 0,
     };
   });
+
+  const allocatedCents = employeeAllocations.reduce(
+    (sum, employee) => sum + employee.cents,
+    0,
+  );
 
   const draftTime = draftUpdatedAt
     ? new Date(draftUpdatedAt).toLocaleTimeString([], {
@@ -210,7 +238,10 @@ export function TipDivvyCalculator({
     setAssignments((current) => [...current, { userId: member.id, role }]);
   }
 
-  function updateAssignment(index: number, changes: Partial<TipPoolStaffAssignment>) {
+  function updateAssignment(
+    index: number,
+    changes: Partial<TipPoolStaffAssignment>,
+  ) {
     setAssignments((current) => {
       const assignment = current[index];
       if (!assignment) return current;
@@ -233,7 +264,9 @@ export function TipDivvyCalculator({
   }
 
   function removeAssignment(index: number) {
-    setAssignments((current) => current.filter((_, itemIndex) => itemIndex !== index));
+    setAssignments((current) =>
+      current.filter((_, itemIndex) => itemIndex !== index),
+    );
   }
 
   function updateWeight(role: TipClaimRoleKey, value: string) {
@@ -253,7 +286,8 @@ export function TipDivvyCalculator({
           <Badge variant="secondary">Weighted roles</Badge>
         </div>
         <p className="max-w-3xl text-sm text-muted-foreground md:text-base">
-          Split the full tip pool across on-duty staff using the same weighted role logic as the Tip Claim Calculator.
+          Split the full tip pool across on-duty staff using the same weighted
+          role logic as the Tip Claim Calculator.
         </p>
       </div>
 
@@ -265,7 +299,8 @@ export function TipDivvyCalculator({
             <CardHeader>
               <CardTitle>Total tips</CardTitle>
               <CardDescription>
-                Enter the complete tip pool to distribute{organizationName ? ` for ${organizationName}` : ""}.
+                Enter the complete tip pool to distribute
+                {organizationName ? ` for ${organizationName}` : ""}.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -286,7 +321,9 @@ export function TipDivvyCalculator({
                     onChange={(event) => setTotalTips(event.target.value)}
                   />
                 </InputGroup>
-                <FieldDescription>The entire amount entered here will be allocated.</FieldDescription>
+                <FieldDescription>
+                  The entire amount entered here will be allocated.
+                </FieldDescription>
               </Field>
             </CardContent>
           </Card>
@@ -295,80 +332,132 @@ export function TipDivvyCalculator({
             <CardHeader>
               <CardTitle>On-duty staff</CardTitle>
               <CardDescription>
-                Add each employee sharing the tip pool and choose the role they worked.
+                Add each employee sharing the tip pool and choose the role they
+                worked.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
-              {membersError ? <p className="text-sm text-destructive">{membersError}</p> : null}
-              {assignments.map((assignment, index) => {
-                const member = members.find((candidate) => candidate.id === assignment.userId);
-                const availableMembers = eligibleMembers.filter(
-                  (candidate) =>
-                    candidate.id === assignment.userId || !assignedUserIds.has(candidate.id),
-                );
+              {membersError ? (
+                <p className="text-sm text-destructive">{membersError}</p>
+              ) : null}
 
-                return (
-                  <div
-                    key={`${assignment.userId}-${index}`}
-                    className="grid gap-2 rounded-lg border p-3 sm:grid-cols-[minmax(0,1fr)_180px_auto]"
-                  >
-                    <Select
-                      value={assignment.userId}
-                      onValueChange={(userId) => updateAssignment(index, { userId })}
+              <div className="flex flex-col gap-2">
+                {assignments.map((assignment, index) => {
+                  const member = members.find(
+                    (candidate) => candidate.id === assignment.userId,
+                  );
+                  const availableMembers = eligibleMembers.filter(
+                    (candidate) =>
+                      candidate.id === assignment.userId ||
+                      !assignedUserIds.has(candidate.id),
+                  );
+                  const availableRoles = member ? enabledRoles(member) : [];
+
+                  return (
+                    <div
+                      key={`${assignment.userId}-${index}`}
+                      className="grid min-w-0 gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(140px,0.45fr)_auto]"
                     >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select employee" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableMembers.map((candidate) => (
-                          <SelectItem key={candidate.id} value={candidate.id}>
-                            {candidate.name || candidate.email}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      <Select
+                        value={assignment.userId}
+                        onValueChange={(userId) =>
+                          updateAssignment(index, { userId })
+                        }
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select member" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableMembers.map((candidate) => (
+                            <SelectItem key={candidate.id} value={candidate.id}>
+                              {candidate.name || candidate.email}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
 
-                    <Select
-                      value={assignment.role}
-                      onValueChange={(role) =>
-                        updateAssignment(index, { role: role as TipClaimRoleKey })
-                      }
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {(member ? enabledRoles(member) : []).map((role) => (
-                          <SelectItem key={role} value={role}>
-                            {TIP_CLAIM_ROLE_LABELS[role]}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      <Select
+                        value={assignment.role}
+                        onValueChange={(role) =>
+                          updateAssignment(index, {
+                            role: role as TipClaimRoleKey,
+                          })
+                        }
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableRoles.map((role) => (
+                            <SelectItem key={role} value={role}>
+                              {TIP_CLAIM_ROLE_LABELS[role]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
 
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeAssignment(index)}
-                      aria-label="Remove employee"
-                    >
-                      <Trash2Icon />
-                    </Button>
-                  </div>
-                );
-              })}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeAssignment(index)}
+                        aria-label="Remove staff member"
+                      >
+                        <Trash2Icon />
+                      </Button>
+                    </div>
+                  );
+                })}
 
-              <Button
-                type="button"
-                variant="outline"
-                className="self-start"
-                disabled={membersPending || unassignedMembers.length === 0}
-                onClick={addMember}
-              >
-                <PlusIcon data-icon="inline-start" />
-                Add employee
-              </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="self-start"
+                  disabled={membersPending || unassignedMembers.length === 0}
+                  onClick={addMember}
+                >
+                  <PlusIcon data-icon="inline-start" />
+                  Add staff member
+                </Button>
+              </div>
+
+              <Accordion type="single" collapsible className="mt-3">
+                <AccordionItem value="weights">
+                  <AccordionTrigger>Allocation settings</AccordionTrigger>
+                  <AccordionContent className="flex flex-col gap-4">
+                    <p className="text-muted-foreground">
+                      Higher weights receive a larger share. Defaults are
+                      Bartender 5, Manager 5, Barback 3, Door 1.
+                    </p>
+                    <FieldGroup>
+                      {TIP_CLAIM_ROLE_ORDER.map((role) => (
+                        <Field key={role} orientation="responsive">
+                          <FieldLabel htmlFor={`pool-weight-${role}`}>
+                            {TIP_CLAIM_ROLE_LABELS[role]} weight
+                          </FieldLabel>
+                          <InputGroup className="sm:max-w-32">
+                            <InputGroupInput
+                              id={`pool-weight-${role}`}
+                              type="number"
+                              inputMode="decimal"
+                              min="0"
+                              max="10"
+                              step="0.1"
+                              value={weights[role]}
+                              onChange={(event) =>
+                                updateWeight(role, event.target.value)
+                              }
+                            />
+                            <InputGroupAddon align="inline-end">
+                              <InputGroupText>×</InputGroupText>
+                            </InputGroupAddon>
+                          </InputGroup>
+                        </Field>
+                      ))}
+                    </FieldGroup>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
             </CardContent>
           </Card>
 
@@ -376,7 +465,8 @@ export function TipDivvyCalculator({
             <CardHeader>
               <CardTitle>Draft</CardTitle>
               <CardDescription>
-                Your current tip pool is stored locally for this organization while you work.
+                Your current tip pool is stored locally for this organization
+                while you work.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
@@ -389,7 +479,9 @@ export function TipDivvyCalculator({
                       : "Draft saved"}
                 </p>
               ) : (
-                <p className="text-xs text-muted-foreground">No saved draft yet.</p>
+                <p className="text-xs text-muted-foreground">
+                  No saved draft yet.
+                </p>
               )}
 
               <AlertDialog>
@@ -406,14 +498,20 @@ export function TipDivvyCalculator({
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Reset Tip Pool Calculator?</AlertDialogTitle>
+                    <AlertDialogTitle>
+                      Reset Tip Pool Calculator?
+                    </AlertDialogTitle>
                     <AlertDialogDescription>
-                      This deletes the locally saved tip pool draft for this organization and clears the current calculator.
+                      This deletes the locally saved tip pool draft for this
+                      organization and clears the current calculator.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction variant="destructive" onClick={resetDraft}>
+                    <AlertDialogAction
+                      variant="destructive"
+                      onClick={resetDraft}
+                    >
                       Reset calculator
                     </AlertDialogAction>
                   </AlertDialogFooter>
@@ -423,7 +521,7 @@ export function TipDivvyCalculator({
           </Card>
         </div>
 
-        <div className="flex min-w-0 flex-col gap-5">
+        <div className="flex min-w-0 flex-col gap-5 lg:sticky lg:top-6 lg:self-start">
           <Card>
             <CardHeader>
               <CardTitle>Tip pool</CardTitle>
@@ -432,58 +530,27 @@ export function TipDivvyCalculator({
               </CardDescription>
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Total tips</p>
-                <p className="text-2xl font-semibold tabular-nums">
+              <div className="flex flex-col gap-1">
+                <span className="text-sm text-muted-foreground">Total tips</span>
+                <span className="text-2xl font-semibold tabular-nums">
                   {currency.format(totalTipsCents / 100)}
-                </p>
+                </span>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Allocated</p>
-                <p className="text-2xl font-semibold tabular-nums">
-                  {currency.format(
-                    employeeAllocations.reduce((sum, employee) => sum + employee.cents, 0) / 100,
-                  )}
-                </p>
+              <div className="flex flex-col gap-1">
+                <span className="text-sm text-muted-foreground">Allocated</span>
+                <span className="text-2xl font-semibold tabular-nums">
+                  {currency.format(allocatedCents / 100)}
+                </span>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Role weights</CardTitle>
-              <CardDescription>Adjust each role from 0 to 10 weight units.</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-3 sm:grid-cols-2">
-              {TIP_CLAIM_ROLE_ORDER.map((role) => (
-                <Field key={role}>
-                  <FieldLabel htmlFor={`divvy-weight-${role}`}>
-                    {TIP_CLAIM_ROLE_LABELS[role]}
-                  </FieldLabel>
-                  <InputGroup>
-                    <InputGroupInput
-                      id={`divvy-weight-${role}`}
-                      type="number"
-                      inputMode="decimal"
-                      min="0"
-                      max="10"
-                      step="0.1"
-                      value={weights[role]}
-                      onChange={(event) => updateWeight(role, event.target.value)}
-                    />
-                    <InputGroupAddon align="inline-end">
-                      <InputGroupText>×</InputGroupText>
-                    </InputGroupAddon>
-                  </InputGroup>
-                </Field>
-              ))}
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
               <CardTitle>Role breakdown</CardTitle>
-              <CardDescription>Tip pool totals by active role.</CardDescription>
+              <CardDescription>
+                Amount each role receives based on active staff and weights.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
@@ -491,21 +558,43 @@ export function TipDivvyCalculator({
                   <TableRow>
                     <TableHead>Role</TableHead>
                     <TableHead className="text-right">Staff</TableHead>
+                    <TableHead className="text-right">Each</TableHead>
                     <TableHead className="text-right">Role total</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {roleBreakdown.map((row) => (
-                    <TableRow key={row.role}>
-                      <TableCell className="font-medium">
-                        {TIP_CLAIM_ROLE_LABELS[row.role]} ({weights[row.role]}×)
-                      </TableCell>
-                      <TableCell className="text-right">{row.count}</TableCell>
-                      <TableCell className="text-right font-medium tabular-nums">
-                        {currency.format(row.totalCents / 100)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {roleBreakdown.map((row) => {
+                    const each =
+                      row.count === 0
+                        ? "—"
+                        : row.minimum === row.maximum
+                          ? currency.format(row.minimum / 100)
+                          : `${currency.format(row.minimum / 100)}–${currency.format(
+                              row.maximum / 100,
+                            )}`;
+
+                    return (
+                      <TableRow key={row.role}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">
+                              {TIP_CLAIM_ROLE_LABELS[row.role]}
+                            </span>
+                            <Badge variant="outline">{row.weight}×</Badge>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {row.count}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {each}
+                        </TableCell>
+                        <TableCell className="text-right font-medium tabular-nums">
+                          {currency.format(row.totalCents / 100)}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </CardContent>
@@ -514,7 +603,9 @@ export function TipDivvyCalculator({
           <Card>
             <CardHeader>
               <CardTitle>Distribution</CardTitle>
-              <CardDescription>Exact share for each employee.</CardDescription>
+              <CardDescription>
+                Exact share for each employee in the tip pool.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
@@ -528,15 +619,22 @@ export function TipDivvyCalculator({
                 <TableBody>
                   {employeeAllocations.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={3} className="text-center text-muted-foreground">
+                      <TableCell
+                        colSpan={3}
+                        className="text-center text-muted-foreground"
+                      >
                         Add staff to calculate the split.
                       </TableCell>
                     </TableRow>
                   ) : (
                     employeeAllocations.map((employee) => (
                       <TableRow key={employee.userId}>
-                        <TableCell className="font-medium">{employee.name}</TableCell>
-                        <TableCell>{TIP_CLAIM_ROLE_LABELS[employee.role]}</TableCell>
+                        <TableCell className="font-medium">
+                          {employee.name}
+                        </TableCell>
+                        <TableCell>
+                          {TIP_CLAIM_ROLE_LABELS[employee.role]}
+                        </TableCell>
                         <TableCell className="text-right font-medium tabular-nums">
                           {currency.format(employee.cents / 100)}
                         </TableCell>

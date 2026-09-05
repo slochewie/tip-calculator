@@ -234,18 +234,22 @@ function Reports() {
       <div
         role="tablist"
         aria-label="Report type"
-        className="inline-flex w-fit items-center rounded-lg bg-muted p-1"
+        className="flex w-fit items-center gap-2"
       >
         <Button
           type="button"
           role="tab"
           aria-selected={activeTab === "claims"}
-          variant={activeTab === "claims" ? "secondary" : "ghost"}
+          variant={activeTab === "claims" ? "default" : "outline"}
           size="sm"
+          className={activeTab === "claims" ? "shadow-sm" : "opacity-65"}
           onClick={() => setActiveTab("claims")}
         >
           Claims
-          <Badge variant="secondary" className="ml-1">
+          <Badge
+            variant={activeTab === "claims" ? "secondary" : "outline"}
+            className="ml-1"
+          >
             {claimShifts.length}
           </Badge>
         </Button>
@@ -253,12 +257,16 @@ function Reports() {
           type="button"
           role="tab"
           aria-selected={activeTab === "tips"}
-          variant={activeTab === "tips" ? "secondary" : "ghost"}
+          variant={activeTab === "tips" ? "default" : "outline"}
           size="sm"
+          className={activeTab === "tips" ? "shadow-sm" : "opacity-65"}
           onClick={() => setActiveTab("tips")}
         >
           Tips
-          <Badge variant="secondary" className="ml-1">
+          <Badge
+            variant={activeTab === "tips" ? "secondary" : "outline"}
+            className="ml-1"
+          >
             {poolShifts.length}
           </Badge>
         </Button>
@@ -358,12 +366,7 @@ function Reports() {
                         {shift.canCorrect ? (
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                disabled={deletingKey !== null}
-                              >
+                              <Button type="button" variant="outline" size="sm" disabled={deletingKey !== null}>
                                 <PencilIcon data-icon="inline-start" />
                                 Correct report
                               </Button>
@@ -387,12 +390,7 @@ function Reports() {
 
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button
-                              type="button"
-                              variant="destructive"
-                              size="sm"
-                              disabled={deletingKey !== null}
-                            >
+                            <Button type="button" variant="destructive" size="sm" disabled={deletingKey !== null}>
                               <Trash2Icon data-icon="inline-start" />
                               {isDeleting ? "Deleting…" : "Delete report"}
                             </Button>
@@ -406,11 +404,7 @@ function Reports() {
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                variant="destructive"
-                                disabled={isDeleting}
-                                onClick={() => void handleDeletePool(shift)}
-                              >
+                              <AlertDialogAction variant="destructive" disabled={isDeleting} onClick={() => void handleDeletePool(shift)}>
                                 {isDeleting ? "Deleting…" : "Delete report"}
                               </AlertDialogAction>
                             </AlertDialogFooter>
@@ -423,24 +417,15 @@ function Reports() {
 
                 <CardContent>
                   <details className="group rounded-lg border">
-                    <summary className="cursor-pointer select-none px-4 py-3 font-medium">
-                      View report details
-                    </summary>
+                    <summary className="cursor-pointer select-none px-4 py-3 font-medium">View report details</summary>
                     <div className="space-y-2 border-t p-4">
                       {shift.staff.map((staffMember) => (
-                        <div
-                          key={staffMember.id}
-                          className="flex items-start justify-between gap-4 rounded-md bg-muted/40 px-3 py-2"
-                        >
+                        <div key={staffMember.id} className="flex items-start justify-between gap-4 rounded-md bg-muted/40 px-3 py-2">
                           <div className="min-w-0">
                             <p className="truncate font-medium">{staffMember.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {formatRole(staffMember.role)} · {staffMember.weightTenths / 10}× weight
-                            </p>
+                            <p className="text-xs text-muted-foreground">{formatRole(staffMember.role)} · {staffMember.weightTenths / 10}× weight</p>
                           </div>
-                          <span className="shrink-0 font-medium tabular-nums">
-                            {formatMoney(staffMember.shareCents)}
-                          </span>
+                          <span className="shrink-0 font-medium tabular-nums">{formatMoney(staffMember.shareCents)}</span>
                         </div>
                       ))}
                     </div>
@@ -456,15 +441,11 @@ function Reports() {
         <section className="space-y-3">
           <div>
             <h2 className="text-lg font-semibold">Tip Claim Reports</h2>
-            <p className="text-sm text-muted-foreground">
-              Saved end-of-shift sales and claim allocations.
-            </p>
+            <p className="text-sm text-muted-foreground">Saved end-of-shift sales and claim allocations.</p>
           </div>
 
           {claimShifts.map((shift) => {
-            const registerNames = new Map(
-              shift.registers.map((register) => [register.registerKey, register.name]),
-            );
+            const registerNames = new Map(shift.registers.map((register) => [register.registerKey, register.name]));
             const key = `claim:${shift.id}`;
             const isDeleting = deletingKey === key;
 
@@ -477,9 +458,7 @@ function Reports() {
                         <CardTitle>{formatDate(shift.completedAt)}</CardTitle>
                         <Badge variant="secondary">Tip Claim</Badge>
                       </div>
-                      <CardDescription>
-                        {shift.staff.length} staff · {shift.registers.length} {shift.registers.length === 1 ? "register" : "registers"}
-                      </CardDescription>
+                      <CardDescription>{shift.staff.length} staff · {shift.registers.length} {shift.registers.length === 1 ? "register" : "registers"}</CardDescription>
                     </div>
 
                     <div className="flex flex-col gap-3 sm:items-end">
@@ -487,21 +466,14 @@ function Reports() {
                         <span className="text-muted-foreground">Sales</span>
                         <span className="font-medium">{formatMoney(shift.totalSalesCents)}</span>
                         <span className="text-muted-foreground">Claim</span>
-                        <span className="font-medium">
-                          {formatMoney(shift.requiredClaimCents)} ({shift.claimPercent}%)
-                        </span>
+                        <span className="font-medium">{formatMoney(shift.requiredClaimCents)} ({shift.claimPercent}%)</span>
                       </div>
 
                       <div className="flex flex-wrap gap-2 sm:justify-end">
                         {shift.canCorrect ? (
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                disabled={deletingKey !== null}
-                              >
+                              <Button type="button" variant="outline" size="sm" disabled={deletingKey !== null}>
                                 <PencilIcon data-icon="inline-start" />
                                 Correct report
                               </Button>
@@ -515,9 +487,7 @@ function Reports() {
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleCorrectClaim(shift)}>
-                                  Reopen in calculator
-                                </AlertDialogAction>
+                                <AlertDialogAction onClick={() => handleCorrectClaim(shift)}>Reopen in calculator</AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
                           </AlertDialog>
@@ -525,12 +495,7 @@ function Reports() {
 
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button
-                              type="button"
-                              variant="destructive"
-                              size="sm"
-                              disabled={deletingKey !== null}
-                            >
+                            <Button type="button" variant="destructive" size="sm" disabled={deletingKey !== null}>
                               <Trash2Icon data-icon="inline-start" />
                               {isDeleting ? "Deleting…" : "Delete report"}
                             </Button>
@@ -544,11 +509,7 @@ function Reports() {
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                variant="destructive"
-                                disabled={isDeleting}
-                                onClick={() => void handleDeleteClaim(shift)}
-                              >
+                              <AlertDialogAction variant="destructive" disabled={isDeleting} onClick={() => void handleDeleteClaim(shift)}>
                                 {isDeleting ? "Deleting…" : "Delete report"}
                               </AlertDialogAction>
                             </AlertDialogFooter>
@@ -561,22 +522,15 @@ function Reports() {
 
                 <CardContent>
                   <details className="group rounded-lg border">
-                    <summary className="cursor-pointer select-none px-4 py-3 font-medium">
-                      View report details
-                    </summary>
+                    <summary className="cursor-pointer select-none px-4 py-3 font-medium">View report details</summary>
                     <div className="grid gap-6 border-t p-4 lg:grid-cols-2">
                       <section className="space-y-3">
                         <h3 className="font-medium">Registers</h3>
                         <div className="space-y-2">
                           {shift.registers.map((register) => (
-                            <div
-                              key={register.id}
-                              className="flex items-center justify-between gap-4 rounded-md bg-muted/40 px-3 py-2"
-                            >
+                            <div key={register.id} className="flex items-center justify-between gap-4 rounded-md bg-muted/40 px-3 py-2">
                               <span>{register.name}</span>
-                              <span className="font-medium tabular-nums">
-                                {formatMoney(register.salesCents)}
-                              </span>
+                              <span className="font-medium tabular-nums">{formatMoney(register.salesCents)}</span>
                             </div>
                           ))}
                         </div>
@@ -586,24 +540,17 @@ function Reports() {
                         <h3 className="font-medium">On-duty staff</h3>
                         <div className="space-y-2">
                           {shift.staff.map((staffMember) => (
-                            <div
-                              key={staffMember.id}
-                              className="rounded-md bg-muted/40 px-3 py-2"
-                            >
+                            <div key={staffMember.id} className="rounded-md bg-muted/40 px-3 py-2">
                               <div className="flex items-start justify-between gap-4">
                                 <div className="min-w-0">
                                   <p className="truncate font-medium">{staffMember.name}</p>
                                   <p className="text-xs text-muted-foreground">
                                     {formatRole(staffMember.role)}
-                                    {staffMember.registerKey
-                                      ? ` · ${registerNames.get(staffMember.registerKey) ?? staffMember.registerKey}`
-                                      : ""}
+                                    {staffMember.registerKey ? ` · ${registerNames.get(staffMember.registerKey) ?? staffMember.registerKey}` : ""}
                                     {` · ${staffMember.weight}× weight`}
                                   </p>
                                 </div>
-                                <span className="shrink-0 font-medium tabular-nums">
-                                  {formatMoney(staffMember.claimCents)}
-                                </span>
+                                <span className="shrink-0 font-medium tabular-nums">{formatMoney(staffMember.claimCents)}</span>
                               </div>
                             </div>
                           ))}

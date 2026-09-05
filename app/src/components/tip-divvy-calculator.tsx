@@ -27,12 +27,7 @@ import {
   CardHeader,
   CardTitle,
 } from "#/components/ui/card.tsx";
-import {
-  Field,
-  FieldDescription,
-  FieldGroup,
-  FieldLabel,
-} from "#/components/ui/field.tsx";
+import { Field, FieldDescription, FieldLabel } from "#/components/ui/field.tsx";
 import {
   InputGroup,
   InputGroupAddon,
@@ -56,6 +51,10 @@ import {
 } from "#/components/ui/table.tsx";
 import type { TipClaimMember } from "#/components/tip-claim-calculator.tsx";
 import {
+  TipPoolAllocationSettings,
+  type TipPoolAllocationMode,
+} from "#/components/tip-pool-allocation-settings.tsx";
+import {
   allocateTipClaims,
   DEFAULT_TIP_CLAIM_WEIGHTS,
   getTipClaimTotalWeight,
@@ -65,6 +64,10 @@ import {
   type TipClaimRoleState,
   type TipClaimWeightState,
 } from "#/lib/tip-claim-allocation.ts";
+import {
+  DEFAULT_TIP_POOL_PERCENTAGES,
+  type TipPoolPercentageTargets,
+} from "#/lib/tip-pool-percentage-allocation.ts";
 import {
   correctTipPoolShift,
   saveTipPoolShift,
@@ -97,13 +100,6 @@ const ROLE_ENABLED_FIELDS: Record<
   door: "doorEnabled",
 };
 
-const TIP_POOL_SETTINGS_ROLE_ORDER: TipClaimRoleKey[] = [
-  "manager",
-  "bartender",
-  "barback",
-  "door",
-];
-
 const currency = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "USD",
@@ -120,11 +116,6 @@ function isRoleEnabled(member: TipClaimMember, role: TipClaimRoleKey) {
 
 function enabledRoles(member: TipClaimMember) {
   return TIP_CLAIM_ROLE_ORDER.filter((role) => isRoleEnabled(member, role));
-}
-
-function clampWeight(value: number) {
-  if (!Number.isFinite(value)) return 0;
-  return Math.min(10, Math.max(0, Math.round(value * 10) / 10));
 }
 
 function formatWeight(value: number) {
@@ -146,6 +137,10 @@ export function TipDivvyCalculator({
   const [weights, setWeights] = useState<TipClaimWeightState>({
     ...DEFAULT_TIP_CLAIM_WEIGHTS,
   });
+  const [allocationMode, setAllocationMode] =
+    useState<TipPoolAllocationMode>("weights");
+  const [percentageTargets, setPercentageTargets] =
+    useState<TipPoolPercentageTargets>({ ...DEFAULT_TIP_POOL_PERCENTAGES });
   const [editingShiftId, setEditingShiftId] = useState<string | null>(null);
   const [editingCompletedAt, setEditingCompletedAt] = useState<string | null>(null);
   const [savingReport, setSavingReport] = useState(false);
@@ -162,6 +157,10 @@ export function TipDivvyCalculator({
     setAssignments,
     weights,
     setWeights,
+    allocationMode,
+    setAllocationMode,
+    percentageTargets,
+    setPercentageTargets,
     editingShiftId,
     setEditingShiftId,
     editingCompletedAt,
@@ -299,13 +298,6 @@ export function TipDivvyCalculator({
     );
   }
 
-  function updateWeight(role: TipClaimRoleKey, value: string) {
-    setWeights((current) => ({
-      ...current,
-      [role]: clampWeight(Number(value)),
-    }));
-  }
-
   async function handleSaveReport() {
     if (!organizationId || !canSaveReport || savingReport) return;
 
@@ -364,12 +356,14 @@ export function TipDivvyCalculator({
           <h1 className="font-heading text-3xl font-semibold tracking-tight">
             Tip Pool Calculator
           </h1>
-          <Badge variant="secondary">Weighted roles</Badge>
+          <Badge variant="secondary">
+            {allocationMode === "percentages" ? "Percentage targets" : "Weighted roles"}
+          </Badge>
           {editingShiftId ? <Badge variant="outline">Correcting report</Badge> : null}
         </div>
         <p className="max-w-3xl text-sm text-muted-foreground md:text-base">
           Split the full tip pool across on-duty staff using the same weighted
-          role logic as the Tip Claim Calculator.
+          allocation engine, with either direct weights or percentage targets.
         </p>
       </div>
 
@@ -504,39 +498,18 @@ export function TipDivvyCalculator({
               </div>
 
               <Accordion type="single" collapsible className="mt-3">
-                <AccordionItem value="weights">
+                <AccordionItem value="allocation">
                   <AccordionTrigger>Allocation settings</AccordionTrigger>
-                  <AccordionContent className="flex flex-col gap-4">
-                    <p className="text-muted-foreground">
-                      Higher weights receive a larger share. Defaults are
-                      Manager 5, Bartender 5, Barback 3, Door 1.
-                    </p>
-                    <FieldGroup>
-                      {TIP_POOL_SETTINGS_ROLE_ORDER.map((role) => (
-                        <Field key={role} orientation="responsive">
-                          <FieldLabel htmlFor={`pool-weight-${role}`}>
-                            {TIP_CLAIM_ROLE_LABELS[role]} weight
-                          </FieldLabel>
-                          <InputGroup className="sm:max-w-32">
-                            <InputGroupInput
-                              id={`pool-weight-${role}`}
-                              type="number"
-                              inputMode="decimal"
-                              min="0"
-                              max="10"
-                              step="0.1"
-                              value={weights[role]}
-                              onChange={(event) =>
-                                updateWeight(role, event.target.value)
-                              }
-                            />
-                            <InputGroupAddon align="inline-end">
-                              <InputGroupText>×</InputGroupText>
-                            </InputGroupAddon>
-                          </InputGroup>
-                        </Field>
-                      ))}
-                    </FieldGroup>
+                  <AccordionContent>
+                    <TipPoolAllocationSettings
+                      staff={staff}
+                      weights={weights}
+                      setWeights={setWeights}
+                      mode={allocationMode}
+                      setMode={setAllocationMode}
+                      targets={percentageTargets}
+                      setTargets={setPercentageTargets}
+                    />
                   </AccordionContent>
                 </AccordionItem>
               </Accordion>

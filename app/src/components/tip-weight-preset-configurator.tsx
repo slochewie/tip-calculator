@@ -1,6 +1,11 @@
 import { useMemo, useState } from "react";
-import { Pie, PieChart } from "recharts";
-import { PlusIcon, SaveIcon, Trash2Icon } from "lucide-react";
+import { Cell, Pie, PieChart } from "recharts";
+import {
+  ChevronDownIcon,
+  ChevronUpIcon,
+  SaveIcon,
+  Trash2Icon,
+} from "lucide-react";
 
 import { Badge } from "#/components/ui/badge.tsx";
 import { Button } from "#/components/ui/button.tsx";
@@ -19,7 +24,6 @@ import {
 } from "#/components/ui/chart.tsx";
 import { Field, FieldDescription, FieldLabel } from "#/components/ui/field.tsx";
 import { Input } from "#/components/ui/input.tsx";
-import { Slider } from "#/components/ui/slider.tsx";
 import {
   TIP_CLAIM_ROLE_LABELS,
   TIP_CLAIM_ROLE_ORDER,
@@ -60,6 +64,41 @@ function clampWeight(value: number) {
   return Math.min(10, Math.max(0, Math.round(value * 10) / 10));
 }
 
+function StepperButtons({
+  label,
+  onIncrement,
+  onDecrement,
+}: {
+  label: string;
+  onIncrement: () => void;
+  onDecrement: () => void;
+}) {
+  return (
+    <div className="grid shrink-0 grid-rows-2 overflow-hidden rounded-md border">
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="size-7 rounded-none border-b"
+        aria-label={`Increase ${label}`}
+        onClick={onIncrement}
+      >
+        <ChevronUpIcon className="size-3.5" />
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="size-7 rounded-none"
+        aria-label={`Decrease ${label}`}
+        onClick={onDecrement}
+      >
+        <ChevronDownIcon className="size-3.5" />
+      </Button>
+    </div>
+  );
+}
+
 export function TipWeightPresetConfigurator({
   organizationId,
   organizationName,
@@ -98,18 +137,45 @@ export function TipWeightPresetConfigurator({
     });
   }, [staff, weights]);
 
-  const chartData = roleData.filter((item) => item.units > 0);
   const totalStaff = TIP_CLAIM_ROLE_ORDER.reduce(
     (sum, role) => sum + staff[role],
     0,
   );
   const totalWeightUnits = roleData.reduce((sum, item) => sum + item.units, 0);
 
+  const chartData = roleData.flatMap((item) =>
+    item.staff > 0 && item.weight > 0
+      ? Array.from({ length: item.staff }, (_, segmentIndex) => ({
+          role: item.role,
+          segmentIndex,
+          units: item.weight,
+          percentage:
+            totalWeightUnits > 0 ? (item.weight / totalWeightUnits) * 100 : 0,
+          rolePercentage: item.percentage,
+          fill: item.fill,
+        }))
+      : [],
+  );
+
   function resetForm() {
     setEditingId(null);
     setName("");
     setStaff({ ...DEFAULT_TIP_WEIGHT_PRESET_STAFF });
     setWeights({ ...DEFAULT_TIP_WEIGHT_PRESET_WEIGHTS });
+  }
+
+  function updateStaff(role: TipClaimRoleKey, value: number) {
+    setStaff((current) => ({
+      ...current,
+      [role]: clampCount(value),
+    }));
+  }
+
+  function updateWeight(role: TipClaimRoleKey, value: number) {
+    setWeights((current) => ({
+      ...current,
+      [role]: clampWeight(value),
+    }));
   }
 
   function handleSave() {
@@ -192,61 +258,56 @@ export function TipWeightPresetConfigurator({
                         % of active weight units
                       </CardDescription>
                     </CardHeader>
-                    <CardContent className="flex flex-col gap-4">
-                      <Field>
-                        <FieldLabel htmlFor={`preset-count-${role}`}>Staff</FieldLabel>
-                        <Input
-                          id={`preset-count-${role}`}
-                          type="number"
-                          inputMode="numeric"
-                          min={0}
-                          max={50}
-                          step={1}
-                          value={staff[role]}
-                          onChange={(event) =>
-                            setStaff((current) => ({
-                              ...current,
-                              [role]: clampCount(event.currentTarget.valueAsNumber),
-                            }))
-                          }
-                        />
-                      </Field>
+                    <CardContent>
+                      <div className="grid grid-cols-[minmax(0,0.65fr)_minmax(0,1fr)] items-end gap-4">
+                        <Field>
+                          <FieldLabel htmlFor={`preset-count-${role}`}>Staff</FieldLabel>
+                          <div className="flex items-stretch gap-2">
+                            <Input
+                              id={`preset-count-${role}`}
+                              type="number"
+                              inputMode="numeric"
+                              min={0}
+                              max={50}
+                              step={1}
+                              value={staff[role]}
+                              className="min-w-0 max-w-24 text-center tabular-nums"
+                              onChange={(event) =>
+                                updateStaff(role, event.currentTarget.valueAsNumber)
+                              }
+                            />
+                            <StepperButtons
+                              label={`${TIP_CLAIM_ROLE_LABELS[role]} staff`}
+                              onIncrement={() => updateStaff(role, staff[role] + 1)}
+                              onDecrement={() => updateStaff(role, staff[role] - 1)}
+                            />
+                          </div>
+                        </Field>
 
-                      <Field>
-                        <div className="flex items-center justify-between gap-3">
+                        <Field>
                           <FieldLabel htmlFor={`preset-weight-${role}`}>Weight</FieldLabel>
-                          <Input
-                            id={`preset-weight-${role}`}
-                            type="number"
-                            inputMode="decimal"
-                            min={0}
-                            max={10}
-                            step={0.1}
-                            value={weights[role]}
-                            className="w-24 text-right tabular-nums"
-                            onChange={(event) =>
-                              setWeights((current) => ({
-                                ...current,
-                                [role]: clampWeight(event.currentTarget.valueAsNumber),
-                              }))
-                            }
-                          />
-                        </div>
-                        <Slider
-                          aria-label={`${TIP_CLAIM_ROLE_LABELS[role]} weight`}
-                          min={0}
-                          max={10}
-                          step={0.1}
-                          value={[weights[role]]}
-                          onValueChange={(value) => {
-                            const next = Array.isArray(value) ? value[0] : value;
-                            setWeights((current) => ({
-                              ...current,
-                              [role]: clampWeight(Number(next)),
-                            }));
-                          }}
-                        />
-                      </Field>
+                          <div className="flex items-stretch justify-end gap-2">
+                            <Input
+                              id={`preset-weight-${role}`}
+                              type="number"
+                              inputMode="decimal"
+                              min={0}
+                              max={10}
+                              step={0.1}
+                              value={weights[role]}
+                              className="min-w-0 max-w-28 text-right tabular-nums"
+                              onChange={(event) =>
+                                updateWeight(role, event.currentTarget.valueAsNumber)
+                              }
+                            />
+                            <StepperButtons
+                              label={`${TIP_CLAIM_ROLE_LABELS[role]} weight`}
+                              onIncrement={() => updateWeight(role, weights[role] + 0.1)}
+                              onDecrement={() => updateWeight(role, weights[role] - 0.1)}
+                            />
+                          </div>
+                        </Field>
+                      </div>
                     </CardContent>
                   </Card>
                 ))}
@@ -342,7 +403,12 @@ export function TipWeightPresetConfigurator({
                             const payload = item.payload as (typeof chartData)[number];
                             return (
                               <div className="flex min-w-40 items-center justify-between gap-4">
-                                <span>{TIP_CLAIM_ROLE_LABELS[payload.role]}</span>
+                                <span>
+                                  {TIP_CLAIM_ROLE_LABELS[payload.role]}
+                                  {staff[payload.role] > 1
+                                    ? ` ${payload.segmentIndex + 1}`
+                                    : ""}
+                                </span>
                                 <span className="font-mono font-medium tabular-nums">
                                   {payload.percentage.toLocaleString("en-US", {
                                     maximumFractionDigits: 1,
@@ -361,8 +427,6 @@ export function TipWeightPresetConfigurator({
                       innerRadius="54%"
                       outerRadius="82%"
                       paddingAngle={0}
-                      stroke="var(--background)"
-                      strokeWidth={2}
                       label={({ percentage }) =>
                         percentage >= 4
                           ? `${percentage.toLocaleString("en-US", {
@@ -371,7 +435,16 @@ export function TipWeightPresetConfigurator({
                           : ""
                       }
                       labelLine={false}
-                    />
+                    >
+                      {chartData.map((entry) => (
+                        <Cell
+                          key={`${entry.role}-${entry.segmentIndex}`}
+                          fill={entry.fill}
+                          stroke="var(--background)"
+                          strokeWidth={entry.segmentIndex === 0 ? 2 : 1}
+                        />
+                      ))}
+                    </Pie>
                   </PieChart>
                 </ChartContainer>
               ) : (

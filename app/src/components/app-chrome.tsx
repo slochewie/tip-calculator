@@ -3,6 +3,7 @@ import { Link, useLocation } from "@tanstack/react-router";
 import {
   Building2Icon,
   CalculatorIcon,
+  CoinsIcon,
   GaugeIcon,
   LogOutIcon,
   NetworkIcon,
@@ -107,6 +108,7 @@ export function AppChrome({ children }: { children: ReactNode }) {
   const avatarLabel = getInitials(displayName);
   const consoleBaseURL = authBaseURL.replace(/\/$/, "");
   const sidebarDefaultOpen = getSidebarDefaultOpen();
+  const appTitle = location.pathname === "/tips" ? "Tip Divvy" : "Tip Claim Calculator";
 
   return (
     <TooltipProvider>
@@ -132,6 +134,19 @@ export function AppChrome({ children }: { children: ReactNode }) {
                       <Link to="/app">
                         <CalculatorIcon />
                         <span className={sidebarLabelClassName}>Tip Calculator</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      className={sidebarButtonClassName}
+                      isActive={location.pathname === "/tips"}
+                      tooltip="Tip Divvy"
+                    >
+                      <Link to="/tips">
+                        <CoinsIcon />
+                        <span className={sidebarLabelClassName}>Tip Divvy</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -276,7 +291,7 @@ export function AppChrome({ children }: { children: ReactNode }) {
             />
 
             <div className="min-w-0 shrink-0">
-              <p className="truncate text-sm font-semibold">Tip Claim Calculator</p>
+              <p className="truncate text-sm font-semibold">{appTitle}</p>
               <p className="hidden truncate text-xs text-muted-foreground sm:block">
                 NiteOwl.dev
               </p>

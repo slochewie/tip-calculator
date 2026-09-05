@@ -79,7 +79,6 @@ export function TipPoolAllocationSettings({
   setTargets,
 }: TipPoolAllocationSettingsProps) {
   const manualWeightsRef = useRef<TipClaimWeightState>(safeManualWeights(weights));
-  const previousModeRef = useRef<TipPoolAllocationMode>(mode);
 
   const optimizedWeights = useMemo(
     () => optimizeTipPoolWeightsForPercentages(staff, targets),
@@ -102,26 +101,6 @@ export function TipPoolAllocationSettings({
     inactiveTargetRoles.length === 0;
 
   useEffect(() => {
-    const previousMode = previousModeRef.current;
-
-    if (previousMode !== mode) {
-      if (previousMode === "weights" && mode === "percentages") {
-        manualWeightsRef.current = safeManualWeights(weights);
-      }
-
-      if (previousMode === "percentages" && mode === "weights") {
-        const restored = safeManualWeights(manualWeightsRef.current);
-        const unchanged = ROLE_ORDER.every(
-          (role) => Math.abs(weights[role] - restored[role]) < 0.0001,
-        );
-        if (!unchanged) setWeights(restored);
-      }
-
-      previousModeRef.current = mode;
-    }
-  }, [mode, setWeights, weights]);
-
-  useEffect(() => {
     if (mode !== "weights" || !allWeightsZero(weights)) return;
 
     const restored = safeManualWeights(manualWeightsRef.current);
@@ -138,6 +117,21 @@ export function TipPoolAllocationSettings({
 
     if (!unchanged) setWeights(optimizedWeights);
   }, [canOptimize, optimizedWeights, setWeights, weights]);
+
+  function switchMode(nextMode: TipPoolAllocationMode) {
+    if (nextMode === mode) return;
+
+    if (nextMode === "percentages") {
+      manualWeightsRef.current = safeManualWeights(weights);
+      setMode("percentages");
+      return;
+    }
+
+    const restored = safeManualWeights(manualWeightsRef.current);
+    manualWeightsRef.current = restored;
+    setWeights(restored);
+    setMode("weights");
+  }
 
   function updateWeight(role: TipClaimRoleKey, value: string) {
     const nextWeights = {
@@ -163,7 +157,7 @@ export function TipPoolAllocationSettings({
           size="sm"
           variant={mode === "weights" ? "default" : "ghost"}
           aria-pressed={mode === "weights"}
-          onClick={() => setMode("weights")}
+          onClick={() => switchMode("weights")}
         >
           Weights
         </Button>
@@ -172,7 +166,7 @@ export function TipPoolAllocationSettings({
           size="sm"
           variant={mode === "percentages" ? "default" : "ghost"}
           aria-pressed={mode === "percentages"}
-          onClick={() => setMode("percentages")}
+          onClick={() => switchMode("percentages")}
         >
           Percentages
         </Button>

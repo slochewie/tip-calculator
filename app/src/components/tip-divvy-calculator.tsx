@@ -54,6 +54,7 @@ import {
   TipPoolAllocationSettings,
   type TipPoolAllocationMode,
 } from "#/components/tip-pool-allocation-settings.tsx";
+import { TipPoolReportPreview } from "#/components/tip-pool-report-preview.tsx";
 import {
   allocateTipClaims,
   DEFAULT_TIP_CLAIM_WEIGHTS,
@@ -146,6 +147,7 @@ export function TipDivvyCalculator({
   const [savingReport, setSavingReport] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const { draftStatus, draftUpdatedAt, resetDraft } = useTipPoolDraft({
     organizationId,
@@ -299,37 +301,73 @@ export function TipDivvyCalculator({
   }
 
   function handleCancelCorrection() {
+    setPreviewOpen(false);
     setSaveError(null);
     setSaveMessage(null);
     resetDraft();
   }
 
-  async function handleSaveReport() {
+  async function handleSaveReport(saveWeights: TipClaimWeightState = weights) {
     if (!organizationId || !canSaveReport || savingReport) return;
+
+    const saveAllocations = allocateTipClaims(totalTipsCents, staff, saveWeights);
+    const roleIndexes: Record<TipClaimRoleKey, number> = {
+      bartender: 0,
+      manager: 0,
+      barback: 0,
+      door: 0,
+    };
+    const saveEmployeeAllocations = assignments.map((assignment) => {
+      roleIndexes[assignment.role] += 1;
+      const allocation = saveAllocations.find(
+        (candidate) =>
+          candidate.role === assignment.role &&
+          candidate.person === roleIndexes[assignment.role],
+      );
+      const member = members.find(
+        (candidate) => candidate.id === assignment.userId,
+      );
+      return {
+        ...assignment,
+        name: member?.name || member?.email || assignment.userId,
+        email: member?.email || "",
+        cents: allocation?.cents ?? 0,
+      };
+    });
+    const saveAllocatedCents = saveEmployeeAllocations.reduce(
+      (sum, employee) => sum + employee.cents,
+      0,
+    );
+
+    if (saveAllocatedCents !== totalTipsCents) {
+      setSaveError("The full tip pool must be allocated before saving.");
+      return;
+    }
 
     setSavingReport(true);
     setSaveError(null);
     setSaveMessage(null);
 
+    const saveTotalWeight = getTipClaimTotalWeight(staff, saveWeights);
     const payload: TipPoolSavePayload = {
       organizationId,
       totalTipsCents,
-      totalWeightTenths: Math.round(totalWeight * 10),
+      totalWeightTenths: Math.round(saveTotalWeight * 10),
       weights: {
-        managerTenths: Math.round(weights.manager * 10),
-        bartenderTenths: Math.round(weights.bartender * 10),
-        barbackTenths: Math.round(weights.barback * 10),
-        doorTenths: Math.round(weights.door * 10),
+        managerTenths: Math.round(saveWeights.manager * 10),
+        bartenderTenths: Math.round(saveWeights.bartender * 10),
+        barbackTenths: Math.round(saveWeights.barback * 10),
+        doorTenths: Math.round(saveWeights.door * 10),
       },
       completedAt: editingCompletedAt
         ? new Date(editingCompletedAt)
         : new Date(),
-      staff: employeeAllocations.map((employee) => ({
+      staff: saveEmployeeAllocations.map((employee) => ({
         userId: employee.userId,
         name: employee.name,
         email: employee.email,
         role: employee.role,
-        weightTenths: Math.round(weights[employee.role] * 10),
+        weightTenths: Math.round(saveWeights[employee.role] * 10),
         shareCents: employee.cents,
       })),
     };
@@ -343,6 +381,7 @@ export function TipDivvyCalculator({
         setSaveMessage("Tip Pool report saved.");
       }
 
+      setPreviewOpen(false);
       resetDraft();
     } catch (error) {
       setSaveError(
@@ -354,6 +393,13 @@ export function TipDivvyCalculator({
       setSavingReport(false);
     }
   }
+
+  const previewStaff = employeeAllocations.map((employee) => ({
+    userId: employee.userId,
+    name: employee.name,
+    email: employee.email,
+    role: employee.role,
+  }));
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 p-4 md:p-6 lg:p-8">
@@ -619,6 +665,16 @@ export function TipDivvyCalculator({
               ) : null}
 
               <div className="flex flex-col gap-2 sm:flex-row">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  disabled={!canSaveReport || savingReport}
+                  onClick={() => setPreviewOpen(true)}
+                >
+                  Preview
+                </Button>
+
                 {editingShiftId ? (
                   <Button
                     type="button"
@@ -752,6 +808,20 @@ export function TipDivvyCalculator({
           </Card>
         </div>
       </div>
+
+      <TipPoolReportPreview
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        totalTipsCents={totalTipsCents}
+        staff={previewStaff}
+        weights={weights}
+        allocationMode={allocationMode}
+        percentageTargets={percentageTargets}
+        savePending={savingReport}
+        editingShiftId={editingShiftId}
+        onApply={(previewWeights) => setWeights(previewWeights)}
+        onSave={(previewWeights) => handleSaveReport(previewWeights)}
+      />
     </main>
   );
 }

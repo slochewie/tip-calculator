@@ -1,6 +1,17 @@
 import { useMemo, useState, type ReactNode } from "react";
-import { PlusIcon, Trash2Icon } from "lucide-react";
+import { PlusIcon, RotateCcwIcon, Trash2Icon } from "lucide-react";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "#/components/ui/alert-dialog.tsx";
 import { Badge } from "#/components/ui/badge.tsx";
 import { Button } from "#/components/ui/button.tsx";
 import {
@@ -36,6 +47,7 @@ import {
   TableHeader,
   TableRow,
 } from "#/components/ui/table.tsx";
+import type { TipClaimMember } from "#/components/tip-claim-calculator.tsx";
 import {
   allocateTipClaims,
   DEFAULT_TIP_CLAIM_WEIGHTS,
@@ -46,14 +58,13 @@ import {
   type TipClaimRoleState,
   type TipClaimWeightState,
 } from "#/lib/tip-claim-allocation.ts";
-import type { TipClaimMember } from "#/components/tip-claim-calculator.tsx";
-
-type StaffAssignment = {
-  userId: string;
-  role: TipClaimRoleKey;
-};
+import {
+  type TipPoolStaffAssignment,
+  useTipPoolDraft,
+} from "#/lib/use-tip-pool-draft.ts";
 
 type TipDivvyCalculatorProps = {
+  organizationId?: string;
   organizationName?: string;
   organizationSelector?: ReactNode;
   members?: TipClaimMember[];
@@ -98,6 +109,7 @@ function clampWeight(value: number) {
 }
 
 export function TipDivvyCalculator({
+  organizationId,
   organizationName,
   organizationSelector,
   members = [],
@@ -105,9 +117,21 @@ export function TipDivvyCalculator({
   membersError = null,
 }: TipDivvyCalculatorProps) {
   const [totalTips, setTotalTips] = useState("");
-  const [assignments, setAssignments] = useState<StaffAssignment[]>([]);
+  const [assignments, setAssignments] = useState<TipPoolStaffAssignment[]>([]);
   const [weights, setWeights] = useState<TipClaimWeightState>({
     ...DEFAULT_TIP_CLAIM_WEIGHTS,
+  });
+
+  const { draftStatus, draftUpdatedAt, resetDraft } = useTipPoolDraft({
+    organizationId,
+    members,
+    membersPending,
+    totalTips,
+    setTotalTips,
+    assignments,
+    setAssignments,
+    weights,
+    setWeights,
   });
 
   const eligibleMembers = members.filter((member) => enabledRoles(member).length > 0);
@@ -160,6 +184,22 @@ export function TipDivvyCalculator({
     });
   }, [allocations, assignments, members]);
 
+  const roleBreakdown = TIP_CLAIM_ROLE_ORDER.map((role) => {
+    const roleEmployees = employeeAllocations.filter((employee) => employee.role === role);
+    return {
+      role,
+      count: roleEmployees.length,
+      totalCents: roleEmployees.reduce((sum, employee) => sum + employee.cents, 0),
+    };
+  });
+
+  const draftTime = draftUpdatedAt
+    ? new Date(draftUpdatedAt).toLocaleTimeString([], {
+        hour: "numeric",
+        minute: "2-digit",
+      })
+    : null;
+
   function addMember() {
     const member = unassignedMembers[0];
     if (!member) return;
@@ -170,7 +210,7 @@ export function TipDivvyCalculator({
     setAssignments((current) => [...current, { userId: member.id, role }]);
   }
 
-  function updateAssignment(index: number, changes: Partial<StaffAssignment>) {
+  function updateAssignment(index: number, changes: Partial<TipPoolStaffAssignment>) {
     setAssignments((current) => {
       const assignment = current[index];
       if (!assignment) return current;
@@ -207,7 +247,9 @@ export function TipDivvyCalculator({
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 p-4 md:p-6 lg:p-8">
       <div className="flex flex-col gap-2">
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="font-heading text-3xl font-semibold tracking-tight">Tip Pool Calculator</h1>
+          <h1 className="font-heading text-3xl font-semibold tracking-tight">
+            Tip Pool Calculator
+          </h1>
           <Badge variant="secondary">Weighted roles</Badge>
         </div>
         <p className="max-w-3xl text-sm text-muted-foreground md:text-base">
@@ -266,7 +308,10 @@ export function TipDivvyCalculator({
                 );
 
                 return (
-                  <div key={`${assignment.userId}-${index}`} className="grid gap-2 rounded-lg border p-3 sm:grid-cols-[minmax(0,1fr)_180px_auto]">
+                  <div
+                    key={`${assignment.userId}-${index}`}
+                    className="grid gap-2 rounded-lg border p-3 sm:grid-cols-[minmax(0,1fr)_180px_auto]"
+                  >
                     <Select
                       value={assignment.userId}
                       onValueChange={(userId) => updateAssignment(index, { userId })}
@@ -326,9 +371,84 @@ export function TipDivvyCalculator({
               </Button>
             </CardContent>
           </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Draft</CardTitle>
+              <CardDescription>
+                Your current tip pool is stored locally for this organization while you work.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3">
+              {draftStatus ? (
+                <p className="text-xs text-muted-foreground">
+                  {draftStatus === "saving"
+                    ? "Saving draft…"
+                    : draftTime
+                      ? `Draft saved at ${draftTime}`
+                      : "Draft saved"}
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground">No saved draft yet.</p>
+              )}
+
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="self-start text-destructive hover:text-destructive"
+                    disabled={!organizationId}
+                  >
+                    <RotateCcwIcon data-icon="inline-start" />
+                    Reset calculator
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Reset Tip Pool Calculator?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This deletes the locally saved tip pool draft for this organization and clears the current calculator.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction variant="destructive" onClick={resetDraft}>
+                      Reset calculator
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </CardContent>
+          </Card>
         </div>
 
         <div className="flex min-w-0 flex-col gap-5">
+          <Card>
+            <CardHeader>
+              <CardTitle>Tip pool</CardTitle>
+              <CardDescription>
+                {assignments.length} staff · {totalWeight} active weight units
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Total tips</p>
+                <p className="text-2xl font-semibold tabular-nums">
+                  {currency.format(totalTipsCents / 100)}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Allocated</p>
+                <p className="text-2xl font-semibold tabular-nums">
+                  {currency.format(
+                    employeeAllocations.reduce((sum, employee) => sum + employee.cents, 0) / 100,
+                  )}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Role weights</CardTitle>
@@ -362,19 +482,41 @@ export function TipDivvyCalculator({
 
           <Card>
             <CardHeader>
-              <CardTitle>Distribution</CardTitle>
-              <CardDescription>
-                {assignments.length} staff · {totalWeight} total weight units
-              </CardDescription>
+              <CardTitle>Role breakdown</CardTitle>
+              <CardDescription>Tip pool totals by active role.</CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-              <div className="flex items-baseline justify-between gap-4 rounded-lg bg-muted/40 px-4 py-3">
-                <span className="text-sm text-muted-foreground">Total tips</span>
-                <span className="text-2xl font-semibold tabular-nums">
-                  {currency.format(totalTipsCents / 100)}
-                </span>
-              </div>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Role</TableHead>
+                    <TableHead className="text-right">Staff</TableHead>
+                    <TableHead className="text-right">Role total</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {roleBreakdown.map((row) => (
+                    <TableRow key={row.role}>
+                      <TableCell className="font-medium">
+                        {TIP_CLAIM_ROLE_LABELS[row.role]} ({weights[row.role]}×)
+                      </TableCell>
+                      <TableCell className="text-right">{row.count}</TableCell>
+                      <TableCell className="text-right font-medium tabular-nums">
+                        {currency.format(row.totalCents / 100)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
 
+          <Card>
+            <CardHeader>
+              <CardTitle>Distribution</CardTitle>
+              <CardDescription>Exact share for each employee.</CardDescription>
+            </CardHeader>
+            <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>

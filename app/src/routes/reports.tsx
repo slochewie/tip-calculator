@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   Building2Icon,
   CalculatorIcon,
   LogOutIcon,
+  PencilIcon,
   ReceiptTextIcon,
   Trash2Icon,
   UserRoundIcon,
@@ -37,6 +38,7 @@ import {
   SelectValue,
 } from "#/components/ui/select.tsx";
 import { authBaseURL, authClient } from "#/lib/auth-client.ts";
+import { saveTipClaimCorrectionDraft } from "#/lib/tip-claim-draft.ts";
 import {
   deleteTipClaimShift,
   listTipClaimShifts,
@@ -75,6 +77,7 @@ function formatRole(role: string) {
 }
 
 function TipClaimReports() {
+  const navigate = useNavigate();
   const { data: session, isPending } = authClient.useSession();
   const {
     data: organizations,
@@ -184,6 +187,11 @@ function TipClaimReports() {
     } finally {
       setDeletingShiftId(null);
     }
+  }
+
+  function handleCorrectShift(shift: TipClaimShiftReport) {
+    saveTipClaimCorrectionDraft(shift);
+    void navigate({ to: "/app" });
   }
 
   if (isPending || !session) {
@@ -376,41 +384,76 @@ function TipClaimReports() {
                           </span>
                         </div>
 
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              type="button"
-                              variant="destructive"
-                              size="sm"
-                              disabled={deletingShiftId !== null}
-                            >
-                              <Trash2Icon data-icon="inline-start" />
-                              {isDeleting ? "Deleting…" : "Delete shift"}
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete saved shift?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Delete the {formatDate(shift.completedAt)} shift with{" "}
-                                {formatMoney(shift.totalSalesCents)} in sales? This cannot
-                                be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel disabled={isDeleting}>
-                                Cancel
-                              </AlertDialogCancel>
-                              <AlertDialogAction
+                        <div className="flex flex-wrap gap-2 sm:justify-end">
+                          {shift.canCorrect ? (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={deletingShiftId !== null}
+                                >
+                                  <PencilIcon data-icon="inline-start" />
+                                  Correct report
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Reopen saved report?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Load the {formatDate(shift.completedAt)} report into the
+                                    calculator for correction? This replaces the current local
+                                    calculator draft. The saved report is unchanged until you
+                                    save the correction.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleCorrectShift(shift)}>
+                                    Reopen in calculator
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          ) : null}
+
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                type="button"
                                 variant="destructive"
-                                disabled={isDeleting}
-                                onClick={() => void handleDeleteShift(shift)}
+                                size="sm"
+                                disabled={deletingShiftId !== null}
                               >
+                                <Trash2Icon data-icon="inline-start" />
                                 {isDeleting ? "Deleting…" : "Delete shift"}
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete saved shift?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Delete the {formatDate(shift.completedAt)} shift with{" "}
+                                  {formatMoney(shift.totalSalesCents)} in sales? This cannot
+                                  be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel disabled={isDeleting}>
+                                  Cancel
+                                </AlertDialogCancel>
+                                <AlertDialogAction
+                                  variant="destructive"
+                                  disabled={isDeleting}
+                                  onClick={() => void handleDeleteShift(shift)}
+                                >
+                                  {isDeleting ? "Deleting…" : "Delete shift"}
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       </div>
                     </div>
                   </CardHeader>

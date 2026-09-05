@@ -500,7 +500,7 @@ export function TipDivvyCalculator({
               <Accordion type="single" collapsible className="mt-3">
                 <AccordionItem value="allocation">
                   <AccordionTrigger>Allocation settings</AccordionTrigger>
-                  <AccordionContent>
+                  <AccordionContent key={allocationMode}>
                     <TipPoolAllocationSettings
                       staff={staff}
                       weights={weights}

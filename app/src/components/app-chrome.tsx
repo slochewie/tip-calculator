@@ -122,6 +122,7 @@ export function AppChrome({ children }: { children: ReactNode }) {
 
           <SidebarContent>
             <SidebarGroup>
+              <SidebarGroupLabel className="text-sm">Tip Calculator</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
                   <SidebarMenuItem>
@@ -129,11 +130,11 @@ export function AppChrome({ children }: { children: ReactNode }) {
                       asChild
                       className={sidebarButtonClassName}
                       isActive={location.pathname === "/app"}
-                      tooltip="Tip Calculator"
+                      tooltip="Claims"
                     >
                       <Link to="/app">
                         <CalculatorIcon />
-                        <span className={sidebarLabelClassName}>Tip Calculator</span>
+                        <span className={sidebarLabelClassName}>Claims</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -142,11 +143,11 @@ export function AppChrome({ children }: { children: ReactNode }) {
                       asChild
                       className={sidebarButtonClassName}
                       isActive={location.pathname === "/tips"}
-                      tooltip="Tip Divvy"
+                      tooltip="Tips"
                     >
                       <Link to="/tips">
                         <CoinsIcon />
-                        <span className={sidebarLabelClassName}>Tip Divvy</span>
+                        <span className={sidebarLabelClassName}>Tips</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

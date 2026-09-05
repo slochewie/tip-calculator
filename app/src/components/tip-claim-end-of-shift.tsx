@@ -107,6 +107,18 @@ export function TipClaimEndOfShift({
 					</Button>
 				</div>
 
+				{correcting ? (
+					<Button
+						type="button"
+						variant="outline"
+						className="self-start"
+						disabled={savePending}
+						onClick={onReset}
+					>
+						Cancel correction
+					</Button>
+				) : null}
+
 				<AlertDialog>
 					<AlertDialogTrigger asChild>
 						<Button

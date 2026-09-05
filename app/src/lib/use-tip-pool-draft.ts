@@ -7,13 +7,14 @@ import {
   useState,
 } from "react";
 
+import type { TipClaimMember } from "#/components/tip-claim-calculator.tsx";
 import {
   DEFAULT_TIP_CLAIM_WEIGHTS,
   TIP_CLAIM_ROLE_ORDER,
   type TipClaimRoleKey,
   type TipClaimWeightState,
 } from "#/lib/tip-claim-allocation.ts";
-import type { TipClaimMember } from "#/components/tip-claim-calculator.tsx";
+import type { TipPoolShiftReport } from "#/lib/tip-pool.ts";
 
 export type TipPoolStaffAssignment = {
   userId: string;
@@ -27,6 +28,8 @@ type TipPoolDraft = {
   totalTips: string;
   assignments: TipPoolStaffAssignment[];
   weights: TipClaimWeightState;
+  editingShiftId?: string | null;
+  editingCompletedAt?: string | null;
 };
 
 type UseTipPoolDraftOptions = {
@@ -39,6 +42,10 @@ type UseTipPoolDraftOptions = {
   setAssignments: Dispatch<SetStateAction<TipPoolStaffAssignment[]>>;
   weights: TipClaimWeightState;
   setWeights: Dispatch<SetStateAction<TipClaimWeightState>>;
+  editingShiftId: string | null;
+  setEditingShiftId: Dispatch<SetStateAction<string | null>>;
+  editingCompletedAt: string | null;
+  setEditingCompletedAt: Dispatch<SetStateAction<string | null>>;
 };
 
 const DRAFT_VERSION = 1;
@@ -68,7 +75,9 @@ function loadDraft(organizationId: string): TipPoolDraft | null {
     }
 
     const validWeights = TIP_CLAIM_ROLE_ORDER.every(
-      (role) => typeof draft.weights?.[role] === "number" && Number.isFinite(draft.weights[role]),
+      (role) =>
+        typeof draft.weights?.[role] === "number" &&
+        Number.isFinite(draft.weights[role]),
     );
     if (!validWeights) return null;
 
@@ -103,6 +112,31 @@ function reconcileAssignments(
   });
 }
 
+export function saveTipPoolCorrectionDraft(shift: TipPoolShiftReport) {
+  const weights: TipClaimWeightState = {
+    manager: shift.managerWeightTenths / 10,
+    bartender: shift.bartenderWeightTenths / 10,
+    barback: shift.barbackWeightTenths / 10,
+    door: shift.doorWeightTenths / 10,
+  };
+  const updatedAt = new Date().toISOString();
+  const draft: TipPoolDraft = {
+    version: DRAFT_VERSION,
+    organizationId: shift.organizationId,
+    updatedAt,
+    totalTips: (shift.totalTipsCents / 100).toFixed(2),
+    assignments: shift.staff.map((staffMember) => ({
+      userId: staffMember.userId,
+      role: staffMember.role,
+    })),
+    weights,
+    editingShiftId: shift.id,
+    editingCompletedAt: shift.completedAt,
+  };
+
+  window.localStorage.setItem(storageKey(shift.organizationId), JSON.stringify(draft));
+}
+
 export function useTipPoolDraft({
   organizationId,
   members,
@@ -113,6 +147,10 @@ export function useTipPoolDraft({
   setAssignments,
   weights,
   setWeights,
+  editingShiftId,
+  setEditingShiftId,
+  editingCompletedAt,
+  setEditingCompletedAt,
 }: UseTipPoolDraftOptions) {
   const hydratedOrganizationRef = useRef<string | null>(null);
   const skipNextAutosaveRef = useRef(false);
@@ -137,6 +175,8 @@ export function useTipPoolDraft({
       setTotalTips("");
       setAssignments([]);
       setWeights({ ...DEFAULT_TIP_CLAIM_WEIGHTS });
+      setEditingShiftId(null);
+      setEditingCompletedAt(null);
       setDraftStatus(null);
       setDraftUpdatedAt(null);
       return;
@@ -145,6 +185,8 @@ export function useTipPoolDraft({
     setTotalTips(draft.totalTips);
     setAssignments(reconcileAssignments(draft.assignments, members));
     setWeights(draft.weights);
+    setEditingShiftId(draft.editingShiftId ?? null);
+    setEditingCompletedAt(draft.editingCompletedAt ?? null);
     setDraftStatus("saved");
     setDraftUpdatedAt(draft.updatedAt);
   }, [
@@ -152,6 +194,8 @@ export function useTipPoolDraft({
     membersPending,
     organizationId,
     setAssignments,
+    setEditingCompletedAt,
+    setEditingShiftId,
     setTotalTips,
     setWeights,
   ]);
@@ -179,6 +223,8 @@ export function useTipPoolDraft({
         totalTips,
         assignments,
         weights,
+        editingShiftId,
+        editingCompletedAt,
       };
       window.localStorage.setItem(storageKey(organizationId), JSON.stringify(draft));
       autosaveTimeoutRef.current = null;
@@ -192,7 +238,15 @@ export function useTipPoolDraft({
         autosaveTimeoutRef.current = null;
       }
     };
-  }, [assignments, membersPending, organizationId, totalTips, weights]);
+  }, [
+    assignments,
+    editingCompletedAt,
+    editingShiftId,
+    membersPending,
+    organizationId,
+    totalTips,
+    weights,
+  ]);
 
   const resetDraft = useCallback(() => {
     if (!organizationId) return;
@@ -207,9 +261,18 @@ export function useTipPoolDraft({
     setTotalTips("");
     setAssignments([]);
     setWeights({ ...DEFAULT_TIP_CLAIM_WEIGHTS });
+    setEditingShiftId(null);
+    setEditingCompletedAt(null);
     setDraftStatus(null);
     setDraftUpdatedAt(null);
-  }, [organizationId, setAssignments, setTotalTips, setWeights]);
+  }, [
+    organizationId,
+    setAssignments,
+    setEditingCompletedAt,
+    setEditingShiftId,
+    setTotalTips,
+    setWeights,
+  ]);
 
   return {
     draftStatus,

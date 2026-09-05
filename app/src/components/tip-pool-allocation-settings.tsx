@@ -77,19 +77,25 @@ export function TipPoolAllocationSettings({
   );
   const targetTotal = ROLE_ORDER.reduce((sum, role) => sum + targets[role], 0);
   const targetTotalIsValid = Math.abs(targetTotal - 100) < 0.05;
+  const activeStaffCount = ROLE_ORDER.reduce((sum, role) => sum + staff[role], 0);
   const inactiveTargetRoles = ROLE_ORDER.filter(
     (role) => staff[role] === 0 && targets[role] > 0,
   );
+  const canOptimize =
+    mode === "percentages" &&
+    targetTotalIsValid &&
+    activeStaffCount > 0 &&
+    inactiveTargetRoles.length === 0;
 
   useEffect(() => {
-    if (mode !== "percentages" || !targetTotalIsValid) return;
+    if (!canOptimize) return;
 
     const unchanged = ROLE_ORDER.every(
       (role) => Math.abs(weights[role] - optimizedWeights[role]) < 0.0001,
     );
 
     if (!unchanged) setWeights(optimizedWeights);
-  }, [mode, optimizedWeights, setWeights, targetTotalIsValid, weights]);
+  }, [canOptimize, optimizedWeights, setWeights, weights]);
 
   function updateWeight(role: TipClaimRoleKey, value: string) {
     setWeights({
@@ -107,11 +113,12 @@ export function TipPoolAllocationSettings({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex w-fit rounded-lg bg-muted p-1">
+      <div className="flex w-fit rounded-lg border bg-muted p-1">
         <Button
           type="button"
           size="sm"
-          variant={mode === "weights" ? "secondary" : "ghost"}
+          variant={mode === "weights" ? "default" : "ghost"}
+          aria-pressed={mode === "weights"}
           onClick={() => setMode("weights")}
         >
           Weights
@@ -119,7 +126,8 @@ export function TipPoolAllocationSettings({
         <Button
           type="button"
           size="sm"
-          variant={mode === "percentages" ? "secondary" : "ghost"}
+          variant={mode === "percentages" ? "default" : "ghost"}
+          aria-pressed={mode === "percentages"}
           onClick={() => setMode("percentages")}
         >
           Percentages
@@ -221,7 +229,8 @@ export function TipPoolAllocationSettings({
 
           {inactiveTargetRoles.length > 0 ? (
             <p className="text-sm text-destructive">
-              A target is assigned to a role with no on-duty staff: {inactiveTargetRoles
+              Add on-duty staff for every role with a percentage target, or set
+              that role&apos;s target to 0%: {inactiveTargetRoles
                 .map((role) => TIP_CLAIM_ROLE_LABELS[role])
                 .join(", ")}.
             </p>

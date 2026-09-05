@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 import { Button } from "#/components/ui/button.tsx";
 import {
@@ -14,6 +14,7 @@ import {
   InputGroupText,
 } from "#/components/ui/input-group.tsx";
 import {
+  DEFAULT_TIP_CLAIM_WEIGHTS,
   TIP_CLAIM_ROLE_LABELS,
   type TipClaimRoleKey,
   type TipClaimRoleState,
@@ -48,6 +49,16 @@ function formatPercentage(value: number) {
   return `${Number(value.toFixed(1))}%`;
 }
 
+function allWeightsZero(weights: TipClaimWeightState) {
+  return ROLE_ORDER.every((role) => Math.abs(weights[role]) < 0.0001);
+}
+
+function safeManualWeights(weights: TipClaimWeightState): TipClaimWeightState {
+  return allWeightsZero(weights)
+    ? { ...DEFAULT_TIP_CLAIM_WEIGHTS }
+    : { ...weights };
+}
+
 type TipPoolAllocationSettingsProps = {
   staff: TipClaimRoleState;
   weights: TipClaimWeightState;
@@ -67,6 +78,9 @@ export function TipPoolAllocationSettings({
   targets,
   setTargets,
 }: TipPoolAllocationSettingsProps) {
+  const manualWeightsRef = useRef<TipClaimWeightState>(safeManualWeights(weights));
+  const previousModeRef = useRef<TipPoolAllocationMode>(mode);
+
   const optimizedWeights = useMemo(
     () => optimizeTipPoolWeightsForPercentages(staff, targets),
     [staff, targets],
@@ -88,6 +102,34 @@ export function TipPoolAllocationSettings({
     inactiveTargetRoles.length === 0;
 
   useEffect(() => {
+    const previousMode = previousModeRef.current;
+
+    if (previousMode !== mode) {
+      if (previousMode === "weights" && mode === "percentages") {
+        manualWeightsRef.current = safeManualWeights(weights);
+      }
+
+      if (previousMode === "percentages" && mode === "weights") {
+        const restored = safeManualWeights(manualWeightsRef.current);
+        const unchanged = ROLE_ORDER.every(
+          (role) => Math.abs(weights[role] - restored[role]) < 0.0001,
+        );
+        if (!unchanged) setWeights(restored);
+      }
+
+      previousModeRef.current = mode;
+    }
+  }, [mode, setWeights, weights]);
+
+  useEffect(() => {
+    if (mode !== "weights" || !allWeightsZero(weights)) return;
+
+    const restored = safeManualWeights(manualWeightsRef.current);
+    manualWeightsRef.current = restored;
+    setWeights(restored);
+  }, [mode, setWeights, weights]);
+
+  useEffect(() => {
     if (!canOptimize) return;
 
     const unchanged = ROLE_ORDER.every(
@@ -98,10 +140,12 @@ export function TipPoolAllocationSettings({
   }, [canOptimize, optimizedWeights, setWeights, weights]);
 
   function updateWeight(role: TipClaimRoleKey, value: string) {
-    setWeights({
+    const nextWeights = {
       ...weights,
       [role]: clampWeight(Number(value)),
-    });
+    };
+    manualWeightsRef.current = safeManualWeights(nextWeights);
+    setWeights(nextWeights);
   }
 
   function updateTarget(role: TipClaimRoleKey, value: string) {
@@ -168,9 +212,9 @@ export function TipPoolAllocationSettings({
       ) : (
         <>
           <p className="text-sm text-muted-foreground">
-            Set each role&apos;s target share. The calculator converts those
-            targets into the closest tenth-step weights and still uses the
-            normal weighted allocation engine.
+            Enter a target percentage for each role. The calculator adjusts
+            tenth-step weights to get the actual role percentages as close to
+            those targets as possible.
           </p>
 
           <FieldGroup>
@@ -181,8 +225,7 @@ export function TipPoolAllocationSettings({
                     {TIP_CLAIM_ROLE_LABELS[role]} target
                   </FieldLabel>
                   <FieldDescription>
-                    {staff[role]} {staff[role] === 1 ? "person" : "people"} · actual{" "}
-                    {formatPercentage(actualPercentages[role])}
+                    Target {formatPercentage(targets[role])} · Actual {formatPercentage(actualPercentages[role])} · {weights[role].toFixed(1)}× weight
                   </FieldDescription>
                 </div>
                 <InputGroup className="sm:max-w-32">
@@ -193,11 +236,12 @@ export function TipPoolAllocationSettings({
                     min="0"
                     max="100"
                     step="0.1"
+                    aria-label={`${TIP_CLAIM_ROLE_LABELS[role]} target percentage`}
                     value={targets[role]}
                     onChange={(event) => updateTarget(role, event.target.value)}
                   />
                   <InputGroupAddon align="inline-end">
-                    <InputGroupText>%</InputGroupText>
+                    <InputGroupText>% target</InputGroupText>
                   </InputGroupAddon>
                 </InputGroup>
               </Field>
@@ -211,11 +255,10 @@ export function TipPoolAllocationSettings({
                 {formatPercentage(targetTotal)}
               </span>
             </div>
-            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+            <div className="mt-2 grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
               {ROLE_ORDER.map((role) => (
                 <span key={role}>
-                  {TIP_CLAIM_ROLE_LABELS[role]} {weights[role].toFixed(1)}× →{" "}
-                  {formatPercentage(actualPercentages[role])}
+                  {TIP_CLAIM_ROLE_LABELS[role]}: target {formatPercentage(targets[role])} → actual {formatPercentage(actualPercentages[role])} ({weights[role].toFixed(1)}×)
                 </span>
               ))}
             </div>

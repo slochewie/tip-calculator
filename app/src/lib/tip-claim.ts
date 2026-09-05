@@ -61,6 +61,7 @@ export type TipClaimShiftReport = {
   doorWeight: number;
   completedAt: string;
   createdAt: string;
+  canCorrect: boolean;
   registers: TipClaimReportRegister[];
   staff: TipClaimReportStaff[];
 };
@@ -133,6 +134,15 @@ export async function saveTipClaimShift(payload: TipClaimSavePayload) {
   const result = (await response.json()) as TipClaimSaveResponse;
   if (!response.ok) throw new Error(typeof result.error === "string" ? result.error : "Unable to save end-of-shift sales.");
   if (typeof result.shiftId !== "string" || result.shiftId.length === 0) throw new Error("Tip claim shift was saved without a shift ID.");
+  return { shiftId: result.shiftId };
+}
+
+export async function correctTipClaimShift(shiftId: string, payload: TipClaimSavePayload) {
+  const url = new URL("/api/auth/tip-claim/shifts", authBaseURL);
+  const response = await fetch(url, { method: "PATCH", credentials: "include", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...payload, shiftId }) });
+  const result = (await response.json()) as TipClaimSaveResponse;
+  if (!response.ok) throw new Error(typeof result.error === "string" ? result.error : "Unable to save report correction.");
+  if (result.shiftId !== shiftId) throw new Error("Corrected shift response did not match the requested shift.");
   return { shiftId: result.shiftId };
 }
 

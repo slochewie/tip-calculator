@@ -22,6 +22,7 @@ import { authBaseURL, authClient } from "#/lib/auth-client.ts";
 import { getTipClaimAccess, listTipClaimEmployees } from "#/lib/tip-claim.ts";
 
 export const Route = createFileRoute("/tips")({
+  head: () => ({ meta: [{ title: "Tip Pool Calculator" }] }),
   component: AuthenticatedTipDivvy,
 });
 
@@ -159,7 +160,9 @@ function AuthenticatedTipDivvy() {
         setMembers([]);
         setAccessAllowed(false);
         setMembersError(
-          error instanceof Error ? error.message : "Unable to load Tip Pool Calculator.",
+          error instanceof Error
+            ? error.message
+            : "Unable to load Tip Pool Calculator.",
         );
         setAreMembersPending(false);
       }

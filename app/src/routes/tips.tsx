@@ -159,7 +159,7 @@ function AuthenticatedTipDivvy() {
         setMembers([]);
         setAccessAllowed(false);
         setMembersError(
-          error instanceof Error ? error.message : "Unable to load Tip Divvy.",
+          error instanceof Error ? error.message : "Unable to load Tip Pool Calculator.",
         );
         setAreMembersPending(false);
       }
@@ -231,7 +231,7 @@ function AuthenticatedTipDivvy() {
           <CardHeader>
             <CardTitle>Tip Calculator access required</CardTitle>
             <CardDescription>
-              Your account does not have access to Tip Divvy for this organization.
+              Your account does not have access to the Tip Pool Calculator for this organization.
             </CardDescription>
           </CardHeader>
           {membersError ? (
@@ -250,6 +250,7 @@ function AuthenticatedTipDivvy() {
 
   return (
     <TipDivvyCalculator
+      organizationId={activeOrganization?.id}
       organizationName={activeOrganization?.name}
       organizationSelector={organizationSelector}
       members={members}

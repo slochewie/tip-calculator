@@ -109,7 +109,11 @@ export function AppChrome({ children }: { children: ReactNode }) {
   const consoleBaseURL = authBaseURL.replace(/\/$/, "");
   const sidebarDefaultOpen = getSidebarDefaultOpen();
   const appTitle =
-    location.pathname === "/tips" ? "Tip Pool Calculator" : "Tip Claim Calculator";
+    location.pathname === "/tips"
+      ? "Tip Pool Calculator"
+      : location.pathname === "/weight-presets"
+        ? "Weight Presets"
+        : "Tip Claim Calculator";
 
   return (
     <TooltipProvider>
@@ -175,6 +179,19 @@ export function AppChrome({ children }: { children: ReactNode }) {
                       <Link to="/assignments">
                         <UsersIcon />
                         <span className={sidebarLabelClassName}>Assignments</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      className={sidebarButtonClassName}
+                      isActive={location.pathname === "/weight-presets"}
+                      tooltip="Weight Presets"
+                    >
+                      <Link to="/weight-presets">
+                        <SettingsIcon />
+                        <span className={sidebarLabelClassName}>Weight Presets</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

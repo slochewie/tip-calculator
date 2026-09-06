@@ -78,6 +78,11 @@ function clampWeight(value: number) {
   return Math.min(10, Math.max(0, Math.round(value * 10) / 10));
 }
 
+function clampPercent(value: number) {
+  if (!Number.isFinite(value)) return 8;
+  return Math.min(100, Math.max(0, Math.round(value * 10) / 10));
+}
+
 function MobileStepperButtons({
   label,
   onIncrement,
@@ -168,6 +173,7 @@ export function TipWeightPresetConfigurator({
 }) {
   const [name, setName] = useState("");
   const [registerCount, setRegisterCount] = useState(0);
+  const [claimPercent, setClaimPercent] = useState(8);
   const [staff, setStaff] = useState<TipClaimRoleState>({
     ...DEFAULT_TIP_WEIGHT_PRESET_STAFF,
   });
@@ -271,6 +277,7 @@ export function TipWeightPresetConfigurator({
     setEditingId(null);
     setName("");
     setRegisterCount(0);
+    setClaimPercent(8);
     setStaff({ ...DEFAULT_TIP_WEIGHT_PRESET_STAFF });
     setWeights({ ...DEFAULT_TIP_WEIGHT_PRESET_WEIGHTS });
   }
@@ -305,6 +312,7 @@ export function TipWeightPresetConfigurator({
         id: editingId ?? undefined,
         name,
         registerCount,
+        claimPercent,
         staff,
         weights,
       });
@@ -333,6 +341,7 @@ export function TipWeightPresetConfigurator({
     setEditingId(preset.id);
     setName(preset.name);
     setRegisterCount(preset.registerCount);
+    setClaimPercent(preset.claimPercent);
     setStaff({ ...preset.staff });
     setWeights({ ...preset.weights });
     setPresetError(null);
@@ -431,6 +440,36 @@ export function TipWeightPresetConfigurator({
                   </FieldDescription>
                 </Field>
 
+                <Field>
+                  <FieldLabel htmlFor="preset-claim-percent">
+                    Claim percentage
+                  </FieldLabel>
+                  <div className="flex items-stretch gap-2">
+                    <ClearableNumberInput
+                      id="preset-claim-percent"
+                      inputMode="decimal"
+                      min={0}
+                      max={100}
+                      step={0.1}
+                      value={claimPercent}
+                      onChange={(value) => setClaimPercent(clampPercent(value))}
+                      onClear={() => setClaimPercent(8)}
+                    />
+                    <MobileStepperButtons
+                      label="claim percentage"
+                      onIncrement={() =>
+                        setClaimPercent(clampPercent(claimPercent + 0.1))
+                      }
+                      onDecrement={() =>
+                        setClaimPercent(clampPercent(claimPercent - 0.1))
+                      }
+                    />
+                  </div>
+                  <FieldDescription>
+                    Used only by the Claims calculator. Defaults to 8%. The Pool calculator ignores this value.
+                  </FieldDescription>
+                </Field>
+
                 {presetError ? (
                   <p className="text-sm text-destructive">{presetError}</p>
                 ) : null}
@@ -495,7 +534,7 @@ export function TipWeightPresetConfigurator({
                     >
                       <div className="font-medium">{preset.name}</div>
                       <div className="text-xs text-muted-foreground">
-                        Registers {preset.registerCount} ·{" "}
+                        Registers {preset.registerCount} · Claim {preset.claimPercent}% ·{" "}
                         {PRESET_ROLE_ORDER.map(
                           (role) =>
                             `${TIP_CLAIM_ROLE_LABELS[role]} ${preset.staff[role]} × ${preset.weights[role]}`,

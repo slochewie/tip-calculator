@@ -35,6 +35,7 @@ import {
 import {
   DEFAULT_TIP_WEIGHT_PRESET_STAFF,
   DEFAULT_TIP_WEIGHT_PRESET_WEIGHTS,
+  canManageTipWeightPresets,
   deleteTipWeightPreset,
   listTipWeightPresets,
   saveTipWeightPreset,
@@ -172,6 +173,7 @@ export function TipWeightPresetConfigurator({
   const [presetsPending, setPresetsPending] = useState(true);
   const [mutationPending, setMutationPending] = useState(false);
   const [presetError, setPresetError] = useState<string | null>(null);
+  const [canManagePresets, setCanManagePresets] = useState(false);
   const [expandedRoles, setExpandedRoles] = useState<
     Record<TipClaimRoleKey, boolean>
   >({
@@ -186,10 +188,14 @@ export function TipWeightPresetConfigurator({
 
     setPresetsPending(true);
     setPresetError(null);
+    setCanManagePresets(false);
 
     void listTipWeightPresets(organizationId)
       .then((nextPresets) => {
-        if (!cancelled) setPresets(nextPresets);
+        if (!cancelled) {
+          setPresets(nextPresets);
+          setCanManagePresets(canManageTipWeightPresets());
+        }
       })
       .catch((error: unknown) => {
         if (!cancelled) {
@@ -266,7 +272,14 @@ export function TipWeightPresetConfigurator({
   }
 
   async function handleSave() {
-    if (!name.trim() || totalStaff === 0 || mutationPending) return;
+    if (
+      !canManagePresets ||
+      !name.trim() ||
+      totalStaff === 0 ||
+      mutationPending
+    ) {
+      return;
+    }
 
     setMutationPending(true);
     setPresetError(null);
@@ -308,7 +321,7 @@ export function TipWeightPresetConfigurator({
   }
 
   async function handleDelete(presetId: string) {
-    if (mutationPending) return;
+    if (!canManagePresets || mutationPending) return;
 
     setMutationPending(true);
     setPresetError(null);
@@ -336,6 +349,9 @@ export function TipWeightPresetConfigurator({
             Weight Presets
           </h1>
           <Badge variant="secondary">Staffing states</Badge>
+          {!presetsPending && !canManagePresets ? (
+            <Badge variant="outline">Read only</Badge>
+          ) : null}
         </div>
         <p className="max-w-3xl text-sm text-muted-foreground md:text-base">
           Build named role-weight configurations for specific staffing mixes
@@ -345,60 +361,64 @@ export function TipWeightPresetConfigurator({
 
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.9fr)]">
         <div className="flex min-w-0 flex-col gap-5">
-          <Card>
-            <CardHeader>
-              <CardTitle>{editingId ? "Edit preset" : "New preset"}</CardTitle>
-              <CardDescription>
-                Name this staffing configuration, then use the distribution preview to set role counts and weights.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-5">
-              <Field>
-                <FieldLabel htmlFor="preset-name">Preset name</FieldLabel>
-                <Input
-                  id="preset-name"
-                  placeholder="Friday Full Staff"
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                />
-                <FieldDescription>
-                  Use a name that makes the staffing state easy to recognize.
-                </FieldDescription>
-              </Field>
+          {canManagePresets ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>{editingId ? "Edit preset" : "New preset"}</CardTitle>
+                <CardDescription>
+                  Name this staffing configuration, then use the distribution preview to set role counts and weights.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-5">
+                <Field>
+                  <FieldLabel htmlFor="preset-name">Preset name</FieldLabel>
+                  <Input
+                    id="preset-name"
+                    placeholder="Friday Full Staff"
+                    value={name}
+                    onChange={(event) => setName(event.target.value)}
+                  />
+                  <FieldDescription>
+                    Use a name that makes the staffing state easy to recognize.
+                  </FieldDescription>
+                </Field>
 
-              {presetError ? (
-                <p className="text-sm text-destructive">{presetError}</p>
-              ) : null}
+                {presetError ? (
+                  <p className="text-sm text-destructive">{presetError}</p>
+                ) : null}
 
-              <div className="flex flex-col gap-2 sm:flex-row">
-                {editingId ? (
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  {editingId ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="sm:w-auto"
+                      disabled={mutationPending}
+                      onClick={resetForm}
+                    >
+                      Cancel
+                    </Button>
+                  ) : null}
                   <Button
                     type="button"
-                    variant="outline"
-                    className="sm:w-auto"
-                    disabled={mutationPending}
-                    onClick={resetForm}
+                    disabled={
+                      !name.trim() || totalStaff === 0 || mutationPending
+                    }
+                    onClick={() => void handleSave()}
                   >
-                    Cancel
+                    <SaveIcon data-icon="inline-start" />
+                    {mutationPending
+                      ? "Saving..."
+                      : editingId
+                        ? "Save changes"
+                        : "Save preset"}
                   </Button>
-                ) : null}
-                <Button
-                  type="button"
-                  disabled={
-                    !name.trim() || totalStaff === 0 || mutationPending
-                  }
-                  onClick={() => void handleSave()}
-                >
-                  <SaveIcon data-icon="inline-start" />
-                  {mutationPending
-                    ? "Saving..."
-                    : editingId
-                      ? "Save changes"
-                      : "Save preset"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+                </div>
+              </CardContent>
+            </Card>
+          ) : presetError ? (
+            <p className="text-sm text-destructive">{presetError}</p>
+          ) : null}
 
           <Card>
             <CardHeader>
@@ -433,27 +453,29 @@ export function TipWeightPresetConfigurator({
                         ).join(" · ")}
                       </div>
                     </button>
-                    <div className="flex gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={mutationPending}
-                        onClick={() => handleEdit(preset)}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="sm"
-                        disabled={mutationPending}
-                        onClick={() => void handleDelete(preset.id)}
-                      >
-                        <Trash2Icon data-icon="inline-start" />
-                        Delete
-                      </Button>
-                    </div>
+                    {canManagePresets ? (
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={mutationPending}
+                          onClick={() => handleEdit(preset)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          disabled={mutationPending}
+                          onClick={() => void handleDelete(preset.id)}
+                        >
+                          <Trash2Icon data-icon="inline-start" />
+                          Delete
+                        </Button>
+                      </div>
+                    ) : null}
                   </div>
                 ))
               )}

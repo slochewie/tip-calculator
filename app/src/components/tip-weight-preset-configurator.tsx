@@ -523,7 +523,7 @@ export function TipWeightPresetConfigurator({
                   step={0.01}
                   value={previewAmount || ""}
                   placeholder="0.00"
-                  className="pl-7 tabular-nums"
+                  className="pl-7 pr-10 tabular-nums"
                   onChange={(event) => {
                     const value = event.currentTarget.valueAsNumber;
                     setPreviewAmount(
@@ -531,6 +531,16 @@ export function TipWeightPresetConfigurator({
                     );
                   }}
                 />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-1 top-1/2 size-8 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  aria-label="Clear preview amount"
+                  onClick={() => setPreviewAmount(0)}
+                >
+                  <XIcon className="size-4" />
+                </Button>
               </div>
               <FieldDescription>
                 Enter any total amount, such as combined sales or pooled tips. This preview is never saved.

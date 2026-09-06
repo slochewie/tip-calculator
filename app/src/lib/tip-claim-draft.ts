@@ -1,5 +1,5 @@
 import type {
-	tipClaimRoleState,
+	TipClaimRoleState,
 	TipClaimWeightState,
 } from "#/lib/tip-claim-allocation.ts";
 import type { TipClaimShiftReport } from "#/lib/tip-claim.ts";

@@ -582,14 +582,14 @@ export function TipWeightPresetConfigurator({
               </FieldDescription>
             </Field>
 
-            <div className="relative min-h-0 overflow-hidden">
+            <div className="relative min-h-0 overflow-visible px-2">
               {chartData.length > 0 ? (
                 <ChartContainer
                   config={chartConfig}
-                  className="mx-auto aspect-square h-[min(56vw,20rem)] max-h-80 w-auto max-w-full"
+                  className="mx-auto aspect-square h-[min(56vw,20rem)] max-h-80 w-auto max-w-full overflow-visible"
                   initialDimension={{ width: 300, height: 300 }}
                 >
-                  <PieChart>
+                  <PieChart margin={{ top: 16, right: 24, bottom: 16, left: 24 }}>
                     <ChartTooltip
                       cursor={false}
                       content={
@@ -635,8 +635,8 @@ export function TipWeightPresetConfigurator({
                       data={chartData}
                       dataKey="units"
                       nameKey="role"
-                      innerRadius="52%"
-                      outerRadius="74%"
+                      innerRadius="48%"
+                      outerRadius="68%"
                       paddingAngle={0}
                       label={({ segmentIndex, rolePercentage, roleAmount }) =>
                         segmentIndex === 0 && rolePercentage >= 4
@@ -688,11 +688,11 @@ export function TipWeightPresetConfigurator({
                 return (
                   <div
                     key={item.role}
-                    className="flex flex-col rounded-lg border"
+                    className="flex min-w-0 flex-col rounded-lg border"
                   >
                     <button
                       type="button"
-                      className="flex w-full items-start justify-between gap-3 p-3 text-left"
+                      className="grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 p-3 text-left"
                       aria-expanded={expanded}
                       aria-controls={`preset-role-${item.role}`}
                       onClick={() => toggleRole(item.role)}
@@ -702,35 +702,37 @@ export function TipWeightPresetConfigurator({
                           className="size-2.5 shrink-0 rounded-sm"
                           style={{ backgroundColor: item.fill }}
                         />
-                        <span className="truncate font-medium">
+                        <span className="font-medium">
                           {TIP_CLAIM_ROLE_LABELS[item.role]}
                         </span>
                       </div>
-                      <div className="flex items-start gap-2">
-                        <div className="text-right tabular-nums">
-                          <div className="font-semibold">
-                            {item.percentage.toLocaleString("en-US", {
-                              maximumFractionDigits: 1,
-                            })}
-                            %
-                          </div>
-                          {previewAmount > 0 ? (
-                            <div className="text-xs font-medium">
-                              {currencyFormatter.format(item.amount)} role
-                            </div>
-                          ) : null}
-                          <div className="text-xs text-muted-foreground">
-                            {item.staff} × {item.weight}
-                            {previewAmount > 0 && item.staff > 0
-                              ? ` · ${currencyFormatter.format(item.perPersonAmount)} each`
-                              : ""}
-                          </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <div className="font-semibold tabular-nums">
+                          {item.percentage.toLocaleString("en-US", {
+                            maximumFractionDigits: 1,
+                          })}
+                          %
                         </div>
                         <ChevronDownIcon
-                          className={`mt-0.5 size-4 shrink-0 text-muted-foreground transition-transform ${
+                          className={`size-4 shrink-0 text-muted-foreground transition-transform ${
                             expanded ? "rotate-180" : ""
                           }`}
                         />
+                      </div>
+                      <div className="col-span-2 flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-xs tabular-nums">
+                        {previewAmount > 0 ? (
+                          <span className="font-medium">
+                            {currencyFormatter.format(item.amount)} role
+                          </span>
+                        ) : (
+                          <span />
+                        )}
+                        <span className="text-muted-foreground">
+                          {item.staff} × {item.weight}
+                          {previewAmount > 0 && item.staff > 0
+                            ? ` · ${currencyFormatter.format(item.perPersonAmount)} each`
+                            : ""}
+                        </span>
                       </div>
                     </button>
 

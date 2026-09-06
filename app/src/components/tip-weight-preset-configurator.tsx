@@ -40,6 +40,13 @@ import {
   type TipWeightPreset,
 } from "#/lib/tip-weight-presets.ts";
 
+const PRESET_ROLE_ORDER: TipClaimRoleKey[] = [
+  "manager",
+  "bartender",
+  "barback",
+  "door",
+];
+
 const ROLE_COLORS: Record<TipClaimRoleKey, string> = {
   bartender: "var(--color-bartender)",
   manager: "var(--color-manager)",
@@ -124,7 +131,7 @@ export function TipWeightPresetConfigurator({
       0,
     );
 
-    return TIP_CLAIM_ROLE_ORDER.map((role) => {
+    return PRESET_ROLE_ORDER.map((role) => {
       const units = staff[role] * weights[role];
       return {
         role,
@@ -284,7 +291,7 @@ export function TipWeightPresetConfigurator({
                     >
                       <div className="font-medium">{preset.name}</div>
                       <div className="text-xs text-muted-foreground">
-                        {TIP_CLAIM_ROLE_ORDER.map(
+                        {PRESET_ROLE_ORDER.map(
                           (role) =>
                             `${TIP_CLAIM_ROLE_LABELS[role]} ${preset.staff[role]} × ${preset.weights[role]}`,
                         ).join(" · ")}
@@ -437,12 +444,12 @@ export function TipWeightPresetConfigurator({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 items-end gap-3">
-                    <Field>
+                  <div className="flex flex-col gap-2">
+                    <div className="grid grid-cols-[auto_1fr] items-center gap-3">
                       <FieldLabel htmlFor={`preset-count-${item.role}`}>
                         Staff
                       </FieldLabel>
-                      <div className="flex flex-wrap items-stretch gap-2 sm:flex-nowrap">
+                      <div className="ml-auto flex items-stretch gap-2">
                         <Input
                           id={`preset-count-${item.role}`}
                           type="number"
@@ -451,7 +458,7 @@ export function TipWeightPresetConfigurator({
                           max={50}
                           step={1}
                           value={staff[item.role]}
-                          className="w-20 text-center tabular-nums sm:w-full"
+                          className="w-20 text-center tabular-nums sm:w-24"
                           onChange={(event) =>
                             updateStaff(
                               item.role,
@@ -469,13 +476,13 @@ export function TipWeightPresetConfigurator({
                           }
                         />
                       </div>
-                    </Field>
+                    </div>
 
-                    <Field>
+                    <div className="grid grid-cols-[auto_1fr] items-center gap-3">
                       <FieldLabel htmlFor={`preset-weight-${item.role}`}>
                         Weight
                       </FieldLabel>
-                      <div className="flex flex-wrap items-stretch gap-2 sm:flex-nowrap">
+                      <div className="ml-auto flex items-stretch gap-2">
                         <Input
                           id={`preset-weight-${item.role}`}
                           type="number"
@@ -484,7 +491,7 @@ export function TipWeightPresetConfigurator({
                           max={10}
                           step={0.1}
                           value={weights[item.role]}
-                          className="w-20 text-right tabular-nums sm:w-full"
+                          className="w-20 text-right tabular-nums sm:w-24"
                           onChange={(event) =>
                             updateWeight(
                               item.role,
@@ -502,7 +509,7 @@ export function TipWeightPresetConfigurator({
                           }
                         />
                       </div>
-                    </Field>
+                    </div>
                   </div>
                 </div>
               ))}

@@ -1,5 +1,5 @@
 import type {
-	TipClaimRoleState,
+	tipClaimRoleState,
 	TipClaimWeightState,
 } from "#/lib/tip-claim-allocation.ts";
 import type { TipClaimShiftReport } from "#/lib/tip-claim.ts";
@@ -11,7 +11,7 @@ export type TipClaimDraftRegister = {
 };
 
 export type TipClaimDraftStaffAssignment = {
-	userId: string;
+	userId: string | null;
 	role: "bartender" | "manager" | "barback" | "door";
 	registerId: number | null;
 };

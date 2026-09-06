@@ -1012,8 +1012,9 @@ export function TipClaimCalculator({
 													: undefined;
 												const availableMembers = eligibleMembers.filter(
 													(member) =>
-														member.id === assignment.userId ||
-														!assignedUserIds.has(member.id),
+														isRoleEnabled(member, assignment.role) &&
+														(member.id === assignment.userId ||
+															!assignedUserIds.has(member.id)),
 												);
 												const availableRoles = assignedMember
 													? enabledRoles(assignedMember)

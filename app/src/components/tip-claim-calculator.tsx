@@ -72,6 +72,10 @@ import {
 	correctTipClaimShift,
 	saveTipClaimShift,
 } from "#/lib/tip-claim.ts";
+import {
+	listTipWeightPresets,
+	type TipWeightPreset,
+} from "#/lib/tip-weight-presets.ts";
 import { useTipClaimDraft } from "#/lib/use-tip-claim-draft.ts";
 
 type Register = {
@@ -81,7 +85,7 @@ type Register = {
 };
 
 type StaffAssignment = {
-	userId: string;
+	userId: string | null;
 	role: RoleKey;
 	registerId: number | null;
 };
@@ -105,7 +109,13 @@ type TipClaimCalculatorProps = {
 	membersError?: string | null;
 };
 
-const ROLE_ENABLED_FIELDS: Record<RoleKey, keyof Pick<TipClaimMember, "bartenderEnabled" | "managerEnabled" | "barbackEnabled" | "doorEnabled">> = {
+const ROLE_ENABLED_FIELDS: Record<
+	RoleKey,
+	keyof Pick<
+		TipClaimMember,
+		"bartenderEnabled" | "managerEnabled" | "barbackEnabled" | "doorEnabled"
+	>
+> = {
 	bartender: "bartenderEnabled",
 	manager: "managerEnabled",
 	barback: "barbackEnabled",
@@ -160,6 +170,10 @@ export function TipClaimCalculator({
 	const [weights, setWeights] = useState<WeightState>({
 		...DEFAULT_TIP_CLAIM_WEIGHTS,
 	});
+	const [weightPresets, setWeightPresets] = useState<TipWeightPreset[]>([]);
+	const [selectedWeightPresetId, setSelectedWeightPresetId] = useState("");
+	const [weightPresetsPending, setWeightPresetsPending] = useState(false);
+	const [weightPresetsError, setWeightPresetsError] = useState<string | null>(null);
 	const [savePending, setSavePending] = useState(false);
 	const [saveError, setSaveError] = useState<string | null>(null);
 	const [savedShiftId, setSavedShiftId] = useState<string | null>(null);
@@ -195,6 +209,38 @@ export function TipClaimCalculator({
 		setSaveError(null);
 		setSavedShiftId(null);
 	}, [claimPercent, memberAssignments, organizationId, registers, weights]);
+
+	useEffect(() => {
+		setSelectedWeightPresetId("");
+		setWeightPresets([]);
+		setWeightPresetsError(null);
+
+		if (!organizationId) return;
+
+		let cancelled = false;
+		setWeightPresetsPending(true);
+
+		void listTipWeightPresets(organizationId)
+			.then((presets) => {
+				if (!cancelled) setWeightPresets(presets);
+			})
+			.catch((error: unknown) => {
+				if (!cancelled) {
+					setWeightPresetsError(
+						error instanceof Error
+							? error.message
+							: "Unable to load weight presets.",
+					);
+				}
+			})
+			.finally(() => {
+				if (!cancelled) setWeightPresetsPending(false);
+			});
+
+		return () => {
+			cancelled = true;
+		};
+	}, [organizationId]);
 
 	const effectiveStaff = useMemo<RoleState>(() => {
 		if (!usesOrganizationMembers) {
@@ -263,11 +309,59 @@ export function TipClaimCalculator({
 		(member) => enabledRoles(member, REGISTER_ROLE_ORDER).length > 0,
 	);
 	const assignedUserIds = new Set(
-		memberAssignments.map((assignment) => assignment.userId),
+		memberAssignments.flatMap((assignment) =>
+			assignment.userId ? [assignment.userId] : [],
+		),
 	);
 	const unassignedMembers = eligibleMembers.filter(
 		(member) => !assignedUserIds.has(member.id),
 	);
+	const hasUnassignedSlots = memberAssignments.some(
+		(assignment) => assignment.userId === null,
+	);
+
+	function applyWeightPreset(presetId: string) {
+		const preset = weightPresets.find((candidate) => candidate.id === presetId);
+		if (!preset) return;
+
+		const registerCount = clampInteger(preset.registerCount);
+		const nextRegisters: Register[] = Array.from(
+			{ length: registerCount },
+			(_, index) => ({
+				id: index + 1,
+				name: `Register ${String.fromCharCode(65 + index)}`,
+				sales: "",
+			}),
+		);
+		const nextAssignments: StaffAssignment[] = nextRegisters.map((register) => ({
+			userId: null,
+			role: "bartender",
+			registerId: register.id,
+		}));
+
+		for (const role of ["manager", "barback", "door"] as const) {
+			for (let index = 0; index < preset.staff[role]; index += 1) {
+				nextAssignments.push({ userId: null, role, registerId: null });
+			}
+		}
+
+		setSelectedWeightPresetId(presetId);
+		setRegisters(nextRegisters);
+		setNextRegisterId(registerCount + 1);
+		setStaff({
+			bartender: registerCount,
+			manager: preset.staff.manager,
+			barback: preset.staff.barback,
+			door: preset.staff.door,
+		});
+		setMemberAssignments(nextAssignments);
+		setWeights({ ...preset.weights });
+		setEditingShiftId(null);
+		setEditingCompletedAt(null);
+		setPreviewOpen(false);
+		setSaveError(null);
+		setSavedShiftId(null);
+	}
 
 	function updateRegister(id: number, changes: Partial<Register>) {
 		setRegisters((current) =>
@@ -279,26 +373,34 @@ export function TipClaimCalculator({
 
 	function addRegister() {
 		const letter = String.fromCharCode(65 + registers.length);
+		const registerId = nextRegisterId;
 		setRegisters((current) => [
 			...current,
 			{
-				id: nextRegisterId,
+				id: registerId,
 				name: `Register ${letter}`,
 				sales: "",
 			},
 		]);
+		if (usesOrganizationMembers) {
+			setMemberAssignments((current) => [
+				...current,
+				{ userId: null, role: "bartender", registerId },
+			]);
+		}
+		setStaff((current) => ({ ...current, bartender: current.bartender + 1 }));
 		setNextRegisterId((current) => current + 1);
 	}
 
 	function removeRegister(id: number) {
 		setRegisters((current) => current.filter((register) => register.id !== id));
 		setMemberAssignments((current) =>
-			current.map((assignment) =>
-				assignment.registerId === id
-					? { ...assignment, registerId: null }
-					: assignment,
-			),
+			current.filter((assignment) => assignment.registerId !== id),
 		);
+		setStaff((current) => ({
+			...current,
+			bartender: Math.max(0, current.bartender - 1),
+		}));
 	}
 
 	function updateStaff(role: RoleKey, value: string) {
@@ -340,9 +442,12 @@ export function TipClaimCalculator({
 			const assignment = current[index];
 			if (!assignment) return current;
 
-			const userId = changes.userId ?? assignment.userId;
-			const member = members?.find((candidate) => candidate.id === userId);
-			if (usesOrganizationMembers && !member) return current;
+			const userId =
+				changes.userId !== undefined ? changes.userId : assignment.userId;
+			const member = userId
+				? members?.find((candidate) => candidate.id === userId)
+				: undefined;
+			if (usesOrganizationMembers && userId !== null && !member) return current;
 
 			let role = changes.role ?? assignment.role;
 			if (member && !isRoleEnabled(member, role)) {
@@ -372,6 +477,13 @@ export function TipClaimCalculator({
 				}
 
 				if (
+					userId !== null &&
+					currentAssignment.userId === userId
+				) {
+					return { ...currentAssignment, userId: null };
+				}
+
+				if (
 					registerId !== null &&
 					currentAssignment.registerId === registerId
 				) {
@@ -390,60 +502,58 @@ export function TipClaimCalculator({
 			);
 
 			if (userId === null) {
-				return current.map((assignment, index) =>
-					index === currentRegisterIndex
-						? { ...assignment, registerId: null }
-						: assignment,
-				);
+				if (currentRegisterIndex >= 0) {
+					return current.map((assignment, index) =>
+						index === currentRegisterIndex
+							? { ...assignment, userId: null, role: "bartender", registerId }
+							: assignment,
+					);
+				}
+
+				return [
+					...current,
+					{ userId: null, role: "bartender", registerId },
+				];
 			}
 
 			const member = registerMembers.find((candidate) => candidate.id === userId);
 			if (!member) return current;
 
 			const allowedRegisterRoles = enabledRoles(member, REGISTER_ROLE_ORDER);
+			const role = allowedRegisterRoles[0];
+			if (!role) return current;
+
 			const userIndex = current.findIndex(
 				(assignment) => assignment.userId === userId,
 			);
 
 			if (userIndex >= 0) {
-				return current.map((assignment, index) => {
+				return current.flatMap((assignment, index) => {
+					if (index === currentRegisterIndex && index !== userIndex) return [];
 					if (index === userIndex) {
-						const role = allowedRegisterRoles.includes(assignment.role)
-							? assignment.role
-							: allowedRegisterRoles[0];
-
-						if (!role) return assignment;
-
-						return {
-							...assignment,
-							role,
-							registerId,
-						};
+						return [
+							{
+								...assignment,
+								role: allowedRegisterRoles.includes(assignment.role)
+									? assignment.role
+									: role,
+								registerId,
+							},
+						];
 					}
-
-					if (assignment.registerId === registerId) {
-						return { ...assignment, registerId: null };
-					}
-
-					return assignment;
+					return [assignment];
 				});
 			}
 
-			const role = allowedRegisterRoles[0];
-			if (!role) return current;
-
-			return [
-				...current.map((assignment) =>
-					assignment.registerId === registerId
-						? { ...assignment, registerId: null }
+			if (currentRegisterIndex >= 0) {
+				return current.map((assignment, index) =>
+					index === currentRegisterIndex
+						? { ...assignment, userId, role, registerId }
 						: assignment,
-				),
-				{
-					userId,
-					role,
-					registerId,
-				},
-			];
+				);
+			}
+
+			return [...current, { userId, role, registerId }];
 		});
 	}
 
@@ -471,6 +581,11 @@ export function TipClaimCalculator({
 			return false;
 		}
 
+		if (hasUnassignedSlots) {
+			setSaveError("Assign an employee to every register and staff role before saving.");
+			return false;
+		}
+
 		if (registers.some((register) => register.name.trim().length === 0)) {
 			setSaveError("Every register needs a name before saving.");
 			return false;
@@ -486,6 +601,10 @@ export function TipClaimCalculator({
 
 		const resolvedStaff = memberAssignments.map<TipClaimResolvedStaff>(
 			(assignment) => {
+				if (!assignment.userId) {
+					throw new Error("Assign every staff slot before saving.");
+				}
+
 				const member = members.find(
 					(candidate) => candidate.id === assignment.userId,
 				);
@@ -583,10 +702,12 @@ export function TipClaimCalculator({
 		setPreviewOpen(false);
 		setSaveError(null);
 		setSavedShiftId(null);
+		setSelectedWeightPresetId("");
 		resetDraft();
 	}
 
 	const previewStaff = memberAssignments.flatMap((assignment) => {
+		if (!assignment.userId) return [];
 		const member = members?.find(
 			(candidate) => candidate.id === assignment.userId,
 		);
@@ -621,6 +742,48 @@ export function TipClaimCalculator({
 			<div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
 				<div className="flex min-w-0 flex-col gap-5">
 					{organizationSelector}
+
+					<Card>
+						<CardHeader>
+							<CardTitle>Weight preset</CardTitle>
+							<CardDescription>
+								Select a preset to build the registers, staffing slots, and role weights for this shift.
+							</CardDescription>
+						</CardHeader>
+						<CardContent className="flex flex-col gap-2">
+							<Select
+								value={selectedWeightPresetId}
+								disabled={
+									!organizationId ||
+									weightPresetsPending ||
+									weightPresets.length === 0
+								}
+								onValueChange={applyWeightPreset}
+							>
+								<SelectTrigger className="w-full">
+									<SelectValue
+										placeholder={
+											weightPresetsPending
+												? "Loading weight presets…"
+												: weightPresets.length === 0
+													? "No weight presets"
+													: "Select weight preset"
+										}
+									/>
+								</SelectTrigger>
+								<SelectContent>
+									{weightPresets.map((preset) => (
+										<SelectItem key={preset.id} value={preset.id}>
+											{preset.name}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+							{weightPresetsError ? (
+								<p className="text-sm text-destructive">{weightPresetsError}</p>
+							) : null}
+						</CardContent>
+					</Card>
 
 					<Card>
 						<CardHeader>
@@ -665,11 +828,12 @@ export function TipClaimCalculator({
 									);
 									const assignment =
 										assignmentIndex >= 0 ? memberAssignments[assignmentIndex] : undefined;
-									const assignedMember = assignment
+									const assignedMember = assignment?.userId
 										? members?.find((member) => member.id === assignment.userId)
 										: undefined;
 									const registerAssignedUserIds = new Set(
 										memberAssignments.flatMap((candidate) =>
+											candidate.userId &&
 											candidate.registerId !== null &&
 											candidate.registerId !== register.id
 												? [candidate.userId]
@@ -681,7 +845,7 @@ export function TipClaimCalculator({
 									);
 									const availableRegisterRoles = assignedMember
 										? enabledRoles(assignedMember, REGISTER_ROLE_ORDER)
-										: [];
+										: [assignment?.role ?? "bartender"];
 
 									return (
 										<div
@@ -765,8 +929,8 @@ export function TipClaimCalculator({
 													<Field>
 														<FieldLabel>Role</FieldLabel>
 														<Select
-															value={assignment?.role ?? availableRegisterRoles[0] ?? "bartender"}
-															disabled={assignmentIndex < 0}
+															value={assignment?.role ?? "bartender"}
+															disabled={assignmentIndex < 0 || !assignment?.userId}
 															onValueChange={(role) => {
 																if (assignmentIndex >= 0) {
 																	updateMemberAssignment(assignmentIndex, {
@@ -839,9 +1003,13 @@ export function TipClaimCalculator({
 											) : null}
 
 											{memberAssignments.map((assignment, index) => {
-												const assignedMember = members?.find(
-													(member) => member.id === assignment.userId,
-												);
+												if (assignment.registerId !== null) return null;
+
+												const assignedMember = assignment.userId
+													? members?.find(
+														(member) => member.id === assignment.userId,
+													)
+													: undefined;
 												const availableMembers = eligibleMembers.filter(
 													(member) =>
 														member.id === assignment.userId ||
@@ -849,23 +1017,26 @@ export function TipClaimCalculator({
 												);
 												const availableRoles = assignedMember
 													? enabledRoles(assignedMember)
-													: [];
+													: ROLE_ORDER;
 
 												return (
 													<div
-														key={`${assignment.userId}-${index}`}
+														key={`${assignment.userId ?? "unassigned"}-${assignment.role}-${index}`}
 														className="grid min-w-0 gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(140px,0.45fr)_auto]"
 													>
 														<Select
-															value={assignment.userId}
-															onValueChange={(userId) =>
-																updateMemberAssignment(index, { userId })
+															value={assignment.userId ?? "none"}
+															onValueChange={(value) =>
+																updateMemberAssignment(index, {
+																	userId: value === "none" ? null : value,
+																})
 															}
 														>
 															<SelectTrigger className="w-full">
-																<SelectValue placeholder="Select member" />
+																<SelectValue placeholder="Select employee" />
 															</SelectTrigger>
 															<SelectContent>
+																<SelectItem value="none">Select employee</SelectItem>
 																{availableMembers.map((member) => (
 																	<SelectItem key={member.id} value={member.id}>
 																		{member.name || member.email}
@@ -1103,11 +1274,14 @@ export function TipClaimCalculator({
 							saveDisabled={
 								!organizationId ||
 								memberAssignments.length === 0 ||
+								hasUnassignedSlots ||
 								(requiredClaimCents > 0 &&
 									allocatedClaimCents !== requiredClaimCents)
 							}
 							previewDisabled={
-								!organizationId || memberAssignments.length === 0
+								!organizationId ||
+								memberAssignments.length === 0 ||
+								hasUnassignedSlots
 							}
 							savePending={savePending}
 							savedShiftId={savedShiftId}

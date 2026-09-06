@@ -167,6 +167,7 @@ export function TipWeightPresetConfigurator({
   organizationName?: string;
 }) {
   const [name, setName] = useState("");
+  const [registerCount, setRegisterCount] = useState(0);
   const [staff, setStaff] = useState<TipClaimRoleState>({
     ...DEFAULT_TIP_WEIGHT_PRESET_STAFF,
   });
@@ -269,6 +270,7 @@ export function TipWeightPresetConfigurator({
   function resetForm() {
     setEditingId(null);
     setName("");
+    setRegisterCount(0);
     setStaff({ ...DEFAULT_TIP_WEIGHT_PRESET_STAFF });
     setWeights({ ...DEFAULT_TIP_WEIGHT_PRESET_WEIGHTS });
   }
@@ -302,6 +304,7 @@ export function TipWeightPresetConfigurator({
       const savedPreset = await saveTipWeightPreset(organizationId, {
         id: editingId ?? undefined,
         name,
+        registerCount,
         staff,
         weights,
       });
@@ -329,6 +332,7 @@ export function TipWeightPresetConfigurator({
   function handleEdit(preset: TipWeightPreset) {
     setEditingId(preset.id);
     setName(preset.name);
+    setRegisterCount(preset.registerCount);
     setStaff({ ...preset.staff });
     setWeights({ ...preset.weights });
     setPresetError(null);
@@ -397,6 +401,36 @@ export function TipWeightPresetConfigurator({
                   </FieldDescription>
                 </Field>
 
+                <Field>
+                  <FieldLabel htmlFor="preset-register-count">
+                    Register count
+                  </FieldLabel>
+                  <div className="flex items-stretch gap-2">
+                    <ClearableNumberInput
+                      id="preset-register-count"
+                      inputMode="numeric"
+                      min={0}
+                      max={50}
+                      step={1}
+                      value={registerCount}
+                      onChange={(value) => setRegisterCount(clampCount(value))}
+                      onClear={() => setRegisterCount(0)}
+                    />
+                    <MobileStepperButtons
+                      label="register count"
+                      onIncrement={() =>
+                        setRegisterCount(clampCount(registerCount + 1))
+                      }
+                      onDecrement={() =>
+                        setRegisterCount(clampCount(registerCount - 1))
+                      }
+                    />
+                  </div>
+                  <FieldDescription>
+                    Used only by the Claims calculator to create register rows. The Pool calculator ignores this value.
+                  </FieldDescription>
+                </Field>
+
                 {presetError ? (
                   <p className="text-sm text-destructive">{presetError}</p>
                 ) : null}
@@ -461,6 +495,7 @@ export function TipWeightPresetConfigurator({
                     >
                       <div className="font-medium">{preset.name}</div>
                       <div className="text-xs text-muted-foreground">
+                        Registers {preset.registerCount} ·{" "}
                         {PRESET_ROLE_ORDER.map(
                           (role) =>
                             `${TIP_CLAIM_ROLE_LABELS[role]} ${preset.staff[role]} × ${preset.weights[role]}`,

@@ -16,11 +16,6 @@ export type TipWeightPreset = {
   updatedAt: string;
 };
 
-export type TipWeightPresetList = {
-  presets: TipWeightPreset[];
-  canManage: boolean;
-};
-
 type WeightPresetResponse = {
   preset?: TipWeightPreset;
   error?: string;
@@ -37,6 +32,12 @@ type WeightPresetDeleteResponse = {
   error?: string;
 };
 
+let weightPresetsCanManage = false;
+
+export function canManageTipWeightPresets() {
+  return weightPresetsCanManage;
+}
+
 export const DEFAULT_TIP_WEIGHT_PRESET_STAFF: TipClaimRoleState = {
   manager: 0,
   bartender: 3,
@@ -52,9 +53,7 @@ function endpoint() {
   return new URL("/api/auth/tip-claim/weight-presets", authBaseURL);
 }
 
-export async function listTipWeightPresets(
-  organizationId: string,
-): Promise<TipWeightPresetList> {
+export async function listTipWeightPresets(organizationId: string) {
   const url = endpoint();
   url.searchParams.set("organizationId", organizationId);
 
@@ -71,10 +70,8 @@ export async function listTipWeightPresets(
     );
   }
 
-  return {
-    presets: Array.isArray(result.presets) ? result.presets : [],
-    canManage: result.canManage === true,
-  };
+  weightPresetsCanManage = result.canManage === true;
+  return Array.isArray(result.presets) ? result.presets : [];
 }
 
 export async function saveTipWeightPreset(
@@ -86,6 +83,10 @@ export async function saveTipWeightPreset(
     weights: TipClaimWeightState;
   },
 ) {
+  if (!weightPresetsCanManage) {
+    throw new Error("You do not have permission to manage weight presets.");
+  }
+
   const response = await fetch(endpoint(), {
     method: input.id ? "PATCH" : "POST",
     credentials: "include",
@@ -121,6 +122,10 @@ export async function deleteTipWeightPreset(
   organizationId: string,
   presetId: string,
 ) {
+  if (!weightPresetsCanManage) {
+    throw new Error("You do not have permission to manage weight presets.");
+  }
+
   const response = await fetch(endpoint(), {
     method: "DELETE",
     credentials: "include",

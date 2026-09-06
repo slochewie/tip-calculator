@@ -16,6 +16,11 @@ export type TipWeightPreset = {
   updatedAt: string;
 };
 
+export type TipWeightPresetList = {
+  presets: TipWeightPreset[];
+  canManage: boolean;
+};
+
 type WeightPresetResponse = {
   preset?: TipWeightPreset;
   error?: string;
@@ -23,6 +28,7 @@ type WeightPresetResponse = {
 
 type WeightPresetListResponse = {
   presets?: TipWeightPreset[];
+  canManage?: boolean;
   error?: string;
 };
 
@@ -46,7 +52,9 @@ function endpoint() {
   return new URL("/api/auth/tip-claim/weight-presets", authBaseURL);
 }
 
-export async function listTipWeightPresets(organizationId: string) {
+export async function listTipWeightPresets(
+  organizationId: string,
+): Promise<TipWeightPresetList> {
   const url = endpoint();
   url.searchParams.set("organizationId", organizationId);
 
@@ -63,7 +71,10 @@ export async function listTipWeightPresets(organizationId: string) {
     );
   }
 
-  return Array.isArray(result.presets) ? result.presets : [];
+  return {
+    presets: Array.isArray(result.presets) ? result.presets : [],
+    canManage: result.canManage === true,
+  };
 }
 
 export async function saveTipWeightPreset(

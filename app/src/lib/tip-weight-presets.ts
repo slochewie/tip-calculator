@@ -1,3 +1,4 @@
+import { authBaseURL } from "#/lib/auth-client.ts";
 import {
   DEFAULT_TIP_CLAIM_WEIGHTS,
   type TipClaimRoleState,
@@ -10,11 +11,25 @@ export type TipWeightPreset = {
   name: string;
   staff: TipClaimRoleState;
   weights: TipClaimWeightState;
+  createdByUserId?: string;
   createdAt: string;
   updatedAt: string;
 };
 
-const STORAGE_PREFIX = "niteowl:tip-weight-presets:";
+type WeightPresetResponse = {
+  preset?: TipWeightPreset;
+  error?: string;
+};
+
+type WeightPresetListResponse = {
+  presets?: TipWeightPreset[];
+  error?: string;
+};
+
+type WeightPresetDeleteResponse = {
+  success?: boolean;
+  error?: string;
+};
 
 export const DEFAULT_TIP_WEIGHT_PRESET_STAFF: TipClaimRoleState = {
   manager: 0,
@@ -27,27 +42,31 @@ export const DEFAULT_TIP_WEIGHT_PRESET_WEIGHTS: TipClaimWeightState = {
   ...DEFAULT_TIP_CLAIM_WEIGHTS,
 };
 
-function storageKey(organizationId: string) {
-  return `${STORAGE_PREFIX}${organizationId}`;
+function endpoint() {
+  return new URL("/api/auth/tip-claim/weight-presets", authBaseURL);
 }
 
-function parsePresets(value: string | null): TipWeightPreset[] {
-  if (!value) return [];
+export async function listTipWeightPresets(organizationId: string) {
+  const url = endpoint();
+  url.searchParams.set("organizationId", organizationId);
 
-  try {
-    const parsed = JSON.parse(value);
-    return Array.isArray(parsed) ? (parsed as TipWeightPreset[]) : [];
-  } catch {
-    return [];
+  const response = await fetch(url, {
+    credentials: "include",
+  });
+  const result = (await response.json()) as WeightPresetListResponse;
+
+  if (!response.ok) {
+    throw new Error(
+      typeof result.error === "string"
+        ? result.error
+        : "Unable to load weight presets.",
+    );
   }
+
+  return Array.isArray(result.presets) ? result.presets : [];
 }
 
-export function listTipWeightPresets(organizationId: string) {
-  if (typeof window === "undefined") return [];
-  return parsePresets(window.localStorage.getItem(storageKey(organizationId)));
-}
-
-export function saveTipWeightPreset(
+export async function saveTipWeightPreset(
   organizationId: string,
   input: {
     id?: string;
@@ -56,43 +75,60 @@ export function saveTipWeightPreset(
     weights: TipClaimWeightState;
   },
 ) {
-  if (typeof window === "undefined") {
-    throw new Error("Weight presets can only be saved in the browser.");
+  const response = await fetch(endpoint(), {
+    method: input.id ? "PATCH" : "POST",
+    credentials: "include",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      organizationId,
+      ...(input.id ? { presetId: input.id } : {}),
+      name: input.name,
+      staff: input.staff,
+      weights: input.weights,
+    }),
+  });
+  const result = (await response.json()) as WeightPresetResponse;
+
+  if (!response.ok) {
+    throw new Error(
+      typeof result.error === "string"
+        ? result.error
+        : input.id
+          ? "Unable to update weight preset."
+          : "Unable to save weight preset.",
+    );
   }
 
-  const now = new Date().toISOString();
-  const current = listTipWeightPresets(organizationId);
-  const existing = input.id
-    ? current.find((preset) => preset.id === input.id)
-    : undefined;
-  const preset: TipWeightPreset = {
-    id: existing?.id ?? crypto.randomUUID(),
-    organizationId,
-    name: input.name.trim(),
-    staff: { ...input.staff },
-    weights: { ...input.weights },
-    createdAt: existing?.createdAt ?? now,
-    updatedAt: now,
-  };
+  if (!result.preset) {
+    throw new Error("Weight preset response did not include the saved preset.");
+  }
 
-  const next = existing
-    ? current.map((candidate) =>
-        candidate.id === preset.id ? preset : candidate,
-      )
-    : [...current, preset];
-
-  window.localStorage.setItem(storageKey(organizationId), JSON.stringify(next));
-  return preset;
+  return result.preset;
 }
 
-export function deleteTipWeightPreset(
+export async function deleteTipWeightPreset(
   organizationId: string,
   presetId: string,
 ) {
-  if (typeof window === "undefined") return;
+  const response = await fetch(endpoint(), {
+    method: "DELETE",
+    credentials: "include",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ organizationId, presetId }),
+  });
+  const result = (await response.json()) as WeightPresetDeleteResponse;
 
-  const next = listTipWeightPresets(organizationId).filter(
-    (preset) => preset.id !== presetId,
-  );
-  window.localStorage.setItem(storageKey(organizationId), JSON.stringify(next));
+  if (!response.ok) {
+    throw new Error(
+      typeof result.error === "string"
+        ? result.error
+        : "Unable to delete weight preset.",
+    );
+  }
+
+  if (result.success !== true) {
+    throw new Error("Weight preset deletion did not complete successfully.");
+  }
+
+  return { success: true };
 }

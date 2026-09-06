@@ -63,6 +63,11 @@ const chartConfig = {
   door: { label: "Door", color: "var(--chart-4)" },
 } satisfies ChartConfig;
 
+const currencyFormatter = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+});
+
 function clampCount(value: number) {
   if (!Number.isFinite(value)) return 0;
   return Math.min(50, Math.max(0, Math.round(value)));
@@ -168,6 +173,7 @@ export function TipWeightPresetConfigurator({
   const [weights, setWeights] = useState<TipClaimWeightState>({
     ...DEFAULT_TIP_WEIGHT_PRESET_WEIGHTS,
   });
+  const [previewAmount, setPreviewAmount] = useState(0);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [presets, setPresets] = useState<TipWeightPreset[]>([]);
   const [presetsPending, setPresetsPending] = useState(true);
@@ -221,16 +227,22 @@ export function TipWeightPresetConfigurator({
 
     return PRESET_ROLE_ORDER.map((role) => {
       const units = staff[role] * weights[role];
+      const percentage = totalUnits > 0 ? (units / totalUnits) * 100 : 0;
+      const amount = totalUnits > 0 ? (previewAmount * units) / totalUnits : 0;
+      const perPersonAmount = staff[role] > 0 ? amount / staff[role] : 0;
+
       return {
         role,
         staff: staff[role],
         weight: weights[role],
         units,
-        percentage: totalUnits > 0 ? (units / totalUnits) * 100 : 0,
+        percentage,
+        amount,
+        perPersonAmount,
         fill: ROLE_COLORS[role],
       };
     });
-  }, [staff, weights]);
+  }, [previewAmount, staff, weights]);
 
   const totalStaff = TIP_CLAIM_ROLE_ORDER.reduce(
     (sum, role) => sum + staff[role],
@@ -247,6 +259,8 @@ export function TipWeightPresetConfigurator({
           percentage:
             totalWeightUnits > 0 ? (item.weight / totalWeightUnits) * 100 : 0,
           rolePercentage: item.percentage,
+          roleAmount: item.amount,
+          personAmount: item.perPersonAmount,
           fill: item.fill,
         }))
       : [],
@@ -495,6 +509,34 @@ export function TipWeightPresetConfigurator({
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
+            <Field>
+              <FieldLabel htmlFor="preview-amount">Preview amount</FieldLabel>
+              <div className="relative">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                  $
+                </span>
+                <Input
+                  id="preview-amount"
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  step={0.01}
+                  value={previewAmount || ""}
+                  placeholder="0.00"
+                  className="pl-7 tabular-nums"
+                  onChange={(event) => {
+                    const value = event.currentTarget.valueAsNumber;
+                    setPreviewAmount(
+                      Number.isFinite(value) ? Math.max(0, value) : 0,
+                    );
+                  }}
+                />
+              </div>
+              <FieldDescription>
+                Enter any total amount, such as combined sales or pooled tips. This preview is never saved.
+              </FieldDescription>
+            </Field>
+
             <div className="relative min-h-0 overflow-hidden">
               {chartData.length > 0 ? (
                 <ChartContainer
@@ -511,18 +553,32 @@ export function TipWeightPresetConfigurator({
                           formatter={(_value, _name, item) => {
                             const payload = item.payload as (typeof chartData)[number];
                             return (
-                              <div className="flex min-w-40 items-center justify-between gap-4">
+                              <div className="flex min-w-48 items-center justify-between gap-4">
                                 <span>
                                   {TIP_CLAIM_ROLE_LABELS[payload.role]}
                                   {staff[payload.role] > 1
                                     ? ` ${payload.segmentIndex + 1}`
                                     : ""}
                                 </span>
-                                <span className="font-mono font-medium tabular-nums">
-                                  {payload.percentage.toLocaleString("en-US", {
-                                    maximumFractionDigits: 1,
-                                  })}
-                                  %
+                                <span className="text-right font-mono font-medium tabular-nums">
+                                  {previewAmount > 0 ? (
+                                    <>
+                                      {currencyFormatter.format(payload.personAmount)}
+                                      <span className="ml-2 text-muted-foreground">
+                                        {payload.percentage.toLocaleString("en-US", {
+                                          maximumFractionDigits: 1,
+                                        })}
+                                        %
+                                      </span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      {payload.percentage.toLocaleString("en-US", {
+                                        maximumFractionDigits: 1,
+                                      })}
+                                      %
+                                    </>
+                                  )}
                                 </span>
                               </div>
                             );
@@ -537,11 +593,13 @@ export function TipWeightPresetConfigurator({
                       innerRadius="52%"
                       outerRadius="74%"
                       paddingAngle={0}
-                      label={({ segmentIndex, rolePercentage }) =>
+                      label={({ segmentIndex, rolePercentage, roleAmount }) =>
                         segmentIndex === 0 && rolePercentage >= 4
-                          ? `${rolePercentage.toLocaleString("en-US", {
-                              maximumFractionDigits: 1,
-                            })}%`
+                          ? previewAmount > 0
+                            ? currencyFormatter.format(roleAmount)
+                            : `${rolePercentage.toLocaleString("en-US", {
+                                maximumFractionDigits: 1,
+                              })}%`
                           : ""
                       }
                       labelLine={false}
@@ -565,9 +623,13 @@ export function TipWeightPresetConfigurator({
               {chartData.length > 0 ? (
                 <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                   <div className="flex flex-col items-center gap-0.5 text-center">
-                    <span className="text-xs text-muted-foreground">Staff</span>
+                    <span className="text-xs text-muted-foreground">
+                      {previewAmount > 0 ? "Total" : "Staff"}
+                    </span>
                     <span className="text-xl font-semibold tabular-nums">
-                      {totalStaff}
+                      {previewAmount > 0
+                        ? currencyFormatter.format(previewAmount)
+                        : totalStaff}
                     </span>
                   </div>
                 </div>
@@ -607,8 +669,16 @@ export function TipWeightPresetConfigurator({
                             })}
                             %
                           </div>
+                          {previewAmount > 0 ? (
+                            <div className="text-xs font-medium">
+                              {currencyFormatter.format(item.amount)} role
+                            </div>
+                          ) : null}
                           <div className="text-xs text-muted-foreground">
                             {item.staff} × {item.weight}
+                            {previewAmount > 0 && item.staff > 0
+                              ? ` · ${currencyFormatter.format(item.perPersonAmount)} each`
+                              : ""}
                           </div>
                         </div>
                         <ChevronDownIcon

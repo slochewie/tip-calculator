@@ -243,23 +243,25 @@ export function TipWeightPresetConfigurator({
                 </FieldDescription>
               </Field>
 
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-4">
                 {TIP_CLAIM_ROLE_ORDER.map((role) => (
                   <Card key={role} className="shadow-none">
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-base">
-                        {TIP_CLAIM_ROLE_LABELS[role]}
-                      </CardTitle>
-                      <CardDescription>
-                        {roleData.find((item) => item.role === role)?.percentage.toLocaleString(
-                          "en-US",
-                          { maximumFractionDigits: 1 },
-                        ) ?? "0"}
-                        % of active weight units
-                      </CardDescription>
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <CardTitle className="text-base">
+                          {TIP_CLAIM_ROLE_LABELS[role]}
+                        </CardTitle>
+                        <CardDescription className="text-right">
+                          {roleData.find((item) => item.role === role)?.percentage.toLocaleString(
+                            "en-US",
+                            { maximumFractionDigits: 1 },
+                          ) ?? "0"}
+                          % of active weight units
+                        </CardDescription>
+                      </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="grid grid-cols-[minmax(0,0.65fr)_minmax(0,1fr)] items-end gap-4">
+                      <div className="grid max-w-md grid-cols-2 items-end gap-5">
                         <Field>
                           <FieldLabel htmlFor={`preset-count-${role}`}>Staff</FieldLabel>
                           <div className="flex items-stretch gap-2">
@@ -271,7 +273,7 @@ export function TipWeightPresetConfigurator({
                               max={50}
                               step={1}
                               value={staff[role]}
-                              className="min-w-0 max-w-24 text-center tabular-nums"
+                              className="w-20 text-center tabular-nums"
                               onChange={(event) =>
                                 updateStaff(role, event.currentTarget.valueAsNumber)
                               }
@@ -286,7 +288,7 @@ export function TipWeightPresetConfigurator({
 
                         <Field>
                           <FieldLabel htmlFor={`preset-weight-${role}`}>Weight</FieldLabel>
-                          <div className="flex items-stretch justify-end gap-2">
+                          <div className="flex items-stretch gap-2">
                             <Input
                               id={`preset-weight-${role}`}
                               type="number"
@@ -295,7 +297,7 @@ export function TipWeightPresetConfigurator({
                               max={10}
                               step={0.1}
                               value={weights[role]}
-                              className="min-w-0 max-w-28 text-right tabular-nums"
+                              className="w-24 text-right tabular-nums"
                               onChange={(event) =>
                                 updateWeight(role, event.currentTarget.valueAsNumber)
                               }
@@ -386,12 +388,12 @@ export function TipWeightPresetConfigurator({
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            <div className="relative min-h-0">
+            <div className="relative min-h-0 overflow-hidden">
               {chartData.length > 0 ? (
                 <ChartContainer
                   config={chartConfig}
-                  className="mx-auto aspect-square h-[min(62vw,22rem)] max-h-88 w-auto max-w-full"
-                  initialDimension={{ width: 320, height: 320 }}
+                  className="mx-auto aspect-square h-[min(56vw,20rem)] max-h-80 w-auto max-w-full"
+                  initialDimension={{ width: 300, height: 300 }}
                 >
                   <PieChart>
                     <ChartTooltip
@@ -424,12 +426,12 @@ export function TipWeightPresetConfigurator({
                       data={chartData}
                       dataKey="units"
                       nameKey="role"
-                      innerRadius="54%"
-                      outerRadius="82%"
+                      innerRadius="52%"
+                      outerRadius="74%"
                       paddingAngle={0}
-                      label={({ percentage }) =>
-                        percentage >= 4
-                          ? `${percentage.toLocaleString("en-US", {
+                      label={({ segmentIndex, rolePercentage }) =>
+                        segmentIndex === 0 && rolePercentage >= 4
+                          ? `${rolePercentage.toLocaleString("en-US", {
                               maximumFractionDigits: 1,
                             })}%`
                           : ""

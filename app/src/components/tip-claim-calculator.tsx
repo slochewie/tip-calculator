@@ -309,6 +309,7 @@ export function TipClaimCalculator({
 		}
 
 		setSelectedWeightPresetId(presetId);
+		setClaimPercent(String(preset.claimPercent));
 		setRegisters(nextRegisters);
 		setNextRegisterId(registerCount + 1);
 		setStaff({
@@ -556,7 +557,7 @@ export function TipClaimCalculator({
 					<Card>
 						<CardHeader>
 							<CardTitle>Weight preset</CardTitle>
-							<CardDescription>Select a preset to build the registers, staffing slots, and role weights for this shift.</CardDescription>
+							<CardDescription>Select a preset to build the registers, staffing slots, claim percentage, and role weights for this shift.</CardDescription>
 						</CardHeader>
 						<CardContent className="flex flex-col gap-2">
 							<Select

@@ -207,14 +207,14 @@ export function TipPoolReportPreview({
 
         <div className="grid min-w-0 gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.72fr)] xl:gap-6">
           <div className="flex min-w-0 flex-col gap-2 xl:gap-4">
-            <div className="relative min-h-0">
+            <div className="relative min-h-0 overflow-hidden">
               {chartData.length > 0 ? (
                 <ChartContainer
                   config={chartConfig}
-                  className="mx-auto aspect-square h-[min(54vw,22rem)] max-h-88 w-auto max-w-full"
+                  className="mx-auto aspect-square h-[min(72vw,20rem)] max-h-80 w-auto max-w-full sm:h-[min(54vw,22rem)] sm:max-h-88"
                   initialDimension={{ width: 320, height: 320 }}
                 >
-                  <PieChart>
+                  <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                     <ChartTooltip
                       cursor={false}
                       content={
@@ -248,8 +248,8 @@ export function TipPoolReportPreview({
                       data={chartData}
                       dataKey="cents"
                       nameKey="label"
-                      innerRadius="54%"
-                      outerRadius="82%"
+                      innerRadius="48%"
+                      outerRadius="70%"
                       paddingAngle={0}
                       stroke="var(--background)"
                       strokeWidth={2}

@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { PlusIcon, RotateCcwIcon, SaveIcon, Trash2Icon } from "lucide-react";
 
 import {
@@ -75,6 +75,10 @@ import {
   type TipPoolSavePayload,
 } from "#/lib/tip-pool.ts";
 import {
+  listTipWeightPresets,
+  type TipWeightPreset,
+} from "#/lib/tip-weight-presets.ts";
+import {
   type TipPoolStaffAssignment,
   useTipPoolDraft,
 } from "#/lib/use-tip-pool-draft.ts";
@@ -142,6 +146,10 @@ export function TipDivvyCalculator({
     useState<TipPoolAllocationMode>("weights");
   const [percentageTargets, setPercentageTargets] =
     useState<TipPoolPercentageTargets>({ ...DEFAULT_TIP_POOL_PERCENTAGES });
+  const [weightPresets, setWeightPresets] = useState<TipWeightPreset[]>([]);
+  const [selectedWeightPresetId, setSelectedWeightPresetId] = useState("");
+  const [weightPresetsPending, setWeightPresetsPending] = useState(false);
+  const [weightPresetsError, setWeightPresetsError] = useState<string | null>(null);
   const [editingShiftId, setEditingShiftId] = useState<string | null>(null);
   const [editingCompletedAt, setEditingCompletedAt] = useState<string | null>(null);
   const [savingReport, setSavingReport] = useState(false);
@@ -169,14 +177,48 @@ export function TipDivvyCalculator({
     setEditingCompletedAt,
   });
 
+  useEffect(() => {
+    setSelectedWeightPresetId("");
+    setWeightPresets([]);
+    setWeightPresetsError(null);
+    if (!organizationId) return;
+
+    let cancelled = false;
+    setWeightPresetsPending(true);
+
+    void listTipWeightPresets(organizationId)
+      .then((presets) => {
+        if (!cancelled) setWeightPresets(presets);
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          setWeightPresetsError(
+            error instanceof Error ? error.message : "Unable to load weight presets.",
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setWeightPresetsPending(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [organizationId]);
+
   const eligibleMembers = members.filter(
     (member) => enabledRoles(member).length > 0,
   );
   const assignedUserIds = new Set(
-    assignments.map((assignment) => assignment.userId),
+    assignments.flatMap((assignment) =>
+      assignment.userId ? [assignment.userId] : [],
+    ),
   );
   const unassignedMembers = eligibleMembers.filter(
     (member) => !assignedUserIds.has(member.id),
+  );
+  const hasUnassignedSlots = assignments.some(
+    (assignment) => assignment.userId === null,
   );
 
   const staff = useMemo<TipClaimRoleState>(
@@ -213,13 +255,13 @@ export function TipDivvyCalculator({
           candidate.role === assignment.role &&
           candidate.person === roleIndexes[assignment.role],
       );
-      const member = members.find(
-        (candidate) => candidate.id === assignment.userId,
-      );
+      const member = assignment.userId
+        ? members.find((candidate) => candidate.id === assignment.userId)
+        : undefined;
 
       return {
         ...assignment,
-        name: member?.name || member?.email || assignment.userId,
+        name: member?.name || member?.email || "Select employee",
         email: member?.email || "",
         cents: allocation?.cents ?? 0,
       };
@@ -259,8 +301,31 @@ export function TipDivvyCalculator({
     Boolean(organizationId) &&
     totalTipsCents > 0 &&
     assignments.length > 0 &&
+    !hasUnassignedSlots &&
     allocatedCents === totalTipsCents &&
     employeeAllocations.every((employee) => employee.email.length > 0);
+
+  function applyWeightPreset(presetId: string) {
+    const preset = weightPresets.find((candidate) => candidate.id === presetId);
+    if (!preset) return;
+
+    const nextAssignments: TipPoolStaffAssignment[] = [];
+    for (const role of TIP_CLAIM_ROLE_ORDER) {
+      for (let index = 0; index < preset.staff[role]; index += 1) {
+        nextAssignments.push({ userId: null, role });
+      }
+    }
+
+    setSelectedWeightPresetId(presetId);
+    setAssignments(nextAssignments);
+    setWeights({ ...preset.weights });
+    setAllocationMode("weights");
+    setEditingShiftId(null);
+    setEditingCompletedAt(null);
+    setPreviewOpen(false);
+    setSaveError(null);
+    setSaveMessage(null);
+  }
 
   function addMember() {
     const member = unassignedMembers[0];
@@ -277,20 +342,28 @@ export function TipDivvyCalculator({
     setAssignments((current) => {
       const assignment = current[index];
       if (!assignment) return current;
-      const userId = changes.userId ?? assignment.userId;
-      const member = members.find((candidate) => candidate.id === userId);
-      if (!member) return current;
+      const userId =
+        changes.userId !== undefined ? changes.userId : assignment.userId;
+      const member = userId
+        ? members.find((candidate) => candidate.id === userId)
+        : undefined;
       let role = changes.role ?? assignment.role;
 
-      if (!isRoleEnabled(member, role)) {
+      if (userId !== null && !member) return current;
+
+      if (member && !isRoleEnabled(member, role)) {
         const fallbackRole = enabledRoles(member)[0];
         if (!fallbackRole) return current;
         role = fallbackRole;
       }
 
-      return current.map((item, itemIndex) =>
-        itemIndex === index ? { userId, role } : item,
-      );
+      return current.map((item, itemIndex) => {
+        if (itemIndex === index) return { userId, role };
+        if (userId !== null && item.userId === userId) {
+          return { ...item, userId: null };
+        }
+        return item;
+      });
     });
   }
 
@@ -304,6 +377,7 @@ export function TipDivvyCalculator({
     setPreviewOpen(false);
     setSaveError(null);
     setSaveMessage(null);
+    setSelectedWeightPresetId("");
     resetDraft();
   }
 
@@ -318,6 +392,9 @@ export function TipDivvyCalculator({
       door: 0,
     };
     const saveEmployeeAllocations = assignments.map((assignment) => {
+      if (!assignment.userId) {
+        throw new Error("Assign every staff slot before saving.");
+      }
       roleIndexes[assignment.role] += 1;
       const allocation = saveAllocations.find(
         (candidate) =>
@@ -329,6 +406,7 @@ export function TipDivvyCalculator({
       );
       return {
         ...assignment,
+        userId: assignment.userId,
         name: member?.name || member?.email || assignment.userId,
         email: member?.email || "",
         cents: allocation?.cents ?? 0,
@@ -382,6 +460,7 @@ export function TipDivvyCalculator({
       }
 
       setPreviewOpen(false);
+      setSelectedWeightPresetId("");
       resetDraft();
     } catch (error) {
       setSaveError(
@@ -394,12 +473,23 @@ export function TipDivvyCalculator({
     }
   }
 
-  const previewStaff = employeeAllocations.map((employee) => ({
-    userId: employee.userId,
-    name: employee.name,
-    email: employee.email,
-    role: employee.role,
-  }));
+  const previewStaff = employeeAllocations.flatMap((employee) =>
+    employee.userId
+      ? [
+          {
+            userId: employee.userId,
+            name: employee.name,
+            email: employee.email,
+            role: employee.role,
+          },
+        ]
+      : [],
+  );
+
+  function handleResetCalculator() {
+    setSelectedWeightPresetId("");
+    resetDraft();
+  }
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 p-4 md:p-6 lg:p-8">
@@ -422,6 +512,44 @@ export function TipDivvyCalculator({
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(360px,1fr)]">
         <div className="flex min-w-0 flex-col gap-5">
           {organizationSelector}
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Weight preset</CardTitle>
+              <CardDescription>
+                Select a preset to build the staffing slots and role weights for this tip pool. Register count and claim percentage are ignored here.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-2">
+              <Select
+                value={selectedWeightPresetId}
+                disabled={!organizationId || weightPresetsPending || weightPresets.length === 0}
+                onValueChange={applyWeightPreset}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue
+                    placeholder={
+                      weightPresetsPending
+                        ? "Loading weight presets…"
+                        : weightPresets.length === 0
+                          ? "No weight presets"
+                          : "Select weight preset"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {weightPresets.map((preset) => (
+                    <SelectItem key={preset.id} value={preset.id}>
+                      {preset.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {weightPresetsError ? (
+                <p className="text-sm text-destructive">{weightPresetsError}</p>
+              ) : null}
+            </CardContent>
+          </Card>
 
           <Card>
             <CardHeader>
@@ -471,31 +599,37 @@ export function TipDivvyCalculator({
 
               <div className="flex flex-col gap-2">
                 {assignments.map((assignment, index) => {
-                  const member = members.find(
-                    (candidate) => candidate.id === assignment.userId,
-                  );
+                  const member = assignment.userId
+                    ? members.find((candidate) => candidate.id === assignment.userId)
+                    : undefined;
                   const availableMembers = eligibleMembers.filter(
                     (candidate) =>
-                      candidate.id === assignment.userId ||
-                      !assignedUserIds.has(candidate.id),
+                      isRoleEnabled(candidate, assignment.role) &&
+                      (candidate.id === assignment.userId ||
+                        !assignedUserIds.has(candidate.id)),
                   );
-                  const availableRoles = member ? enabledRoles(member) : [];
+                  const availableRoles = member
+                    ? enabledRoles(member)
+                    : TIP_CLAIM_ROLE_ORDER;
 
                   return (
                     <div
-                      key={`${assignment.userId}-${index}`}
+                      key={`${assignment.userId ?? "unassigned"}-${assignment.role}-${index}`}
                       className="grid min-w-0 gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(140px,0.45fr)_auto]"
                     >
                       <Select
-                        value={assignment.userId}
+                        value={assignment.userId ?? "none"}
                         onValueChange={(userId) =>
-                          updateAssignment(index, { userId })
+                          updateAssignment(index, {
+                            userId: userId === "none" ? null : userId,
+                          })
                         }
                       >
                         <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select member" />
+                          <SelectValue placeholder="Select employee" />
                         </SelectTrigger>
                         <SelectContent>
+                          <SelectItem value="none">Select employee</SelectItem>
                           {availableMembers.map((candidate) => (
                             <SelectItem key={candidate.id} value={candidate.id}>
                               {candidate.name || candidate.email}
@@ -617,7 +751,7 @@ export function TipDivvyCalculator({
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                     <AlertDialogAction
                       variant="destructive"
-                      onClick={resetDraft}
+                      onClick={handleResetCalculator}
                     >
                       Reset calculator
                     </AlertDialogAction>
@@ -788,8 +922,8 @@ export function TipDivvyCalculator({
                       </TableCell>
                     </TableRow>
                   ) : (
-                    employeeAllocations.map((employee) => (
-                      <TableRow key={employee.userId}>
+                    employeeAllocations.map((employee, index) => (
+                      <TableRow key={`${employee.userId ?? "unassigned"}-${employee.role}-${index}`}>
                         <TableCell className="font-medium">
                           {employee.name}
                         </TableCell>

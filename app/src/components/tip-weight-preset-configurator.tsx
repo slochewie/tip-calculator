@@ -201,7 +201,9 @@ export function TipWeightPresetConfigurator({
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 p-4 md:p-6 lg:p-8">
       <div className="flex flex-col gap-2">
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="font-heading text-3xl font-semibold tracking-tight">Weight Presets</h1>
+          <h1 className="font-heading text-3xl font-semibold tracking-tight">
+            Weight Presets
+          </h1>
           <Badge variant="secondary">Staffing states</Badge>
         </div>
         <p className="max-w-3xl text-sm text-muted-foreground md:text-base">
@@ -216,7 +218,8 @@ export function TipWeightPresetConfigurator({
             <CardHeader>
               <CardTitle>{editingId ? "Edit preset" : "New preset"}</CardTitle>
               <CardDescription>
-                Set how many people are working each role, then tune each role's weight.
+                Name this staffing configuration, then use the distribution
+                preview to set role counts and weights.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-5">
@@ -233,78 +236,22 @@ export function TipWeightPresetConfigurator({
                 </FieldDescription>
               </Field>
 
-              <div className="grid gap-4">
-                {TIP_CLAIM_ROLE_ORDER.map((role) => (
-                  <Card key={role} className="shadow-none">
-                    <CardHeader className="pb-3">
-                      <div className="flex flex-wrap items-start justify-between gap-2">
-                        <CardTitle className="text-base">{TIP_CLAIM_ROLE_LABELS[role]}</CardTitle>
-                        <CardDescription className="text-right">
-                          {roleData.find((item) => item.role === role)?.percentage.toLocaleString(
-                            "en-US",
-                            { maximumFractionDigits: 1 },
-                          ) ?? "0"}% of active weight units
-                        </CardDescription>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid max-w-md grid-cols-2 items-end gap-5">
-                        <Field>
-                          <FieldLabel htmlFor={`preset-count-${role}`}>Staff</FieldLabel>
-                          <div className="flex flex-wrap items-stretch gap-2 sm:flex-nowrap">
-                            <Input
-                              id={`preset-count-${role}`}
-                              type="number"
-                              inputMode="numeric"
-                              min={0}
-                              max={50}
-                              step={1}
-                              value={staff[role]}
-                              className="w-20 text-center tabular-nums sm:w-24"
-                              onChange={(event) => updateStaff(role, event.currentTarget.valueAsNumber)}
-                            />
-                            <MobileStepperButtons
-                              label={`${TIP_CLAIM_ROLE_LABELS[role]} staff`}
-                              onIncrement={() => updateStaff(role, staff[role] + 1)}
-                              onDecrement={() => updateStaff(role, staff[role] - 1)}
-                            />
-                          </div>
-                        </Field>
-
-                        <Field>
-                          <FieldLabel htmlFor={`preset-weight-${role}`}>Weight</FieldLabel>
-                          <div className="flex flex-wrap items-stretch gap-2 sm:flex-nowrap">
-                            <Input
-                              id={`preset-weight-${role}`}
-                              type="number"
-                              inputMode="decimal"
-                              min={0}
-                              max={10}
-                              step={0.1}
-                              value={weights[role]}
-                              className="w-20 text-right tabular-nums sm:w-24"
-                              onChange={(event) => updateWeight(role, event.currentTarget.valueAsNumber)}
-                            />
-                            <MobileStepperButtons
-                              label={`${TIP_CLAIM_ROLE_LABELS[role]} weight`}
-                              onIncrement={() => updateWeight(role, weights[role] + 0.1)}
-                              onDecrement={() => updateWeight(role, weights[role] - 0.1)}
-                            />
-                          </div>
-                        </Field>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-
               <div className="flex flex-col gap-2 sm:flex-row">
                 {editingId ? (
-                  <Button type="button" variant="outline" className="sm:w-auto" onClick={resetForm}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="sm:w-auto"
+                    onClick={resetForm}
+                  >
                     Cancel
                   </Button>
                 ) : null}
-                <Button type="button" disabled={!name.trim() || totalStaff === 0} onClick={handleSave}>
+                <Button
+                  type="button"
+                  disabled={!name.trim() || totalStaff === 0}
+                  onClick={handleSave}
+                >
                   <SaveIcon data-icon="inline-start" />
                   {editingId ? "Save changes" : "Save preset"}
                 </Button>
@@ -321,26 +268,43 @@ export function TipWeightPresetConfigurator({
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
               {presets.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No presets saved yet.</p>
+                <p className="text-sm text-muted-foreground">
+                  No presets saved yet.
+                </p>
               ) : (
                 presets.map((preset) => (
                   <div
                     key={preset.id}
                     className="flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between"
                   >
-                    <button type="button" className="min-w-0 text-left" onClick={() => handleEdit(preset)}>
+                    <button
+                      type="button"
+                      className="min-w-0 text-left"
+                      onClick={() => handleEdit(preset)}
+                    >
                       <div className="font-medium">{preset.name}</div>
                       <div className="text-xs text-muted-foreground">
                         {TIP_CLAIM_ROLE_ORDER.map(
-                          (role) => `${TIP_CLAIM_ROLE_LABELS[role]} ${preset.staff[role]} × ${preset.weights[role]}`,
+                          (role) =>
+                            `${TIP_CLAIM_ROLE_LABELS[role]} ${preset.staff[role]} × ${preset.weights[role]}`,
                         ).join(" · ")}
                       </div>
                     </button>
                     <div className="flex gap-2">
-                      <Button type="button" variant="outline" size="sm" onClick={() => handleEdit(preset)}>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEdit(preset)}
+                      >
                         Edit
                       </Button>
-                      <Button type="button" variant="destructive" size="sm" onClick={() => handleDelete(preset.id)}>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDelete(preset.id)}
+                      >
                         <Trash2Icon data-icon="inline-start" />
                         Delete
                       </Button>
@@ -356,7 +320,11 @@ export function TipWeightPresetConfigurator({
           <CardHeader>
             <CardTitle>Distribution preview</CardTitle>
             <CardDescription>
-              {totalStaff} staff · {totalWeightUnits.toLocaleString("en-US", { maximumFractionDigits: 1 })} active weight units
+              {totalStaff} staff ·{" "}
+              {totalWeightUnits.toLocaleString("en-US", {
+                maximumFractionDigits: 1,
+              })}{" "}
+              active weight units
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
@@ -379,10 +347,15 @@ export function TipWeightPresetConfigurator({
                               <div className="flex min-w-40 items-center justify-between gap-4">
                                 <span>
                                   {TIP_CLAIM_ROLE_LABELS[payload.role]}
-                                  {staff[payload.role] > 1 ? ` ${payload.segmentIndex + 1}` : ""}
+                                  {staff[payload.role] > 1
+                                    ? ` ${payload.segmentIndex + 1}`
+                                    : ""}
                                 </span>
                                 <span className="font-mono font-medium tabular-nums">
-                                  {payload.percentage.toLocaleString("en-US", { maximumFractionDigits: 1 })}%
+                                  {payload.percentage.toLocaleString("en-US", {
+                                    maximumFractionDigits: 1,
+                                  })}
+                                  %
                                 </span>
                               </div>
                             );
@@ -399,7 +372,9 @@ export function TipWeightPresetConfigurator({
                       paddingAngle={0}
                       label={({ segmentIndex, rolePercentage }) =>
                         segmentIndex === 0 && rolePercentage >= 4
-                          ? `${rolePercentage.toLocaleString("en-US", { maximumFractionDigits: 1 })}%`
+                          ? `${rolePercentage.toLocaleString("en-US", {
+                              maximumFractionDigits: 1,
+                            })}%`
                           : ""
                       }
                       labelLine={false}
@@ -425,7 +400,9 @@ export function TipWeightPresetConfigurator({
                 <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                   <div className="flex flex-col items-center gap-0.5 text-center">
                     <span className="text-xs text-muted-foreground">Staff</span>
-                    <span className="text-xl font-semibold tabular-nums">{totalStaff}</span>
+                    <span className="text-xl font-semibold tabular-nums">
+                      {totalStaff}
+                    </span>
                   </div>
                 </div>
               ) : null}
@@ -435,19 +412,97 @@ export function TipWeightPresetConfigurator({
               {roleData.map((item) => (
                 <div
                   key={item.role}
-                  className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg border p-3"
+                  className="flex flex-col gap-3 rounded-lg border p-3"
                 >
-                  <div className="flex min-w-0 items-center gap-2">
-                    <span className="size-2.5 shrink-0 rounded-sm" style={{ backgroundColor: item.fill }} />
-                    <span className="truncate font-medium">{TIP_CLAIM_ROLE_LABELS[item.role]}</span>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span
+                        className="size-2.5 shrink-0 rounded-sm"
+                        style={{ backgroundColor: item.fill }}
+                      />
+                      <span className="truncate font-medium">
+                        {TIP_CLAIM_ROLE_LABELS[item.role]}
+                      </span>
+                    </div>
+                    <div className="text-right tabular-nums">
+                      <div className="font-semibold">
+                        {item.percentage.toLocaleString("en-US", {
+                          maximumFractionDigits: 1,
+                        })}
+                        %
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {item.staff} × {item.weight}
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-right tabular-nums">
-                    <div className="font-semibold">
-                      {item.percentage.toLocaleString("en-US", { maximumFractionDigits: 1 })}%
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {item.staff} × {item.weight}
-                    </div>
+
+                  <div className="grid grid-cols-2 items-end gap-3">
+                    <Field>
+                      <FieldLabel htmlFor={`preset-count-${item.role}`}>
+                        Staff
+                      </FieldLabel>
+                      <div className="flex flex-wrap items-stretch gap-2 sm:flex-nowrap">
+                        <Input
+                          id={`preset-count-${item.role}`}
+                          type="number"
+                          inputMode="numeric"
+                          min={0}
+                          max={50}
+                          step={1}
+                          value={staff[item.role]}
+                          className="w-20 text-center tabular-nums sm:w-full"
+                          onChange={(event) =>
+                            updateStaff(
+                              item.role,
+                              event.currentTarget.valueAsNumber,
+                            )
+                          }
+                        />
+                        <MobileStepperButtons
+                          label={`${TIP_CLAIM_ROLE_LABELS[item.role]} staff`}
+                          onIncrement={() =>
+                            updateStaff(item.role, staff[item.role] + 1)
+                          }
+                          onDecrement={() =>
+                            updateStaff(item.role, staff[item.role] - 1)
+                          }
+                        />
+                      </div>
+                    </Field>
+
+                    <Field>
+                      <FieldLabel htmlFor={`preset-weight-${item.role}`}>
+                        Weight
+                      </FieldLabel>
+                      <div className="flex flex-wrap items-stretch gap-2 sm:flex-nowrap">
+                        <Input
+                          id={`preset-weight-${item.role}`}
+                          type="number"
+                          inputMode="decimal"
+                          min={0}
+                          max={10}
+                          step={0.1}
+                          value={weights[item.role]}
+                          className="w-20 text-right tabular-nums sm:w-full"
+                          onChange={(event) =>
+                            updateWeight(
+                              item.role,
+                              event.currentTarget.valueAsNumber,
+                            )
+                          }
+                        />
+                        <MobileStepperButtons
+                          label={`${TIP_CLAIM_ROLE_LABELS[item.role]} weight`}
+                          onIncrement={() =>
+                            updateWeight(item.role, weights[item.role] + 0.1)
+                          }
+                          onDecrement={() =>
+                            updateWeight(item.role, weights[item.role] - 0.1)
+                          }
+                        />
+                      </div>
+                    </Field>
                   </div>
                 </div>
               ))}

@@ -62,7 +62,8 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     location.pathname === '/app' ||
     location.pathname === '/tips' ||
     location.pathname === '/reports' ||
-    location.pathname === '/assignments'
+    location.pathname === '/assignments' ||
+    location.pathname === '/weight-presets'
 
   return (
     <html lang="en" suppressHydrationWarning>

@@ -245,20 +245,11 @@ export function TipWeightPresetConfigurator({
 
               <div className="flex flex-col gap-2 sm:flex-row">
                 {editingId ? (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="sm:w-auto"
-                    onClick={resetForm}
-                  >
+                  <Button type="button" variant="outline" className="sm:w-auto" onClick={resetForm}>
                     Cancel
                   </Button>
                 ) : null}
-                <Button
-                  type="button"
-                  disabled={!name.trim() || totalStaff === 0}
-                  onClick={handleSave}
-                >
+                <Button type="button" disabled={!name.trim() || totalStaff === 0} onClick={handleSave}>
                   <SaveIcon data-icon="inline-start" />
                   {editingId ? "Save changes" : "Save preset"}
                 </Button>
@@ -269,51 +260,24 @@ export function TipWeightPresetConfigurator({
           <Card>
             <CardHeader>
               <CardTitle>Saved presets</CardTitle>
-              <CardDescription>
-                These are currently saved for this organization in this browser.
-              </CardDescription>
+              <CardDescription>These are currently saved for this organization in this browser.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
               {presets.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  No presets saved yet.
-                </p>
+                <p className="text-sm text-muted-foreground">No presets saved yet.</p>
               ) : (
                 presets.map((preset) => (
-                  <div
-                    key={preset.id}
-                    className="flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <button
-                      type="button"
-                      className="min-w-0 text-left"
-                      onClick={() => handleEdit(preset)}
-                    >
+                  <div key={preset.id} className="flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between">
+                    <button type="button" className="min-w-0 text-left" onClick={() => handleEdit(preset)}>
                       <div className="font-medium">{preset.name}</div>
                       <div className="text-xs text-muted-foreground">
-                        {PRESET_ROLE_ORDER.map(
-                          (role) =>
-                            `${TIP_CLAIM_ROLE_LABELS[role]} ${preset.staff[role]} × ${preset.weights[role]}`,
-                        ).join(" · ")}
+                        {PRESET_ROLE_ORDER.map((role) => `${TIP_CLAIM_ROLE_LABELS[role]} ${preset.staff[role]} × ${preset.weights[role]}`).join(" · ")}
                       </div>
                     </button>
                     <div className="flex gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEdit(preset)}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleDelete(preset.id)}
-                      >
-                        <Trash2Icon data-icon="inline-start" />
-                        Delete
+                      <Button type="button" variant="outline" size="sm" onClick={() => handleEdit(preset)}>Edit</Button>
+                      <Button type="button" variant="destructive" size="sm" onClick={() => handleDelete(preset.id)}>
+                        <Trash2Icon data-icon="inline-start" />Delete
                       </Button>
                     </div>
                   </div>
@@ -327,187 +291,49 @@ export function TipWeightPresetConfigurator({
           <CardHeader>
             <CardTitle>Distribution preview</CardTitle>
             <CardDescription>
-              {totalStaff} staff ·{" "}
-              {totalWeightUnits.toLocaleString("en-US", {
-                maximumFractionDigits: 1,
-              })}{" "}
-              active weight units
+              {totalStaff} staff · {totalWeightUnits.toLocaleString("en-US", { maximumFractionDigits: 1 })} active weight units
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <div className="relative min-h-0 overflow-hidden">
               {chartData.length > 0 ? (
-                <ChartContainer
-                  config={chartConfig}
-                  className="mx-auto aspect-square h-[min(56vw,20rem)] max-h-80 w-auto max-w-full"
-                  initialDimension={{ width: 300, height: 300 }}
-                >
+                <ChartContainer config={chartConfig} className="mx-auto aspect-square h-[min(56vw,20rem)] max-h-80 w-auto max-w-full" initialDimension={{ width: 300, height: 300 }}>
                   <PieChart>
-                    <ChartTooltip
-                      cursor={false}
-                      content={
-                        <ChartTooltipContent
-                          hideLabel
-                          formatter={(_value, _name, item) => {
-                            const payload = item.payload as (typeof chartData)[number];
-                            return (
-                              <div className="flex min-w-40 items-center justify-between gap-4">
-                                <span>
-                                  {TIP_CLAIM_ROLE_LABELS[payload.role]}
-                                  {staff[payload.role] > 1
-                                    ? ` ${payload.segmentIndex + 1}`
-                                    : ""}
-                                </span>
-                                <span className="font-mono font-medium tabular-nums">
-                                  {payload.percentage.toLocaleString("en-US", {
-                                    maximumFractionDigits: 1,
-                                  })}
-                                  %
-                                </span>
-                              </div>
-                            );
-                          }}
-                        />
-                      }
-                    />
-                    <Pie
-                      data={chartData}
-                      dataKey="units"
-                      nameKey="role"
-                      innerRadius="52%"
-                      outerRadius="74%"
-                      paddingAngle={0}
-                      label={({ segmentIndex, rolePercentage }) =>
-                        segmentIndex === 0 && rolePercentage >= 4
-                          ? `${rolePercentage.toLocaleString("en-US", {
-                              maximumFractionDigits: 1,
-                            })}%`
-                          : ""
-                      }
-                      labelLine={false}
-                    >
-                      {chartData.map((entry) => (
-                        <Cell
-                          key={`${entry.role}-${entry.segmentIndex}`}
-                          fill={entry.fill}
-                          stroke="var(--background)"
-                          strokeWidth={entry.segmentIndex === 0 ? 2 : 1}
-                        />
-                      ))}
+                    <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel formatter={(_value, _name, item) => {
+                      const payload = item.payload as (typeof chartData)[number];
+                      return <div className="flex min-w-40 items-center justify-between gap-4"><span>{TIP_CLAIM_ROLE_LABELS[payload.role]}{staff[payload.role] > 1 ? ` ${payload.segmentIndex + 1}` : ""}</span><span className="font-mono font-medium tabular-nums">{payload.percentage.toLocaleString("en-US", { maximumFractionDigits: 1 })}%</span></div>;
+                    }} />} />
+                    <Pie data={chartData} dataKey="units" nameKey="role" innerRadius="52%" outerRadius="74%" paddingAngle={0} label={({ segmentIndex, rolePercentage }) => segmentIndex === 0 && rolePercentage >= 4 ? `${rolePercentage.toLocaleString("en-US", { maximumFractionDigits: 1 })}%` : ""} labelLine={false}>
+                      {chartData.map((entry) => <Cell key={`${entry.role}-${entry.segmentIndex}`} fill={entry.fill} stroke="var(--background)" strokeWidth={entry.segmentIndex === 0 ? 2 : 1} />)}
                     </Pie>
                   </PieChart>
                 </ChartContainer>
               ) : (
-                <div className="flex min-h-72 items-center justify-center rounded-lg border border-dashed text-center text-sm text-muted-foreground">
-                  Add staff with a weight above zero to preview the distribution.
-                </div>
+                <div className="flex min-h-72 items-center justify-center rounded-lg border border-dashed text-center text-sm text-muted-foreground">Add staff with a weight above zero to preview the distribution.</div>
               )}
-
-              {chartData.length > 0 ? (
-                <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                  <div className="flex flex-col items-center gap-0.5 text-center">
-                    <span className="text-xs text-muted-foreground">Staff</span>
-                    <span className="text-xl font-semibold tabular-nums">
-                      {totalStaff}
-                    </span>
-                  </div>
-                </div>
-              ) : null}
+              {chartData.length > 0 ? <div className="pointer-events-none absolute inset-0 flex items-center justify-center"><div className="flex flex-col items-center gap-0.5 text-center"><span className="text-xs text-muted-foreground">Staff</span><span className="text-xl font-semibold tabular-nums">{totalStaff}</span></div></div> : null}
             </div>
 
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
               {roleData.map((item) => (
-                <div
-                  key={item.role}
-                  className="flex flex-col gap-3 rounded-lg border p-3"
-                >
+                <div key={item.role} className="flex flex-col gap-3 rounded-lg border p-3">
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <span
-                        className="size-2.5 shrink-0 rounded-sm"
-                        style={{ backgroundColor: item.fill }}
-                      />
-                      <span className="truncate font-medium">
-                        {TIP_CLAIM_ROLE_LABELS[item.role]}
-                      </span>
-                    </div>
-                    <div className="text-right tabular-nums">
-                      <div className="font-semibold">
-                        {item.percentage.toLocaleString("en-US", {
-                          maximumFractionDigits: 1,
-                        })}
-                        %
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {item.staff} × {item.weight}
-                      </div>
-                    </div>
+                    <div className="flex min-w-0 items-center gap-2"><span className="size-2.5 shrink-0 rounded-sm" style={{ backgroundColor: item.fill }} /><span className="truncate font-medium">{TIP_CLAIM_ROLE_LABELS[item.role]}</span></div>
+                    <div className="text-right tabular-nums"><div className="font-semibold">{item.percentage.toLocaleString("en-US", { maximumFractionDigits: 1 })}%</div><div className="text-xs text-muted-foreground">{item.staff} × {item.weight}</div></div>
                   </div>
-
                   <div className="flex flex-col gap-2">
                     <div className="grid grid-cols-[auto_1fr] items-center gap-3">
-                      <FieldLabel htmlFor={`preset-count-${item.role}`}>
-                        Staff
-                      </FieldLabel>
+                      <FieldLabel htmlFor={`preset-count-${item.role}`}>Staff</FieldLabel>
                       <div className="ml-auto flex items-stretch gap-2">
-                        <Input
-                          id={`preset-count-${item.role}`}
-                          type="number"
-                          inputMode="numeric"
-                          min={0}
-                          max={50}
-                          step={1}
-                          value={staff[item.role]}
-                          className="w-20 text-center tabular-nums sm:w-24"
-                          onChange={(event) =>
-                            updateStaff(
-                              item.role,
-                              event.currentTarget.valueAsNumber,
-                            )
-                          }
-                        />
-                        <MobileStepperButtons
-                          label={`${TIP_CLAIM_ROLE_LABELS[item.role]} staff`}
-                          onIncrement={() =>
-                            updateStaff(item.role, staff[item.role] + 1)
-                          }
-                          onDecrement={() =>
-                            updateStaff(item.role, staff[item.role] - 1)
-                          }
-                        />
+                        <Input id={`preset-count-${item.role}`} type="number" inputMode="numeric" min={0} max={50} step={1} value={staff[item.role]} className="w-20 text-right tabular-nums sm:w-24" onChange={(event) => updateStaff(item.role, event.currentTarget.valueAsNumber)} />
+                        <MobileStepperButtons label={`${TIP_CLAIM_ROLE_LABELS[item.role]} staff`} onIncrement={() => updateStaff(item.role, staff[item.role] + 1)} onDecrement={() => updateStaff(item.role, staff[item.role] - 1)} />
                       </div>
                     </div>
-
                     <div className="grid grid-cols-[auto_1fr] items-center gap-3">
-                      <FieldLabel htmlFor={`preset-weight-${item.role}`}>
-                        Weight
-                      </FieldLabel>
+                      <FieldLabel htmlFor={`preset-weight-${item.role}`}>Weight</FieldLabel>
                       <div className="ml-auto flex items-stretch gap-2">
-                        <Input
-                          id={`preset-weight-${item.role}`}
-                          type="number"
-                          inputMode="decimal"
-                          min={0}
-                          max={10}
-                          step={0.1}
-                          value={weights[item.role]}
-                          className="w-20 text-right tabular-nums sm:w-24"
-                          onChange={(event) =>
-                            updateWeight(
-                              item.role,
-                              event.currentTarget.valueAsNumber,
-                            )
-                          }
-                        />
-                        <MobileStepperButtons
-                          label={`${TIP_CLAIM_ROLE_LABELS[item.role]} weight`}
-                          onIncrement={() =>
-                            updateWeight(item.role, weights[item.role] + 0.1)
-                          }
-                          onDecrement={() =>
-                            updateWeight(item.role, weights[item.role] - 0.1)
-                          }
-                        />
+                        <Input id={`preset-weight-${item.role}`} type="number" inputMode="decimal" min={0} max={10} step={0.1} value={weights[item.role]} className="w-20 text-right tabular-nums sm:w-24" onChange={(event) => updateWeight(item.role, event.currentTarget.valueAsNumber)} />
+                        <MobileStepperButtons label={`${TIP_CLAIM_ROLE_LABELS[item.role]} weight`} onIncrement={() => updateWeight(item.role, weights[item.role] + 0.1)} onDecrement={() => updateWeight(item.role, weights[item.role] - 0.1)} />
                       </div>
                     </div>
                   </div>

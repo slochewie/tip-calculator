@@ -23,7 +23,7 @@ import {
 import type { TipPoolShiftReport } from "#/lib/tip-pool.ts";
 
 export type TipPoolStaffAssignment = {
-  userId: string;
+  userId: string | null;
   role: TipClaimRoleKey;
 };
 
@@ -110,7 +110,7 @@ function loadDraft(organizationId: string): TipPoolDraft | null {
     const validAssignments = draft.assignments.every(
       (assignment) =>
         assignment &&
-        typeof assignment.userId === "string" &&
+        (assignment.userId === null || typeof assignment.userId === "string") &&
         TIP_CLAIM_ROLE_ORDER.includes(assignment.role),
     );
     if (!validAssignments) return null;
@@ -128,6 +128,10 @@ function reconcileAssignments(
   const usedUsers = new Set<string>();
 
   return assignments.flatMap((assignment) => {
+    if (assignment.userId === null) {
+      return TIP_CLAIM_ROLE_ORDER.includes(assignment.role) ? [assignment] : [];
+    }
+
     if (usedUsers.has(assignment.userId)) return [];
 
     const member = members.find((candidate) => candidate.id === assignment.userId);

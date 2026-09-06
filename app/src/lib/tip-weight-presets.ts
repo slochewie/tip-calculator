@@ -10,6 +10,7 @@ export type TipWeightPreset = {
   organizationId: string;
   name: string;
   registerCount: number;
+  claimPercent: number;
   staff: TipClaimRoleState;
   weights: TipClaimWeightState;
   createdByUserId?: string;
@@ -81,6 +82,7 @@ export async function saveTipWeightPreset(
     id?: string;
     name: string;
     registerCount: number;
+    claimPercent: number;
     staff: TipClaimRoleState;
     weights: TipClaimWeightState;
   },
@@ -98,6 +100,7 @@ export async function saveTipWeightPreset(
       ...(input.id ? { presetId: input.id } : {}),
       name: input.name,
       registerCount: input.registerCount,
+      claimPercent: input.claimPercent,
       staff: input.staff,
       weights: input.weights,
     }),

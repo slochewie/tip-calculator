@@ -76,11 +76,6 @@ function reconcileAssignments(
 	const usedRegisters = new Set<number>();
 
 	return assignments.flatMap((assignment) => {
-		if (usedUsers.has(assignment.userId)) return [];
-
-		const member = members.find((candidate) => candidate.id === assignment.userId);
-		if (!member || !isRoleEnabled(member, assignment.role)) return [];
-
 		let registerId = assignment.registerId;
 		if (
 			registerId !== null &&
@@ -90,6 +85,18 @@ function reconcileAssignments(
 		) {
 			registerId = null;
 		}
+
+		if (assignment.userId === null) {
+			if (registerId !== null) usedRegisters.add(registerId);
+			return [{ ...assignment, registerId }];
+		}
+
+		if (usedUsers.has(assignment.userId)) return [];
+
+		const member = members.find(
+			(candidate) => candidate.id === assignment.userId,
+		);
+		if (!member || !isRoleEnabled(member, assignment.role)) return [];
 
 		usedUsers.add(assignment.userId);
 		if (registerId !== null) usedRegisters.add(registerId);

@@ -1,5 +1,7 @@
 # Weight Presets
 
+> **New here?** Read [Getting Started](getting-started.md) first.
+
 Weight Presets are reusable staffing configurations for the Tip Calculator. A preset records how many employees are working in each role and the relative **weight** assigned to one employee in that role.
 
 The important idea is simple:

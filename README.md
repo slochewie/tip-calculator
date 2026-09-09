@@ -11,10 +11,13 @@ Both workflows integrate with the NiteOwl.dev Better Auth service for organizati
 
 ## Documentation
 
-- [Documentation index](docs/README.md) — guide index plus short Claims and Tips how-tos.
+- [Documentation index](docs/README.md) — the user-guide entry point.
+- [Getting Started](docs/getting-started.md) — the five-minute Claims and Tips workflow.
 - [Tip Claim Calculator](docs/tip-claim-calculator.md) — how to build a one-off shift or load a preset, enter register sales, assign staff, review the required claim, and save the shift.
 - [Tip Pool Calculator](docs/tip-pool-calculator.md) — how to configure a one-off pool or load a preset, enter the complete pool amount, assign staff, and review the weighted distribution.
 - [Weight Presets](docs/weight-presets.md) — how role weights work, 5/3/2 examples, staffing changes, and why employee weights are preferable to fixed role percentages.
+- [Assignments](docs/assignments.md) — calculator access, assignment managers, and employee role eligibility.
+- [Reports](docs/reports.md) — reviewing, correcting, and deleting saved shifts.
 
 ## Features
 

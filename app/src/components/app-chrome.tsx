@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import {
+  BookOpenIcon,
   Building2Icon,
   CalculatorIcon,
   CoinsIcon,
@@ -254,6 +255,22 @@ export function AppChrome({ children }: { children: ReactNode }) {
               <SidebarGroupLabel className="text-sm">Settings</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      className={sidebarButtonClassName}
+                      tooltip="Documentation"
+                    >
+                      <a
+                        href="https://github.com/slochewie/tip-calculator/tree/main/docs"
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <BookOpenIcon />
+                        <span className={sidebarLabelClassName}>Documentation</span>
+                      </a>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       asChild

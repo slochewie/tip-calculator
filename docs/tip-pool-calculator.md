@@ -1,5 +1,7 @@
 # Tip Pool Calculator
 
+> **New here?** Read [Getting Started](getting-started.md) first.
+
 The **Tips** page distributes one complete tip pool across the employees working the shift using the same weighted allocation engine as Claims.
 
 Unlike Claims, the Tip Pool Calculator does not use register sales or a claim percentage. You enter the complete amount that needs to be distributed, then the calculator allocates that amount across the active employees according to their role weights.

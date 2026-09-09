@@ -1,5 +1,7 @@
 # Tip Claim Calculator
 
+> **New here?** Read [Getting Started](getting-started.md) first.
+
 The **Claims** page calculates the minimum tip claim from combined register sales, then distributes that claim across the employees working the shift using role weights.
 
 The page supports two ways to configure a shift:

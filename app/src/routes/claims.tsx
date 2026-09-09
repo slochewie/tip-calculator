@@ -23,7 +23,7 @@ import { Skeleton } from "#/components/ui/skeleton.tsx";
 import { authBaseURL, authClient } from "#/lib/auth-client.ts";
 import { getTipClaimAccess, listTipClaimEmployees } from "#/lib/tip-claim.ts";
 
-export const Route = createFileRoute("/app")({
+export const Route = createFileRoute("/claims")({
   component: AuthenticatedTipCalculator,
 });
 

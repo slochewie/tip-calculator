@@ -134,10 +134,10 @@ export function AppChrome({ children }: { children: ReactNode }) {
                     <SidebarMenuButton
                       asChild
                       className={sidebarButtonClassName}
-                      isActive={location.pathname === "/app"}
+                      isActive={location.pathname === "/claims"}
                       tooltip="Claims"
                     >
-                      <Link to="/app">
+                      <Link to="/claims">
                         <CalculatorIcon />
                         <span className={sidebarLabelClassName}>Claims</span>
                       </Link>

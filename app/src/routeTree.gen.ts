@@ -10,18 +10,15 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AppRouteImport } from './routes/app'
 import { Route as AssignmentsRouteImport } from './routes/assignments'
+import { Route as ClaimsRouteImport } from './routes/claims'
 import { Route as ReportsRouteImport } from './routes/reports'
+import { Route as TipsRouteImport } from './routes/tips'
+import { Route as WeightPresetsRouteImport } from './routes/weight-presets'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AppRoute = AppRouteImport.update({
-  id: '/app',
-  path: '/app',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AssignmentsRoute = AssignmentsRouteImport.update({
@@ -29,44 +26,76 @@ const AssignmentsRoute = AssignmentsRouteImport.update({
   path: '/assignments',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ClaimsRoute = ClaimsRouteImport.update({
+  id: '/claims',
+  path: '/claims',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ReportsRoute = ReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TipsRoute = TipsRouteImport.update({
+  id: '/tips',
+  path: '/tips',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WeightPresetsRoute = WeightPresetsRouteImport.update({
+  id: '/weight-presets',
+  path: '/weight-presets',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/app': typeof AppRoute
   '/assignments': typeof AssignmentsRoute
+  '/claims': typeof ClaimsRoute
   '/reports': typeof ReportsRoute
+  '/tips': typeof TipsRoute
+  '/weight-presets': typeof WeightPresetsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/app': typeof AppRoute
   '/assignments': typeof AssignmentsRoute
+  '/claims': typeof ClaimsRoute
   '/reports': typeof ReportsRoute
+  '/tips': typeof TipsRoute
+  '/weight-presets': typeof WeightPresetsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/app': typeof AppRoute
   '/assignments': typeof AssignmentsRoute
+  '/claims': typeof ClaimsRoute
   '/reports': typeof ReportsRoute
+  '/tips': typeof TipsRoute
+  '/weight-presets': typeof WeightPresetsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/app' | '/assignments' | '/reports'
+  fullPaths:
+    '/' | '/assignments' | '/claims' | '/reports' | '/tips' | '/weight-presets'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/app' | '/assignments' | '/reports'
-  id: '__root__' | '/' | '/app' | '/assignments' | '/reports'
+  to:
+    '/' | '/assignments' | '/claims' | '/reports' | '/tips' | '/weight-presets'
+  id:
+    | '__root__'
+    | '/'
+    | '/assignments'
+    | '/claims'
+    | '/reports'
+    | '/tips'
+    | '/weight-presets'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AppRoute: typeof AppRoute
   AssignmentsRoute: typeof AssignmentsRoute
+  ClaimsRoute: typeof ClaimsRoute
   ReportsRoute: typeof ReportsRoute
+  TipsRoute: typeof TipsRoute
+  WeightPresetsRoute: typeof WeightPresetsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -78,18 +107,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/app': {
-      id: '/app'
-      path: '/app'
-      fullPath: '/app'
-      preLoaderRoute: typeof AppRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/assignments': {
       id: '/assignments'
       path: '/assignments'
       fullPath: '/assignments'
       preLoaderRoute: typeof AssignmentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/claims': {
+      id: '/claims'
+      path: '/claims'
+      fullPath: '/claims'
+      preLoaderRoute: typeof ClaimsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reports': {
@@ -99,14 +128,30 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReportsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tips': {
+      id: '/tips'
+      path: '/tips'
+      fullPath: '/tips'
+      preLoaderRoute: typeof TipsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/weight-presets': {
+      id: '/weight-presets'
+      path: '/weight-presets'
+      fullPath: '/weight-presets'
+      preLoaderRoute: typeof WeightPresetsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AppRoute: AppRoute,
   AssignmentsRoute: AssignmentsRoute,
+  ClaimsRoute: ClaimsRoute,
   ReportsRoute: ReportsRoute,
+  TipsRoute: TipsRoute,
+  WeightPresetsRoute: WeightPresetsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

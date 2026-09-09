@@ -1,7 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
-
-import { TipClaimCalculator } from "#/components/tip-claim-calculator.tsx";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/")({
-  component: TipClaimCalculator,
+  beforeLoad: () => {
+    throw redirect({ to: "/claims" });
+  },
 });

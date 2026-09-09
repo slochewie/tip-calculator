@@ -42,13 +42,16 @@ export function canManageTipWeightPresets() {
 
 export const DEFAULT_TIP_WEIGHT_PRESET_STAFF: TipClaimRoleState = {
   manager: 0,
-  bartender: 3,
-  barback: 2,
-  door: 2,
+  bartender: 1,
+  barback: 0,
+  door: 0,
 };
 
 export const DEFAULT_TIP_WEIGHT_PRESET_WEIGHTS: TipClaimWeightState = {
   ...DEFAULT_TIP_CLAIM_WEIGHTS,
+  bartender: 5,
+  barback: 3,
+  door: 2,
 };
 
 function endpoint() {

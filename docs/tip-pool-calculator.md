@@ -19,6 +19,8 @@ The Tips page begins with the selected organization, a Tip pool amount of $0.00,
 
 If no preset is selected, the configuration can be treated as a one-off shift. Add or remove employees, choose each role, and adjust role weights under **Allocation settings** if needed.
 
+![Tip Pool Calculator one-off configuration with no preset selected](images/tip-pool-calculator/tips-one-off.webp)
+
 To create a one-off tip pool configuration:
 
 1. Select the organization.
@@ -41,6 +43,8 @@ For example, loading a preset named `Staff: 3-2-2 Weights: 5/3/2 Registers: 2` c
 - two Barbacks at weight 3;
 - two Door employees at weight 2.
 
+![Tip Pool Calculator with a 3-2-2 Weight Preset loaded](images/tip-pool-calculator/tips-preset-loaded.webp)
+
 The preset may also contain a register count and claim percentage because presets are shared with Claims. **Tips intentionally ignores those two Claims-specific fields.** Only staffing counts and role weights are used on the Tip Pool Calculator.
 
 Employee selectors remain blank after loading the preset so the manager can choose the people who actually worked that shift.
@@ -50,6 +54,8 @@ The loaded preset is a starting point, not a lock. The working shift can still b
 ## Entering the tip pool
 
 Enter the complete amount that needs to be distributed in the **Tip pool** field. The entire amount entered there is allocated.
+
+![Tip Pool Calculator with a $2,500 pool entered](images/tip-pool-calculator/tips-pool-entered.webp)
 
 For example, with a $2,500 pool and the 3-2-2 staffing preset using 5/3/2 weights:
 

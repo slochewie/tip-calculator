@@ -15,6 +15,8 @@ See [Weight Presets](weight-presets.md) for a detailed explanation of role weigh
 
 The default Claims page starts with the selected organization, no Weight Preset, the default claim percentage, one register row, and no on-duty staff assigned.
 
+![Blank Tip Claim Calculator page](images/tip-claim-calculator/claims-blank.webp)
+
 From this state you can create a one-time shift configuration directly on the page.
 
 To build a one-off configuration:
@@ -44,6 +46,8 @@ For Claims, a preset can populate:
 
 For example, a preset named `Staff: 3-2-2 Weights: 5/3/2 Registers: 2` creates two register rows and seven staffing slots: three Bartenders, two Barbacks, and two Door employees using 5/3/2 role weights.
 
+![Tip Claim Calculator with a 3-2-2 Weight Preset loaded](images/tip-claim-calculator/claims-preset-loaded.webp)
+
 The preset creates the structure of the shift, not the employee assignments. Employee selectors remain blank so the manager can choose the people who actually worked that shift.
 
 You can still adjust the working configuration after loading a preset. Changing a value on the current shift does not rewrite the saved preset unless you edit the preset itself on the Weight Presets page.
@@ -51,6 +55,8 @@ You can still adjust the working configuration after loading a preset. Changing 
 ## Entering register sales
 
 Enter the sales total for every register used during the shift. The **Required claim** card updates automatically from the combined sales and the current claim percentage.
+
+![Tip Claim Calculator with two register sales values entered](images/tip-claim-calculator/claims-sales-entered.webp)
 
 For example, with:
 

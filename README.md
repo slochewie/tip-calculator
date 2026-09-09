@@ -11,6 +11,8 @@ Both workflows integrate with the NiteOwl.dev Better Auth service for organizati
 
 ## Documentation
 
+- [Tip Claim Calculator](docs/tip-claim-calculator.md) — how to build a one-off shift or load a preset, enter register sales, assign staff, review the required claim, and save the shift.
+- [Tip Pool Calculator](docs/tip-pool-calculator.md) — how to configure a one-off pool or load a preset, enter the complete pool amount, assign staff, and review the weighted distribution.
 - [Weight Presets](docs/weight-presets.md) — how role weights work, 5/3/2 examples, staffing changes, and why employee weights are preferable to fixed role percentages.
 
 ## Features
@@ -34,6 +36,8 @@ The Claims calculator supports both a standalone public mode and the authenticat
 - Correct previously saved reports when authorized
 - Preserve in-progress authenticated drafts locally
 
+See the [Tip Claim Calculator guide](docs/tip-claim-calculator.md) for the user workflow.
+
 ### Tip Pool Calculator
 
 The Tips page provides a separate tip-pool workflow that is intentionally unaware of registers and claim percentages.
@@ -49,6 +53,8 @@ The Tips page provides a separate tip-pool workflow that is intentionally unawar
 - Save completed Tip Pool reports
 - Correct previously saved Tip Pool reports when authorized
 - Store in-progress drafts locally per organization
+
+See the [Tip Pool Calculator guide](docs/tip-pool-calculator.md) for the user workflow.
 
 ### Weight Presets
 

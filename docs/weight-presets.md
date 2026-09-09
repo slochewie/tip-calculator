@@ -21,7 +21,9 @@ A preset also contains two Claims-specific settings:
 
 The **Tips** pool calculator ignores Register count and Claim percentage. It uses only the staffing counts and role weights.
 
-<!-- Screenshot: default/blank Weight Presets page -->
+![Blank Weight Presets page showing the organization selector, preset editor, saved presets, and distribution preview](images/weight-presets/weight-presets-overview.webp)
+
+*The default Weight Presets page. Staffing counts and weights are edited in the Distribution preview before saving a named preset.*
 
 ## Example: 5 / 3 / 2 weights
 
@@ -48,7 +50,9 @@ For a $1,000 pool, one weight unit is worth $100. The result is therefore:
 | Door | 1 | $200 | $200 | 20% |
 | **Total** | **3** | | **$1,000** | **100%** |
 
-<!-- Screenshot: 1 bartender / 1 barback / 1 door, $1,000 preview -->
+![5/3/2 weights with one bartender, one barback, and one door employee splitting a $1,000 pool](images/weight-presets/5-3-2-one-one-one.webp)
+
+*With one employee in each role, 5/3/2 produces a 50% / 30% / 20% result.*
 
 The 50/30/20 percentages above are the *result* of the 5/3/2 weights and this particular staffing mix. They are not percentages that need to be stored in the preset.
 
@@ -75,7 +79,9 @@ For a $2,500 pool, each weight unit is worth $100. The calculator distributes:
 | Door | 2 | 2 | $200 | $400 | 16% |
 | **Total** | **7** | | | **$2,500** | **100%** |
 
-<!-- Screenshot: 3 bartenders / 2 barbacks / 2 door, $2,500 preview -->
+![5/3/2 weights with three bartenders, two barbacks, and two door employees splitting a $2,500 pool](images/weight-presets/5-3-2-three-two-two.webp)
+
+*The same 5/3/2 employee weights automatically become a 60% / 24% / 16% role split when staffing changes to 3-2-2.*
 
 Notice that the role percentages changed from **50/30/20** to **60/24/16**, but the individual relationship did not change: every bartender still receives 5 shares, every barback 3 shares, and every door employee 2 shares.
 
@@ -88,8 +94,6 @@ With one bartender, two barbacks, and no door employees, the same weights produc
 ```
 
 For a $1,100 pool, the bartender receives $500 and each barback receives $300. Barbacks collectively receive $600, or 54.5% of the pool, even though each individual barback receives less than the bartender.
-
-<!-- Screenshot: 1 bartender / 2 barbacks, $1,100 preview -->
 
 This is an important distinction: **role total** and **individual employee share** are different things.
 
@@ -124,7 +128,9 @@ The resulting role totals are exactly 50% / 30% / 20%, but the individual relati
 - one barback receives 90% as much as one bartender;
 - one door employee receives 60% as much as one bartender.
 
-<!-- Screenshot: 3 bartenders / 2 barbacks / 2 door using 10/9/6, $1,000 preview -->
+![10/9/6 weights recreating a fixed 50% / 30% / 20% role split with three bartenders, two barbacks, and two door employees](images/weight-presets/fixed-percentages-10-9-6.webp)
+
+*Forcing the 3-2-2 staffing state back to a fixed 50% / 30% / 20% role split requires 10/9/6 employee weights, changing the individual payout relationship.*
 
 That may be correct if those are the intended employee relationships. But if the intent is that a bartender should always receive 5 shares for every 3 received by a barback and 2 received by door, then **5/3/2 should remain the weights and the role percentages should be allowed to change with staffing**.
 

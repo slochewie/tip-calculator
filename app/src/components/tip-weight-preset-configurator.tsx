@@ -83,6 +83,28 @@ function clampPercent(value: number) {
   return Math.min(100, Math.max(0, Math.round(value * 10) / 10));
 }
 
+function formatPresetWeight(value: number) {
+  return value.toLocaleString("en-US", { maximumFractionDigits: 1 });
+}
+
+function getSuggestedPresetName(
+  registerCount: number,
+  staff: TipClaimRoleState,
+  weights: TipClaimWeightState,
+) {
+  const roles: TipClaimRoleKey[] =
+    staff.manager > 0
+      ? ["manager", "bartender", "barback", "door"]
+      : ["bartender", "barback", "door"];
+
+  const staffPart = roles.map((role) => staff[role]).join("-");
+  const weightPart = roles
+    .map((role) => formatPresetWeight(weights[role]))
+    .join("/");
+
+  return `Staff: ${staffPart} Weights: ${weightPart} Registers: ${registerCount}`;
+}
+
 function MobileStepperButtons({
   label,
   onIncrement,
@@ -172,6 +194,7 @@ export function TipWeightPresetConfigurator({
   organizationName?: string;
 }) {
   const [name, setName] = useState("");
+  const [nameCustomized, setNameCustomized] = useState(false);
   const [registerCount, setRegisterCount] = useState(0);
   const [claimPercent, setClaimPercent] = useState(8);
   const [staff, setStaff] = useState<TipClaimRoleState>({
@@ -255,6 +278,17 @@ export function TipWeightPresetConfigurator({
     (sum, role) => sum + staff[role],
     0,
   );
+  const hasConfigurationChanges =
+    registerCount !== 0 ||
+    TIP_CLAIM_ROLE_ORDER.some(
+      (role) =>
+        staff[role] !== DEFAULT_TIP_WEIGHT_PRESET_STAFF[role] ||
+        weights[role] !== DEFAULT_TIP_WEIGHT_PRESET_WEIGHTS[role],
+    );
+  const suggestedName = hasConfigurationChanges
+    ? getSuggestedPresetName(registerCount, staff, weights)
+    : "";
+  const displayedName = nameCustomized ? name : suggestedName;
   const totalWeightUnits = roleData.reduce((sum, item) => sum + item.units, 0);
 
   const chartData = roleData.flatMap((item) =>
@@ -276,6 +310,7 @@ export function TipWeightPresetConfigurator({
   function resetForm() {
     setEditingId(null);
     setName("");
+    setNameCustomized(false);
     setRegisterCount(0);
     setClaimPercent(8);
     setStaff({ ...DEFAULT_TIP_WEIGHT_PRESET_STAFF });
@@ -297,7 +332,7 @@ export function TipWeightPresetConfigurator({
   async function handleSave() {
     if (
       !canManagePresets ||
-      !name.trim() ||
+      !displayedName.trim() ||
       totalStaff === 0 ||
       mutationPending
     ) {
@@ -310,7 +345,7 @@ export function TipWeightPresetConfigurator({
     try {
       const savedPreset = await saveTipWeightPreset(organizationId, {
         id: editingId ?? undefined,
-        name,
+        name: displayedName,
         registerCount,
         claimPercent,
         staff,
@@ -340,6 +375,7 @@ export function TipWeightPresetConfigurator({
   function handleEdit(preset: TipWeightPreset) {
     setEditingId(preset.id);
     setName(preset.name);
+    setNameCustomized(true);
     setRegisterCount(preset.registerCount);
     setClaimPercent(preset.claimPercent);
     setStaff({ ...preset.staff });
@@ -402,11 +438,14 @@ export function TipWeightPresetConfigurator({
                   <Input
                     id="preset-name"
                     placeholder="Friday Full Staff"
-                    value={name}
-                    onChange={(event) => setName(event.target.value)}
+                    value={displayedName}
+                    onChange={(event) => {
+                      setName(event.target.value);
+                      setNameCustomized(true);
+                    }}
                   />
                   <FieldDescription>
-                    Use a name that makes the staffing state easy to recognize.
+                    A descriptive name is suggested as the configuration changes. Type a custom name to replace it.
                   </FieldDescription>
                 </Field>
 
@@ -489,7 +528,7 @@ export function TipWeightPresetConfigurator({
                   <Button
                     type="button"
                     disabled={
-                      !name.trim() || totalStaff === 0 || mutationPending
+                      !displayedName.trim() || totalStaff === 0 || mutationPending
                     }
                     onClick={() => void handleSave()}
                   >

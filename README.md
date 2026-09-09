@@ -9,6 +9,10 @@ The application now includes two related calculators:
 
 Both workflows integrate with the NiteOwl.dev Better Auth service for organizations, employee access, role assignments, saved reports, corrections, and shared weight presets.
 
+## Documentation
+
+- [Weight Presets](docs/weight-presets.md) — how role weights work, 5/3/2 examples, staffing changes, and why employee weights are preferable to fixed role percentages.
+
 ## Features
 
 ### Tip Claim Calculator
@@ -75,6 +79,8 @@ Preset management is permission-aware:
 
 - Organization owners/admins, Tip Calculator assignment managers, and global admins can create, edit, and delete presets.
 - Regular Tip Calculator users can view and use presets but see the page in read-only mode.
+
+See the [Weight Presets guide](docs/weight-presets.md) for worked examples and an explanation of the weighting model.
 
 ### Assignments
 
@@ -234,6 +240,7 @@ Protected routes authenticate through the NiteOwl.dev / McCarthy's Better Auth s
 │   │   ├── lib/          # Auth clients, allocation engines, drafts, reports, and presets
 │   │   └── routes/       # Claims, Tips, Reports, Assignments, and Weight Presets routes
 │   └── package.json
+├── docs/                 # User-facing application guides
 ├── docker-compose.yml
 └── README.md
 ```

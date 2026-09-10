@@ -47,6 +47,7 @@ import {
   SidebarProvider,
   SidebarSeparator,
   SidebarTrigger,
+  useSidebar,
 } from "#/components/ui/sidebar.tsx";
 import { TooltipProvider } from "#/components/ui/tooltip.tsx";
 import { authBaseURL, authClient } from "#/lib/auth-client.ts";
@@ -97,6 +98,22 @@ const sidebarButtonClassName =
 const sidebarLabelClassName =
   "truncate group-data-[collapsible=icon]:hidden";
 
+function SidebarRouteLink({
+  to,
+  children,
+}: {
+  to: "/claims" | "/tips" | "/reports" | "/assignments" | "/weight-presets";
+  children: ReactNode;
+}) {
+  const { setOpenMobile } = useSidebar();
+
+  return (
+    <Link to={to} onClick={() => setOpenMobile(false)}>
+      {children}
+    </Link>
+  );
+}
+
 export function AppChrome({ children }: { children: ReactNode }) {
   const location = useLocation();
   const { data: session } = authClient.useSession();
@@ -138,10 +155,10 @@ export function AppChrome({ children }: { children: ReactNode }) {
                       isActive={location.pathname === "/claims"}
                       tooltip="Claims"
                     >
-                      <Link to="/claims">
+                      <SidebarRouteLink to="/claims">
                         <CalculatorIcon />
                         <span className={sidebarLabelClassName}>Claims</span>
-                      </Link>
+                      </SidebarRouteLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
@@ -151,10 +168,10 @@ export function AppChrome({ children }: { children: ReactNode }) {
                       isActive={location.pathname === "/tips"}
                       tooltip="Tips"
                     >
-                      <Link to="/tips">
+                      <SidebarRouteLink to="/tips">
                         <CoinsIcon />
                         <span className={sidebarLabelClassName}>Tips</span>
-                      </Link>
+                      </SidebarRouteLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
@@ -164,10 +181,10 @@ export function AppChrome({ children }: { children: ReactNode }) {
                       isActive={location.pathname === "/reports"}
                       tooltip="Reports"
                     >
-                      <Link to="/reports">
+                      <SidebarRouteLink to="/reports">
                         <ReceiptTextIcon />
                         <span className={sidebarLabelClassName}>Reports</span>
-                      </Link>
+                      </SidebarRouteLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
@@ -177,10 +194,10 @@ export function AppChrome({ children }: { children: ReactNode }) {
                       isActive={location.pathname === "/assignments"}
                       tooltip="Assignments"
                     >
-                      <Link to="/assignments">
+                      <SidebarRouteLink to="/assignments">
                         <UsersIcon />
                         <span className={sidebarLabelClassName}>Assignments</span>
-                      </Link>
+                      </SidebarRouteLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
@@ -190,10 +207,10 @@ export function AppChrome({ children }: { children: ReactNode }) {
                       isActive={location.pathname === "/weight-presets"}
                       tooltip="Weight Presets"
                     >
-                      <Link to="/weight-presets">
+                      <SidebarRouteLink to="/weight-presets">
                         <SettingsIcon />
                         <span className={sidebarLabelClassName}>Weight Presets</span>
-                      </Link>
+                      </SidebarRouteLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </SidebarMenu>

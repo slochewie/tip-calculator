@@ -1,6 +1,6 @@
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import {
-	CalculatorIcon,
+	LandmarkIcon,
 	ChevronDownIcon,
 	ChevronUpIcon,
 	PlusIcon,
@@ -543,7 +543,7 @@ export function TipClaimCalculator({
 		<main className="mx-auto flex w-full max-w-6xl flex-col gap-5 p-4 md:p-6 lg:p-8">
 			<div className="flex items-start gap-3">
 				<div className="flex size-10 shrink-0 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-sm">
-					<CalculatorIcon className="size-5" />
+					<LandmarkIcon className="size-5" />
 				</div>
 				<div className="flex flex-col gap-1">
 					<div className="flex flex-wrap items-center gap-2">

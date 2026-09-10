@@ -3,13 +3,14 @@ import { Link, useLocation } from "@tanstack/react-router";
 import {
   BookOpenIcon,
   Building2Icon,
-  CalculatorIcon,
-  CoinsIcon,
+  HandCoinsIcon,
+  LandmarkIcon,
   GaugeIcon,
   LogOutIcon,
   NetworkIcon,
   PaletteIcon,
-  ReceiptTextIcon,
+  ScaleIcon,
+  ScrollTextIcon,
   SettingsIcon,
   ShieldCheckIcon,
   SquareTerminalIcon,
@@ -148,7 +149,7 @@ export function AppChrome({ children }: { children: ReactNode }) {
                       tooltip="Claims"
                     >
                       <Link to="/claims">
-                        <CalculatorIcon />
+                        <LandmarkIcon />
                         <span className={sidebarLabelClassName}>Claims</span>
                       </Link>
                     </SidebarMenuButton>
@@ -161,7 +162,7 @@ export function AppChrome({ children }: { children: ReactNode }) {
                       tooltip="Tips"
                     >
                       <Link to="/tips">
-                        <CoinsIcon />
+                        <HandCoinsIcon />
                         <span className={sidebarLabelClassName}>Tips</span>
                       </Link>
                     </SidebarMenuButton>
@@ -174,7 +175,7 @@ export function AppChrome({ children }: { children: ReactNode }) {
                       tooltip="Reports"
                     >
                       <Link to="/reports">
-                        <ReceiptTextIcon />
+                        <ScrollTextIcon />
                         <span className={sidebarLabelClassName}>Reports</span>
                       </Link>
                     </SidebarMenuButton>
@@ -200,7 +201,7 @@ export function AppChrome({ children }: { children: ReactNode }) {
                       tooltip="Weight Presets"
                     >
                       <Link to="/weight-presets">
-                        <SettingsIcon />
+                        <ScaleIcon />
                         <span className={sidebarLabelClassName}>Weight Presets</span>
                       </Link>
                     </SidebarMenuButton>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { PencilIcon, ReceiptTextIcon, Trash2Icon } from "lucide-react";
+import { PencilIcon, ScrollTextIcon, Trash2Icon } from "lucide-react";
 
 import {
   AlertDialog,
@@ -220,7 +220,7 @@ function Reports() {
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 md:p-6 lg:p-8">
       <div className="flex items-start gap-3">
         <div className="flex size-10 shrink-0 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-sm">
-          <ReceiptTextIcon className="size-5" />
+          <ScrollTextIcon className="size-5" />
         </div>
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Reports</h1>

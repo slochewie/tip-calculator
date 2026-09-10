@@ -1,5 +1,6 @@
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import {
+	CalculatorIcon,
 	ChevronDownIcon,
 	ChevronUpIcon,
 	PlusIcon,
@@ -540,14 +541,19 @@ export function TipClaimCalculator({
 
 	return (
 		<main className="mx-auto flex w-full max-w-6xl flex-col gap-5 p-4 md:p-6 lg:p-8">
-			<div className="flex flex-col gap-2">
-				<div className="flex flex-wrap items-center gap-2">
-					<h1 className="font-heading text-3xl font-semibold tracking-tight">Tip Claim Calculator</h1>
-					<Badge variant="secondary">Weighted roles</Badge>
+			<div className="flex items-start gap-3">
+				<div className="flex size-10 shrink-0 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-sm">
+					<CalculatorIcon className="size-5" />
 				</div>
-				<p className="max-w-3xl text-sm text-muted-foreground md:text-base">
-					Calculate the minimum tip claim from combined register sales, then split it across on-duty staff using role weights.
-				</p>
+				<div className="flex flex-col gap-1">
+					<div className="flex flex-wrap items-center gap-2">
+						<h1 className="text-2xl font-semibold tracking-tight">Tip Claim Calculator</h1>
+						<Badge variant="secondary">Weighted roles</Badge>
+					</div>
+					<p className="text-sm text-muted-foreground">
+						Calculate the minimum tip claim from combined register sales, then split it across on-duty staff using role weights.
+					</p>
+				</div>
 			</div>
 
 			<div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">

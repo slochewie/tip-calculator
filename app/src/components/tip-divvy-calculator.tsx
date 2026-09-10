@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { PlusIcon, RotateCcwIcon, SaveIcon, Trash2Icon } from "lucide-react";
+import { CoinsIcon, PlusIcon, RotateCcwIcon, SaveIcon, Trash2Icon } from "lucide-react";
 
 import {
   Accordion,
@@ -493,20 +493,25 @@ export function TipDivvyCalculator({
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 p-4 md:p-6 lg:p-8">
-      <div className="flex flex-col gap-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <h1 className="font-heading text-3xl font-semibold tracking-tight">
-            Tip Pool Calculator
-          </h1>
-          <Badge variant="secondary">
-            {allocationMode === "percentages" ? "Percentage targets" : "Weighted roles"}
-          </Badge>
-          {editingShiftId ? <Badge variant="outline">Correcting report</Badge> : null}
+      <div className="flex items-start gap-3">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-sm">
+          <CoinsIcon className="size-5" />
         </div>
-        <p className="max-w-3xl text-sm text-muted-foreground md:text-base">
-          Split the full tip pool across on-duty staff using the same weighted
-          allocation engine, with either direct weights or percentage targets.
-        </p>
+        <div className="flex flex-col gap-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-2xl font-semibold tracking-tight">
+              Tip Pool Calculator
+            </h1>
+            <Badge variant="secondary">
+              {allocationMode === "percentages" ? "Percentage targets" : "Weighted roles"}
+            </Badge>
+            {editingShiftId ? <Badge variant="outline">Correcting report</Badge> : null}
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Split the full tip pool across on-duty staff using the same weighted
+            allocation engine, with either direct weights or percentage targets.
+          </p>
+        </div>
       </div>
 
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(360px,1fr)]">

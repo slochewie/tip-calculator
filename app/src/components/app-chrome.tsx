@@ -98,19 +98,11 @@ const sidebarButtonClassName =
 const sidebarLabelClassName =
   "truncate group-data-[collapsible=icon]:hidden";
 
-function SidebarRouteLink({
-  to,
-  children,
-}: {
-  to: "/claims" | "/tips" | "/reports" | "/assignments" | "/weight-presets";
-  children: ReactNode;
-}) {
+function TipCalculatorSidebarMenu({ children }: { children: ReactNode }) {
   const { setOpenMobile } = useSidebar();
 
   return (
-    <Link to={to} onClick={() => setOpenMobile(false)}>
-      {children}
-    </Link>
+    <SidebarMenu onClick={() => setOpenMobile(false)}>{children}</SidebarMenu>
   );
 }
 
@@ -147,7 +139,7 @@ export function AppChrome({ children }: { children: ReactNode }) {
             <SidebarGroup>
               <SidebarGroupLabel className="text-sm">Tip Calculator</SidebarGroupLabel>
               <SidebarGroupContent>
-                <SidebarMenu>
+                <TipCalculatorSidebarMenu>
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       asChild
@@ -155,10 +147,10 @@ export function AppChrome({ children }: { children: ReactNode }) {
                       isActive={location.pathname === "/claims"}
                       tooltip="Claims"
                     >
-                      <SidebarRouteLink to="/claims">
+                      <Link to="/claims">
                         <CalculatorIcon />
                         <span className={sidebarLabelClassName}>Claims</span>
-                      </SidebarRouteLink>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
@@ -168,10 +160,10 @@ export function AppChrome({ children }: { children: ReactNode }) {
                       isActive={location.pathname === "/tips"}
                       tooltip="Tips"
                     >
-                      <SidebarRouteLink to="/tips">
+                      <Link to="/tips">
                         <CoinsIcon />
                         <span className={sidebarLabelClassName}>Tips</span>
-                      </SidebarRouteLink>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
@@ -181,10 +173,10 @@ export function AppChrome({ children }: { children: ReactNode }) {
                       isActive={location.pathname === "/reports"}
                       tooltip="Reports"
                     >
-                      <SidebarRouteLink to="/reports">
+                      <Link to="/reports">
                         <ReceiptTextIcon />
                         <span className={sidebarLabelClassName}>Reports</span>
-                      </SidebarRouteLink>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
@@ -194,10 +186,10 @@ export function AppChrome({ children }: { children: ReactNode }) {
                       isActive={location.pathname === "/assignments"}
                       tooltip="Assignments"
                     >
-                      <SidebarRouteLink to="/assignments">
+                      <Link to="/assignments">
                         <UsersIcon />
                         <span className={sidebarLabelClassName}>Assignments</span>
-                      </SidebarRouteLink>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
@@ -207,13 +199,13 @@ export function AppChrome({ children }: { children: ReactNode }) {
                       isActive={location.pathname === "/weight-presets"}
                       tooltip="Weight Presets"
                     >
-                      <SidebarRouteLink to="/weight-presets">
+                      <Link to="/weight-presets">
                         <SettingsIcon />
                         <span className={sidebarLabelClassName}>Weight Presets</span>
-                      </SidebarRouteLink>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                </SidebarMenu>
+                </TipCalculatorSidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
 

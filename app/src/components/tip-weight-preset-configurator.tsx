@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Cell, Pie, PieChart } from "recharts";
 import {
   ChevronDownIcon,
   ChevronUpIcon,
   SaveIcon,
   Trash2Icon,
+  WeightIcon,
   XIcon,
 } from "lucide-react";
 
@@ -189,9 +190,11 @@ function ClearableNumberInput({
 export function TipWeightPresetConfigurator({
   organizationId,
   organizationName,
+  organizationSelector,
 }: {
   organizationId: string;
   organizationName?: string;
+  organizationSelector: ReactNode;
 }) {
   const [name, setName] = useState("");
   const [nameCustomized, setNameCustomized] = useState(false);
@@ -406,21 +409,28 @@ export function TipWeightPresetConfigurator({
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 p-4 md:p-6 lg:p-8">
-      <div className="flex flex-col gap-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <h1 className="font-heading text-3xl font-semibold tracking-tight">
-            Weight Presets
-          </h1>
-          <Badge variant="secondary">Staffing states</Badge>
-          {!presetsPending && !canManagePresets ? (
-            <Badge variant="outline">Read only</Badge>
-          ) : null}
+      <div className="flex items-start gap-3">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-sm">
+          <WeightIcon className="size-5" />
         </div>
-        <p className="max-w-3xl text-sm text-muted-foreground md:text-base">
-          Build named role-weight configurations for specific staffing mixes
-          {organizationName ? ` in ${organizationName}` : ""}.
-        </p>
+        <div className="flex flex-col gap-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-2xl font-semibold tracking-tight">
+              Weight Presets
+            </h1>
+            <Badge variant="secondary">Staffing states</Badge>
+            {!presetsPending && !canManagePresets ? (
+              <Badge variant="outline">Read only</Badge>
+            ) : null}
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Build named role-weight configurations for specific staffing mixes
+            {organizationName ? ` in ${organizationName}` : ""}.
+          </p>
+        </div>
       </div>
+
+      {organizationSelector}
 
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.9fr)]">
         <div className="flex min-w-0 flex-col gap-5">

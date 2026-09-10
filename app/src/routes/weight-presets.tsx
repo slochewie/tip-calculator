@@ -143,13 +143,11 @@ function WeightPresetsRoute() {
 
   return (
     <>
-      <div className="mx-auto w-full max-w-6xl px-4 pt-4 md:px-6 md:pt-6 lg:px-8 lg:pt-8">
-        {organizationSelector}
-      </div>
       <TipWeightPresetConfigurator
         key={activeOrganization.id}
         organizationId={activeOrganization.id}
         organizationName={activeOrganization.name}
+        organizationSelector={organizationSelector}
       />
     </>
   );

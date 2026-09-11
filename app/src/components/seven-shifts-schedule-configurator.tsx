@@ -1,6 +1,12 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { ChevronDownIcon, ChevronUpIcon, XIcon } from "lucide-react";
+import {
+  ChevronDownIcon,
+  ChevronUpIcon,
+  ScaleIcon,
+  UsersIcon,
+  XIcon,
+} from "lucide-react";
 import { Cell, Pie, PieChart } from "recharts";
 
 import { CalculatorTabs } from "#/components/calculator-tabs.tsx";
@@ -420,8 +426,12 @@ export function SevenShiftsScheduleConfigurator({
                     </span>
                   </div>
                   <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3">
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-sm font-semibold">Staff</span>
+                    <div className="flex items-center gap-2">
+                      <UsersIcon
+                        className="size-4 shrink-0"
+                        aria-hidden="true"
+                      />
+                      <span className="sr-only">Staff</span>
                       <span className="text-base font-normal tabular-nums">
                         {item.staff}
                       </span>
@@ -431,7 +441,8 @@ export function SevenShiftsScheduleConfigurator({
                         className="shrink-0"
                         htmlFor={`schedule-weight-${item.role}`}
                       >
-                        Weight
+                        <ScaleIcon className="size-4" aria-hidden="true" />
+                        <span className="sr-only">Weight</span>
                       </FieldLabel>
                       <WeightStepper
                         role={item.role}

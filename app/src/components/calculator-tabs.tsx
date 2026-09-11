@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
+import { HandCoinsIcon, LandmarkIcon, ScaleIcon } from "lucide-react";
 
+import { SevenShiftsLogo } from "#/components/seven-shifts-logo.tsx";
 import { authClient } from "#/lib/auth-client.ts";
 import { getSevenShiftsScheduleAccess } from "#/lib/seven-shifts-schedules.ts";
 
 const baseClassName =
-  "shrink-0 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground";
+  "flex size-10 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground";
 const activeClassName = "bg-background text-foreground shadow-sm";
 
 export function useSevenShiftsNavigationAccess() {
@@ -55,11 +57,21 @@ export function CalculatorTabs() {
   const location = useLocation();
   const showSevenShifts = useSevenShiftsNavigationAccess();
   const links = [
-    { to: "/claims" as const, label: "Claims" },
-    { to: "/tips" as const, label: "Tips" },
-    { to: "/weight-presets" as const, label: "Weight Presets" },
+    { to: "/claims" as const, label: "Claims", icon: LandmarkIcon },
+    { to: "/tips" as const, label: "Tips", icon: HandCoinsIcon },
+    {
+      to: "/weight-presets" as const,
+      label: "Weight Presets",
+      icon: ScaleIcon,
+    },
     ...(showSevenShifts
-      ? [{ to: "/seven-shifts" as const, label: "7Shifts Schedule" }]
+      ? [
+          {
+            to: "/seven-shifts" as const,
+            label: "7Shifts Schedule",
+            icon: SevenShiftsLogo,
+          },
+        ]
       : []),
   ];
 
@@ -71,16 +83,20 @@ export function CalculatorTabs() {
       >
         {links.map((item) => {
           const active = location.pathname === item.to;
+          const Icon = item.icon;
 
           return (
             <Link
               key={item.to}
               to={item.to}
               role="tab"
+              aria-label={item.label}
               aria-selected={active}
+              title={item.label}
               className={`${baseClassName} ${active ? activeClassName : ""}`}
             >
-              {item.label}
+              <Icon className="size-5" aria-hidden="true" />
+              <span className="sr-only">{item.label}</span>
             </Link>
           );
         })}

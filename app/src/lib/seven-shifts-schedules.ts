@@ -1,12 +1,12 @@
 import { authBaseURL } from "#/lib/auth-client.ts";
 
-type SevenShiftsLocationPermission = {
-  app: "counter" | "unifi" | "schedules";
-  organizationId: string;
+type SevenShiftsScheduleOrganization = {
+  id: string;
+  enabled: boolean;
 };
 
-type SevenShiftsAccessResponse = {
-  permissions?: SevenShiftsLocationPermission[];
+type SevenShiftsScheduleOrganizationsResponse = {
+  organizations?: SevenShiftsScheduleOrganization[];
   error?: string;
 };
 
@@ -79,19 +79,18 @@ function scheduleError(body: unknown) {
 }
 export async function getSevenShiftsScheduleAccess(organizationId: string) {
   const response = await fetch(
-    new URL("/api/auth/seven-shifts/access", authBaseURL),
+    new URL("/api/auth/seven-shifts-schedules/organizations", authBaseURL),
     { credentials: "include" },
   );
-  const body = (await response.json()) as SevenShiftsAccessResponse;
+  const body = (await response.json()) as SevenShiftsScheduleOrganizationsResponse;
 
   if (!response.ok) {
     throw new Error(scheduleError(body));
   }
 
-  return (body.permissions ?? []).some(
-    (permission) =>
-      permission.app === "schedules" &&
-      permission.organizationId === organizationId,
+  return (body.organizations ?? []).some(
+    (organization) =>
+      organization.id === organizationId && organization.enabled,
   );
 }
 

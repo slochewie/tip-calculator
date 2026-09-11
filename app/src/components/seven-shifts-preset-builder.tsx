@@ -90,10 +90,12 @@ function scheduledRoleIndex(row: StaffingRow) {
 }
 
 export type SevenShiftsClaimsSetup = {
+  name: string;
   registerCount: number;
   staff: TipClaimRoleState;
   memberAssignments: Array<{
     userId: string | null;
+    name: string;
     role: TipClaimRoleKey;
     registerId: number | null;
   }>;
@@ -105,6 +107,14 @@ function localDateValue(date: Date) {
     String(date.getMonth() + 1).padStart(2, "0"),
     String(date.getDate()).padStart(2, "0"),
   ].join("-");
+}
+
+function formatScheduleDate(dateValue: string) {
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "UTC",
+    month: "short",
+    day: "numeric",
+  }).format(new Date(`${dateValue}T12:00:00Z`));
 }
 
 function weekStartFor(dateValue: string) {
@@ -292,8 +302,8 @@ export function SevenShiftsPresetBuilder({
   onApplyTips,
 }: {
   organizationId: string;
-  onApplyClaims: (setup: SevenShiftsClaimsSetup) => void;
-  onApplyTips: (setup: SevenShiftsClaimsSetup) => void;
+  onApplyClaims: (setup: SevenShiftsClaimsSetup) => Promise<void> | void;
+  onApplyTips: (setup: SevenShiftsClaimsSetup) => Promise<void> | void;
 }) {
   const [date, setDate] = useState(() => localDateValue(new Date()));
   const [shifts, setShifts] = useState<SevenShiftsScheduleShift[]>([]);
@@ -305,6 +315,10 @@ export function SevenShiftsPresetBuilder({
   >({});
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [applyError, setApplyError] = useState<string | null>(null);
+  const [applyPending, setApplyPending] = useState<"claims" | "tips" | null>(
+    null,
+  );
   const [employees, setEmployees] = useState<TipClaimEmployee[]>([]);
   const [employeesPending, setEmployeesPending] = useState(false);
   const [employeesError, setEmployeesError] = useState<string | null>(null);
@@ -483,7 +497,8 @@ export function SevenShiftsPresetBuilder({
     rows.length > 0 &&
     assignedRoleCount === rows.length &&
     allRegistersAssigned &&
-    !pending;
+    !pending &&
+    applyPending === null;
 
   function selectShiftGroup(groupKey: string) {
     const group = shiftGroups.find((candidate) => candidate.key === groupKey);
@@ -500,6 +515,7 @@ export function SevenShiftsPresetBuilder({
     );
     setReplacementUserIds({});
     setEditingEmployeeKey(null);
+    setApplyError(null);
   }
 
   function replaceEmployee(rowKey: string, userId: string) {
@@ -557,8 +573,11 @@ export function SevenShiftsPresetBuilder({
     });
   }
 
-  function applyStaffing(destination: "claims" | "tips") {
+  async function applyStaffing(destination: "claims" | "tips") {
     if (!canApply) return;
+
+    setApplyPending(destination);
+    setApplyError(null);
 
     const staff: TipClaimRoleState = {
       manager: 0,
@@ -573,8 +592,13 @@ export function SevenShiftsPresetBuilder({
       if (!role) continue;
 
       staff[role] += 1;
+      const replacementEmployee = employeeById.get(
+        replacementUserIds[row.key] ?? "",
+      );
+
       memberAssignments.push({
         userId: replacementUserIds[row.key] ?? row.userId,
+        name: replacementEmployee?.name ?? row.name,
         role,
         registerId:
           role === "bartender"
@@ -584,17 +608,28 @@ export function SevenShiftsPresetBuilder({
     }
 
     const setup = {
+      name: selectedGroup
+        ? `7Shifts · ${formatScheduleDate(date)} · ${endTimeLabel(selectedGroup)}`
+        : `7Shifts · ${formatScheduleDate(date)}`,
       registerCount,
       staff,
       memberAssignments,
     };
 
-    if (destination === "claims") {
-      onApplyClaims(setup);
-      return;
+    try {
+      if (destination === "claims") {
+        await onApplyClaims(setup);
+      } else {
+        await onApplyTips(setup);
+      }
+    } catch (applyFailure) {
+      setApplyError(
+        applyFailure instanceof Error
+          ? applyFailure.message
+          : "Unable to save temporary staffing.",
+      );
+      setApplyPending(null);
     }
-
-    onApplyTips(setup);
   }
 
   return (
@@ -931,20 +966,27 @@ export function SevenShiftsPresetBuilder({
               <Button
                 type="button"
                 disabled={!canApply}
-                onClick={() => applyStaffing("claims")}
+                onClick={() => void applyStaffing("claims")}
               >
-                Open Claims with this staffing
+                {applyPending === "claims"
+                  ? "Saving staffing…"
+                  : "Open Claims with this staffing"}
               </Button>
               <Button
                 type="button"
                 variant="outline"
                 disabled={!canApply}
-                onClick={() => applyStaffing("tips")}
+                onClick={() => void applyStaffing("tips")}
               >
-                Open Tips with this staffing
+                {applyPending === "tips"
+                  ? "Saving staffing…"
+                  : "Open Tips with this staffing"}
               </Button>
             </div>
-            {!canApply ? (
+            {applyError ? (
+              <p className="text-sm text-destructive">{applyError}</p>
+            ) : null}
+            {!canApply && applyPending === null ? (
               <p className="text-xs text-muted-foreground">
                 Choose every employee role and assign each register to one
                 bartender before continuing.

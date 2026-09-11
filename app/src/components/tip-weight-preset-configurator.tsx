@@ -27,6 +27,11 @@ import {
 import { Field, FieldDescription, FieldLabel } from "#/components/ui/field.tsx";
 import { Input } from "#/components/ui/input.tsx";
 import {
+  ToggleGroup,
+  ToggleGroupItem,
+} from "#/components/ui/toggle-group.tsx";
+import { SevenShiftsPresetBuilder } from "#/components/seven-shifts-preset-builder.tsx";
+import {
   TIP_CLAIM_ROLE_LABELS,
   TIP_CLAIM_ROLE_ORDER,
   type TipClaimRoleKey,
@@ -213,6 +218,9 @@ export function TipWeightPresetConfigurator({
   const [mutationPending, setMutationPending] = useState(false);
   const [presetError, setPresetError] = useState<string | null>(null);
   const [canManagePresets, setCanManagePresets] = useState(false);
+  const [staffingSource, setStaffingSource] = useState<"manual" | "seven-shifts">(
+    "manual",
+  );
   const [expandedRoles, setExpandedRoles] = useState<
     Record<TipClaimRoleKey, boolean>
   >({
@@ -320,6 +328,16 @@ export function TipWeightPresetConfigurator({
     setWeights({ ...DEFAULT_TIP_WEIGHT_PRESET_WEIGHTS });
   }
 
+  function applyScheduledStaff(nextStaff: TipClaimRoleState) {
+    setEditingId(null);
+    setName("");
+    setNameCustomized(false);
+    setStaff(nextStaff);
+    setWeights({ ...DEFAULT_TIP_WEIGHT_PRESET_WEIGHTS });
+    setPresetError(null);
+    setStaffingSource("manual");
+  }
+
   function updateStaff(role: TipClaimRoleKey, value: number) {
     setStaff((current) => ({ ...current, [role]: clampCount(value) }));
   }
@@ -384,6 +402,7 @@ export function TipWeightPresetConfigurator({
     setStaff({ ...preset.staff });
     setWeights({ ...preset.weights });
     setPresetError(null);
+    setStaffingSource("manual");
   }
 
   async function handleDelete(presetId: string) {
@@ -435,6 +454,48 @@ export function TipWeightPresetConfigurator({
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.9fr)]">
         <div className="flex min-w-0 flex-col gap-5">
           {canManagePresets ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Staffing source</CardTitle>
+                <CardDescription>
+                  Build a custom preset manually or review a persisted 7Shifts
+                  schedule before generating one.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Field>
+                  <FieldLabel>Choose staffing source</FieldLabel>
+                  <ToggleGroup
+                    type="single"
+                    variant="outline"
+                    spacing={0}
+                    value={staffingSource}
+                    onValueChange={(value) => {
+                      if (value === "manual" || value === "seven-shifts") {
+                        setStaffingSource(value);
+                      }
+                    }}
+                  >
+                    <ToggleGroupItem value="manual">
+                      Manual preset
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="seven-shifts">
+                      7Shifts schedule
+                    </ToggleGroupItem>
+                  </ToggleGroup>
+                </Field>
+              </CardContent>
+            </Card>
+          ) : null}
+
+          {canManagePresets && staffingSource === "seven-shifts" ? (
+            <SevenShiftsPresetBuilder
+              organizationId={organizationId}
+              onApply={applyScheduledStaff}
+            />
+          ) : null}
+
+          {canManagePresets && staffingSource === "manual" ? (
             <Card>
               <CardHeader>
                 <CardTitle>{editingId ? "Edit preset" : "New preset"}</CardTitle>

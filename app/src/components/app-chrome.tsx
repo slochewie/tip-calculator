@@ -172,6 +172,19 @@ export function AppChrome({ children }: { children: ReactNode }) {
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      className={sidebarButtonClassName}
+                      isActive={location.pathname === "/weight-presets"}
+                      tooltip="Weight Presets"
+                    >
+                      <Link to="/weight-presets">
+                        <ScaleIcon />
+                        <span className={sidebarLabelClassName}>Weight Presets</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
                   {showSevenShifts ? (
                     <SidebarMenuItem>
                       <SidebarMenuButton
@@ -212,19 +225,6 @@ export function AppChrome({ children }: { children: ReactNode }) {
                       <Link to="/assignments">
                         <UsersIcon />
                         <span className={sidebarLabelClassName}>Assignments</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      asChild
-                      className={sidebarButtonClassName}
-                      isActive={location.pathname === "/weight-presets"}
-                      tooltip="Weight Presets"
-                    >
-                      <Link to="/weight-presets">
-                        <ScaleIcon />
-                        <span className={sidebarLabelClassName}>Weight Presets</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

@@ -57,10 +57,10 @@ export function CalculatorTabs() {
   const links = [
     { to: "/claims" as const, label: "Claims" },
     { to: "/tips" as const, label: "Tips" },
+    { to: "/weight-presets" as const, label: "Weight Presets" },
     ...(showSevenShifts
       ? [{ to: "/seven-shifts" as const, label: "7Shifts Schedule" }]
       : []),
-    { to: "/weight-presets" as const, label: "Weight Presets" },
   ];
 
   return (

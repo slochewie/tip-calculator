@@ -421,14 +421,12 @@ export function SevenShiftsScheduleConfigurator({
                   </div>
                   <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3">
                     <div className="flex items-baseline gap-2">
-                      <span className="text-xs text-muted-foreground">
-                        Staff
-                      </span>
-                      <span className="text-lg font-semibold tabular-nums">
+                      <span className="text-sm font-semibold">Staff</span>
+                      <span className="text-base font-normal tabular-nums">
                         {item.staff}
                       </span>
                     </div>
-                    <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-2">
+                    <div className="grid min-w-0 grid-cols-[auto_minmax(0,15rem)] items-center justify-end gap-2">
                       <FieldLabel
                         className="shrink-0"
                         htmlFor={`schedule-weight-${item.role}`}

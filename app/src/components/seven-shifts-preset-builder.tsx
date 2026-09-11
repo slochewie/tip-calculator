@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   CalendarDaysIcon,
   ChevronDownIcon,
@@ -112,6 +112,36 @@ function weekStartFor(dateValue: string) {
   const date = new Date(year, month - 1, day);
   date.setDate(date.getDate() - date.getDay());
   return localDateValue(date);
+}
+
+function addDateValueDays(dateValue: string, days: number) {
+  const [year, month, day] = dateValue.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day + days));
+
+  return [
+    date.getUTCFullYear(),
+    String(date.getUTCMonth() + 1).padStart(2, "0"),
+    String(date.getUTCDate()).padStart(2, "0"),
+  ].join("-");
+}
+
+function activeScheduleDate(
+  shifts: SevenShiftsScheduleShift[],
+  now: Date,
+) {
+  const nowTime = now.getTime();
+  const activeDates = shifts.flatMap((shift) => {
+    if (!shift.end) return [];
+
+    const startTime = new Date(shift.start).getTime();
+    const endTime = new Date(shift.end).getTime();
+
+    return startTime <= nowTime && nowTime < endTime
+      ? [shift.scheduleDate]
+      : [];
+  });
+
+  return activeDates.sort()[0] ?? null;
 }
 
 function formatTime(value: string, timezone: string) {
@@ -282,6 +312,7 @@ export function SevenShiftsPresetBuilder({
   const [editingEmployeeKey, setEditingEmployeeKey] = useState<string | null>(
     null,
   );
+  const initialScheduleDateResolved = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -323,14 +354,46 @@ export function SevenShiftsPresetBuilder({
     setReplacementUserIds({});
     setEditingEmployeeKey(null);
 
-    void getSevenShiftsScheduleWeek({
-      organizationId,
-      weekStart: weekStartFor(date),
-      signal: controller.signal,
-    })
-      .then((week) => {
+    const weekStarts = [weekStartFor(date)];
+
+    if (!initialScheduleDateResolved.current) {
+      const previousWeekStart = weekStartFor(addDateValueDays(date, -1));
+      if (previousWeekStart !== weekStarts[0]) {
+        weekStarts.push(previousWeekStart);
+      }
+    }
+
+    void Promise.all(
+      weekStarts.map((weekStart) =>
+        getSevenShiftsScheduleWeek({
+          organizationId,
+          weekStart,
+          signal: controller.signal,
+        }),
+      ),
+    )
+      .then((weeks) => {
+        if (controller.signal.aborted) return;
+
+        const availableShifts = weeks.flatMap((week) => week.shifts);
+
+        if (!initialScheduleDateResolved.current) {
+          initialScheduleDateResolved.current = true;
+
+          const currentShiftDate = activeScheduleDate(
+            availableShifts,
+            new Date(),
+          );
+
+          if (currentShiftDate && currentShiftDate !== date) {
+            setShifts([]);
+            setDate(currentShiftDate);
+            return;
+          }
+        }
+
         setShifts(
-          week.shifts.filter(
+          availableShifts.filter(
             (shift) => shift.scheduleDate === date && !shift.deleted,
           ),
         );
@@ -547,11 +610,14 @@ export function SevenShiftsPresetBuilder({
             type="date"
             className="w-full sm:max-w-56"
             value={date}
-            onChange={(event) => setDate(event.currentTarget.value)}
+            onChange={(event) => {
+              initialScheduleDateResolved.current = true;
+              setDate(event.currentTarget.value);
+            }}
           />
           <FieldDescription>
-            The persisted Sunday–Saturday schedule week containing this date
-            will be loaded.
+            Defaults to the persisted start date of an active overnight shift.
+            The Sunday–Saturday week containing this date will be loaded.
           </FieldDescription>
         </Field>
 

@@ -3,6 +3,7 @@ import {
   CalendarDaysIcon,
   ChevronDownIcon,
   ChevronUpIcon,
+  PencilIcon,
   UsersIcon,
 } from "lucide-react";
 
@@ -34,6 +35,10 @@ import {
   getSevenShiftsScheduleWeek,
   type SevenShiftsScheduleShift,
 } from "#/lib/seven-shifts-schedules.ts";
+import {
+  listTipClaimEmployees,
+  type TipClaimEmployee,
+} from "#/lib/tip-claim.ts";
 
 const TIP_ROLES: TipClaimRoleKey[] = [
   "manager",
@@ -63,6 +68,13 @@ const SCHEDULE_ROLE_ORDER = new Map([
   ["barback", 2],
   ["door", 3],
 ]);
+
+const TIP_ROLE_ORDER_INDEX: Record<TipClaimRoleKey, number> = {
+  manager: 0,
+  bartender: 1,
+  barback: 2,
+  door: 3,
+};
 
 function scheduledRoleIndex(row: StaffingRow) {
   let index = Number.MAX_SAFE_INTEGER;
@@ -261,6 +273,43 @@ export function SevenShiftsPresetBuilder({
   >({});
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [employees, setEmployees] = useState<TipClaimEmployee[]>([]);
+  const [employeesPending, setEmployeesPending] = useState(false);
+  const [employeesError, setEmployeesError] = useState<string | null>(null);
+  const [replacementUserIds, setReplacementUserIds] = useState<
+    Record<string, string>
+  >({});
+  const [editingEmployeeKey, setEditingEmployeeKey] = useState<string | null>(
+    null,
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    setEmployees([]);
+    setEmployeesPending(true);
+    setEmployeesError(null);
+
+    void listTipClaimEmployees(organizationId)
+      .then((nextEmployees) => {
+        if (!cancelled) setEmployees(nextEmployees);
+      })
+      .catch((loadError: unknown) => {
+        if (cancelled) return;
+        setEmployeesError(
+          loadError instanceof Error
+            ? loadError.message
+            : "Unable to load replacement employees.",
+        );
+      })
+      .finally(() => {
+        if (!cancelled) setEmployeesPending(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [organizationId]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -271,6 +320,8 @@ export function SevenShiftsPresetBuilder({
     setRoles({});
     setRegisterCount(1);
     setRegisterAssignments({});
+    setReplacementUserIds({});
+    setEditingEmployeeKey(null);
 
     void getSevenShiftsScheduleWeek({
       organizationId,
@@ -309,6 +360,49 @@ export function SevenShiftsPresetBuilder({
     () => staffingRows(selectedGroup?.shifts ?? []),
     [selectedGroup],
   );
+  const employeeById = useMemo(
+    () => new Map(employees.map((employee) => [employee.userId, employee])),
+    [employees],
+  );
+  const scheduledUserIds = useMemo(
+    () =>
+      new Set(
+        rows.flatMap((row) => (row.userId === null ? [] : [row.userId])),
+      ),
+    [rows],
+  );
+  const selectedReplacementIds = new Set(Object.values(replacementUserIds));
+  const displayedRows = useMemo(
+    () =>
+      [...rows].sort((left, right) => {
+        const leftIsScheduledManager = scheduledRoleIndex(left) === 0;
+        const rightIsScheduledManager = scheduledRoleIndex(right) === 0;
+
+        if (leftIsScheduledManager !== rightIsScheduledManager) {
+          return leftIsScheduledManager ? -1 : 1;
+        }
+
+        const leftRole = roles[left.key];
+        const rightRole = roles[right.key];
+        const roleDifference =
+          (leftRole ? TIP_ROLE_ORDER_INDEX[leftRole] : Number.MAX_SAFE_INTEGER) -
+          (rightRole
+            ? TIP_ROLE_ORDER_INDEX[rightRole]
+            : Number.MAX_SAFE_INTEGER);
+
+        if (roleDifference !== 0) return roleDifference;
+
+        const leftName =
+          employeeById.get(replacementUserIds[left.key] ?? "")?.name ??
+          left.name;
+        const rightName =
+          employeeById.get(replacementUserIds[right.key] ?? "")?.name ??
+          right.name;
+
+        return leftName.localeCompare(rightName);
+      }),
+    [employeeById, replacementUserIds, roles, rows],
+  );
   const bartenderRows = rows.filter((row) => roles[row.key] === "bartender");
   const assignedRoleCount = rows.filter((row) => roles[row.key]).length;
   const assignedRegisterIds = new Set(
@@ -337,6 +431,20 @@ export function SevenShiftsPresetBuilder({
     setRegisterAssignments(
       normalizeRegisterAssignments(nextRows, nextRoles, 1, {}),
     );
+    setReplacementUserIds({});
+    setEditingEmployeeKey(null);
+  }
+
+  function replaceEmployee(rowKey: string, userId: string) {
+    setReplacementUserIds((current) => {
+      if (userId === "scheduled") {
+        const { [rowKey]: _removed, ...remaining } = current;
+        return remaining;
+      }
+
+      return { ...current, [rowKey]: userId };
+    });
+    setEditingEmployeeKey(null);
   }
 
   function updateRole(rowKey: string, role: TipClaimRoleKey) {
@@ -398,7 +506,7 @@ export function SevenShiftsPresetBuilder({
 
       staff[role] += 1;
       memberAssignments.push({
-        userId: row.userId,
+        userId: replacementUserIds[row.key] ?? row.userId,
         role,
         registerId:
           role === "bartender"
@@ -445,6 +553,11 @@ export function SevenShiftsPresetBuilder({
         </Field>
 
         {error ? <p className="text-sm text-destructive">{error}</p> : null}
+        {employeesError ? (
+          <p className="text-sm text-destructive">
+            Replacement employees unavailable: {employeesError}
+          </p>
+        ) : null}
 
         {pending ? (
           <p className="text-sm text-muted-foreground">Loading schedule…</p>
@@ -553,7 +666,7 @@ export function SevenShiftsPresetBuilder({
             </div>
 
             <div className="grid gap-3 md:grid-cols-2">
-              {rows.map((row) => {
+              {displayedRows.map((row) => {
                 const roleHints = Array.from(
                   new Set(
                     row.shifts.map(
@@ -563,13 +676,80 @@ export function SevenShiftsPresetBuilder({
                 ).join(", ");
                 const role = roles[row.key] || "";
                 const assignedRegister = registerAssignments[row.key] ?? null;
+                const replacementUserId = replacementUserIds[row.key];
+                const replacementEmployee = replacementUserId
+                  ? employeeById.get(replacementUserId)
+                  : undefined;
+                const displayedName = replacementEmployee?.name ?? row.name;
+                const replacementOptions = employees.filter(
+                  (employee) =>
+                    !scheduledUserIds.has(employee.userId) &&
+                    (employee.userId === replacementUserId ||
+                      !selectedReplacementIds.has(employee.userId)),
+                );
+                const canEditEmployee =
+                  !employeesPending &&
+                  !employeesError &&
+                  (replacementOptions.length > 0 ||
+                    replacementEmployee !== undefined);
 
                 return (
                   <Card key={row.key}>
                     <CardHeader>
-                      <CardTitle className="text-base">{row.name}</CardTitle>
-                      <CardDescription>
-                        {row.shifts.map(timeLabel).join(", ")}
+                      <CardTitle className="flex items-center gap-2 text-base">
+                        {editingEmployeeKey === row.key ? (
+                          <Select
+                            value={replacementUserId ?? "scheduled"}
+                            onValueChange={(userId) =>
+                              replaceEmployee(row.key, userId)
+                            }
+                          >
+                            <SelectTrigger
+                              className="min-w-0 flex-1"
+                              aria-label={`Replacement for ${row.name}`}
+                            >
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectGroup>
+                                <SelectItem value="scheduled">
+                                  Keep {row.name}
+                                </SelectItem>
+                                {replacementOptions.map((employee) => (
+                                  <SelectItem
+                                    key={employee.userId}
+                                    value={employee.userId}
+                                  >
+                                    {employee.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectGroup>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <span className="min-w-0 flex-1">{displayedName}</span>
+                        )}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="size-9 shrink-0"
+                          aria-label={`Replace ${displayedName}`}
+                          disabled={!canEditEmployee}
+                          onClick={() =>
+                            setEditingEmployeeKey((current) =>
+                              current === row.key ? null : row.key,
+                            )
+                          }
+                        >
+                          <PencilIcon className="size-4" />
+                        </Button>
+                      </CardTitle>
+                      <CardDescription className="flex flex-col gap-1">
+                        <span>{row.shifts.map(timeLabel).join(", ")}</span>
+                        {replacementEmployee ? (
+                          <span>Covering for {row.name}</span>
+                        ) : null}
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="flex flex-col gap-3">

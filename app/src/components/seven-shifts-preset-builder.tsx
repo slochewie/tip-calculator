@@ -288,10 +288,12 @@ function normalizeRegisterAssignments(
 
 export function SevenShiftsPresetBuilder({
   organizationId,
-  onApply,
+  onApplyClaims,
+  onApplyTips,
 }: {
   organizationId: string;
-  onApply: (setup: SevenShiftsClaimsSetup) => void;
+  onApplyClaims: (setup: SevenShiftsClaimsSetup) => void;
+  onApplyTips: (setup: SevenShiftsClaimsSetup) => void;
 }) {
   const [date, setDate] = useState(() => localDateValue(new Date()));
   const [shifts, setShifts] = useState<SevenShiftsScheduleShift[]>([]);
@@ -555,7 +557,7 @@ export function SevenShiftsPresetBuilder({
     });
   }
 
-  function applyStaffing() {
+  function applyStaffing(destination: "claims" | "tips") {
     if (!canApply) return;
 
     const staff: TipClaimRoleState = {
@@ -581,11 +583,18 @@ export function SevenShiftsPresetBuilder({
       });
     }
 
-    onApply({
+    const setup = {
       registerCount,
       staff,
       memberAssignments,
-    });
+    };
+
+    if (destination === "claims") {
+      onApplyClaims(setup);
+      return;
+    }
+
+    onApplyTips(setup);
   }
 
   return (
@@ -597,7 +606,7 @@ export function SevenShiftsPresetBuilder({
         </CardTitle>
         <CardDescription>
           Choose a date, select a crew grouped by its end time, and configure
-          its registers before opening Claims.
+          its registers before opening Claims or Tips.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-5">
@@ -918,18 +927,27 @@ export function SevenShiftsPresetBuilder({
               })}
             </div>
 
-            <Button
-              type="button"
-              className="self-start"
-              disabled={!canApply}
-              onClick={applyStaffing}
-            >
-              Open Claims with this staffing
-            </Button>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button
+                type="button"
+                disabled={!canApply}
+                onClick={() => applyStaffing("claims")}
+              >
+                Open Claims with this staffing
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={!canApply}
+                onClick={() => applyStaffing("tips")}
+              >
+                Open Tips with this staffing
+              </Button>
+            </div>
             {!canApply ? (
               <p className="text-xs text-muted-foreground">
                 Choose every employee role and assign each register to one
-                bartender before opening Claims.
+                bartender before continuing.
               </p>
             ) : null}
           </>

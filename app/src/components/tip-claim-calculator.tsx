@@ -7,6 +7,7 @@ import {
 	Trash2Icon,
 } from "lucide-react";
 
+import { CalculatorTabs } from "#/components/calculator-tabs.tsx";
 import {
 	Accordion,
 	AccordionContent,
@@ -131,7 +132,6 @@ const currency = new Intl.NumberFormat("en-US", {
 function isRoleEnabled(member: TipClaimMember, role: RoleKey) {
 	return member[ROLE_ENABLED_FIELDS[role]];
 }
-
 function enabledRoles(member: TipClaimMember, roles = ROLE_ORDER) {
 	return roles.filter((role) => isRoleEnabled(member, role));
 }
@@ -602,6 +602,8 @@ export function TipClaimCalculator({
 					</p>
 				</div>
 			</div>
+
+			<CalculatorTabs />
 
 			<div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
 				<div className="flex min-w-0 flex-col gap-5">

@@ -4,6 +4,8 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   PencilIcon,
+  PlusIcon,
+  Trash2Icon,
   UsersIcon,
 } from "lucide-react";
 
@@ -54,6 +56,7 @@ type StaffingRow = {
   linked: boolean;
   open: boolean;
   shifts: SevenShiftsScheduleShift[];
+  added?: boolean;
 };
 
 type ShiftGroup = {
@@ -88,7 +91,6 @@ function scheduledRoleIndex(row: StaffingRow) {
 
   return index;
 }
-
 export type SevenShiftsClaimsSetup = {
   name: string;
   registerCount: number;
@@ -312,10 +314,12 @@ export function SevenShiftsPresetBuilder({
   organizationId,
   onApplyClaims,
   onApplyTips,
+  onStaffChange,
 }: {
   organizationId: string;
   onApplyClaims: (setup: SevenShiftsClaimsSetup) => Promise<void> | void;
   onApplyTips: (setup: SevenShiftsClaimsSetup) => Promise<void> | void;
+  onStaffChange?: (staff: TipClaimRoleState) => void;
 }) {
   const [date, setDate] = useState(() =>
     operationalScheduleDate([], new Date()),
@@ -342,6 +346,10 @@ export function SevenShiftsPresetBuilder({
   const [editingEmployeeKey, setEditingEmployeeKey] = useState<string | null>(
     null,
   );
+  const [addedEmployees, setAddedEmployees] = useState<
+    Array<{ key: string; userId: string }>
+  >([]);
+  const nextAddedEmployeeId = useRef(1);
   const initialScheduleDateResolved = useRef(false);
 
   useEffect(() => {
@@ -383,6 +391,7 @@ export function SevenShiftsPresetBuilder({
     setRegisterAssignments({});
     setReplacementUserIds({});
     setEditingEmployeeKey(null);
+    setAddedEmployees([]);
 
     const weekStarts = [weekStartFor(date)];
 
@@ -457,6 +466,24 @@ export function SevenShiftsPresetBuilder({
     () => new Map(employees.map((employee) => [employee.userId, employee])),
     [employees],
   );
+  const addedRows = useMemo<StaffingRow[]>(
+    () =>
+      addedEmployees.map((addedEmployee) => ({
+        key: addedEmployee.key,
+        userId: addedEmployee.userId || null,
+        name:
+          employeeById.get(addedEmployee.userId)?.name ?? "Select employee",
+        linked: true,
+        open: false,
+        shifts: [],
+        added: true,
+      })),
+    [addedEmployees, employeeById],
+  );
+  const configuredRows = useMemo(
+    () => [...rows, ...addedRows],
+    [addedRows, rows],
+  );
   const scheduledUserIds = useMemo(
     () =>
       new Set(
@@ -466,10 +493,15 @@ export function SevenShiftsPresetBuilder({
       ),
     [shifts],
   );
-  const selectedReplacementIds = new Set(Object.values(replacementUserIds));
+  const selectedEmployeeIds = new Set([
+    ...Object.values(replacementUserIds),
+    ...addedEmployees.flatMap((employee) =>
+      employee.userId ? [employee.userId] : [],
+    ),
+  ]);
   const displayedRows = useMemo(
     () =>
-      [...rows].sort((left, right) => {
+      [...configuredRows].sort((left, right) => {
         const leftIsScheduledManager = scheduledRoleIndex(left) === 0;
         const rightIsScheduledManager = scheduledRoleIndex(right) === 0;
 
@@ -496,10 +528,14 @@ export function SevenShiftsPresetBuilder({
 
         return leftName.localeCompare(rightName);
       }),
-    [employeeById, replacementUserIds, roles, rows],
+    [configuredRows, employeeById, replacementUserIds, roles],
   );
-  const bartenderRows = rows.filter((row) => roles[row.key] === "bartender");
-  const assignedRoleCount = rows.filter((row) => roles[row.key]).length;
+  const bartenderRows = configuredRows.filter(
+    (row) => roles[row.key] === "bartender",
+  );
+  const assignedRoleCount = configuredRows.filter(
+    (row) => roles[row.key],
+  ).length;
   const assignedRegisterIds = new Set(
     Object.values(registerAssignments).filter(
       (registerId): registerId is number => registerId !== null,
@@ -508,11 +544,31 @@ export function SevenShiftsPresetBuilder({
   const allRegistersAssigned =
     bartenderRows.length > 0 && assignedRegisterIds.size === registerCount;
   const canApply =
-    rows.length > 0 &&
-    assignedRoleCount === rows.length &&
+    configuredRows.length > 0 &&
+    configuredRows.every((row) => !row.added || row.userId) &&
+    assignedRoleCount === configuredRows.length &&
     allRegistersAssigned &&
     !pending &&
     applyPending === null;
+  const previewStaff = useMemo<TipClaimRoleState>(() => {
+    const nextStaff: TipClaimRoleState = {
+      manager: 0,
+      bartender: 0,
+      barback: 0,
+      door: 0,
+    };
+
+    for (const row of configuredRows) {
+      const role = roles[row.key];
+      if (role) nextStaff[role] += 1;
+    }
+
+    return nextStaff;
+  }, [configuredRows, roles]);
+
+  useEffect(() => {
+    onStaffChange?.(previewStaff);
+  }, [onStaffChange, previewStaff]);
 
   function selectShiftGroup(groupKey: string) {
     const group = shiftGroups.find((candidate) => candidate.key === groupKey);
@@ -529,6 +585,7 @@ export function SevenShiftsPresetBuilder({
     );
     setReplacementUserIds({});
     setEditingEmployeeKey(null);
+    setAddedEmployees([]);
     setApplyError(null);
   }
 
@@ -545,6 +602,42 @@ export function SevenShiftsPresetBuilder({
     setEditingEmployeeKey(null);
   }
 
+  function addEmployee() {
+    const key = `added:${nextAddedEmployeeId.current}`;
+    nextAddedEmployeeId.current += 1;
+    setAddedEmployees((current) => [...current, { key, userId: "" }]);
+    setRoles((current) => ({ ...current, [key]: "" }));
+  }
+
+  function selectAddedEmployee(rowKey: string, userId: string) {
+    setAddedEmployees((current) =>
+      current.map((employee) =>
+        employee.key === rowKey ? { ...employee, userId } : employee,
+      ),
+    );
+  }
+
+  function removeAddedEmployee(rowKey: string) {
+    setAddedEmployees((current) =>
+      current.filter((employee) => employee.key !== rowKey),
+    );
+    setRoles((current) => {
+      const next = { ...current };
+      delete next[rowKey];
+      return next;
+    });
+    setRegisterAssignments((current) => {
+      const next = { ...current };
+      delete next[rowKey];
+      return normalizeRegisterAssignments(
+        configuredRows.filter((row) => row.key !== rowKey),
+        roles,
+        registerCount,
+        next,
+      );
+    });
+  }
+
   function updateRole(rowKey: string, role: TipClaimRoleKey) {
     const nextRoles = {
       ...roles,
@@ -554,7 +647,7 @@ export function SevenShiftsPresetBuilder({
     setRoles(nextRoles);
     setRegisterAssignments((current) =>
       normalizeRegisterAssignments(
-        rows,
+        configuredRows,
         nextRoles,
         registerCount,
         current,
@@ -567,7 +660,7 @@ export function SevenShiftsPresetBuilder({
 
     setRegisterCount(nextCount);
     setRegisterAssignments((current) =>
-      normalizeRegisterAssignments(rows, roles, nextCount, current),
+      normalizeRegisterAssignments(configuredRows, roles, nextCount, current),
     );
   }
 
@@ -601,17 +694,19 @@ export function SevenShiftsPresetBuilder({
     };
     const memberAssignments: SevenShiftsClaimsSetup["memberAssignments"] = [];
 
-    for (const row of rows) {
+    for (const row of configuredRows) {
       const role = roles[row.key];
       if (!role) continue;
 
       staff[role] += 1;
       const replacementEmployee = employeeById.get(
-        replacementUserIds[row.key] ?? "",
+        row.added ? row.userId ?? "" : replacementUserIds[row.key] ?? "",
       );
 
       memberAssignments.push({
-        userId: replacementUserIds[row.key] ?? row.userId,
+        userId: row.added
+          ? row.userId
+          : replacementUserIds[row.key] ?? row.userId,
         name: replacementEmployee?.name ?? row.name,
         role,
         registerId:
@@ -784,24 +879,27 @@ export function SevenShiftsPresetBuilder({
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="secondary">
                 <UsersIcon data-icon="inline-start" />
-                {rows.length} {rows.length === 1 ? "employee" : "employees"}
+                {configuredRows.length}{" "}
+                {configuredRows.length === 1 ? "employee" : "employees"}
               </Badge>
               <Badge variant="outline">{endTimeLabel(selectedGroup)}</Badge>
               <span className="text-xs text-muted-foreground">
-                {assignedRoleCount} of {rows.length} roles ·{" "}
+                {assignedRoleCount} of {configuredRows.length} roles ·{" "}
                 {assignedRegisterIds.size} of {registerCount} registers assigned
               </span>
             </div>
 
             <div className="grid gap-3 md:grid-cols-2">
               {displayedRows.map((row) => {
-                const roleHints = Array.from(
-                  new Set(
-                    row.shifts.map(
-                      (shift) => shift.role?.name || "No 7Shifts role",
-                    ),
-                  ),
-                ).join(", ");
+                const roleHints = row.added
+                  ? "Last-minute addition"
+                  : Array.from(
+                      new Set(
+                        row.shifts.map(
+                          (shift) => shift.role?.name || "No 7Shifts role",
+                        ),
+                      ),
+                    ).join(", ");
                 const role = roles[row.key] || "";
                 const assignedRegister = registerAssignments[row.key] ?? null;
                 const replacementUserId = replacementUserIds[row.key];
@@ -813,7 +911,13 @@ export function SevenShiftsPresetBuilder({
                   (employee) =>
                     !scheduledUserIds.has(employee.userId) &&
                     (employee.userId === replacementUserId ||
-                      !selectedReplacementIds.has(employee.userId)),
+                      !selectedEmployeeIds.has(employee.userId)),
+                );
+                const addedEmployeeOptions = employees.filter(
+                  (employee) =>
+                    !scheduledUserIds.has(employee.userId) &&
+                    (employee.userId === row.userId ||
+                      !selectedEmployeeIds.has(employee.userId)),
                 );
                 const canEditEmployee =
                   !employeesPending &&
@@ -825,7 +929,33 @@ export function SevenShiftsPresetBuilder({
                   <Card key={row.key}>
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2 text-base">
-                        {editingEmployeeKey === row.key ? (
+                        {row.added ? (
+                          <Select
+                            value={row.userId ?? ""}
+                            onValueChange={(userId) =>
+                              selectAddedEmployee(row.key, userId)
+                            }
+                          >
+                            <SelectTrigger
+                              className="min-w-0 flex-1"
+                              aria-label="Last-minute employee"
+                            >
+                              <SelectValue placeholder="Select employee" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectGroup>
+                                {addedEmployeeOptions.map((employee) => (
+                                  <SelectItem
+                                    key={employee.userId}
+                                    value={employee.userId}
+                                  >
+                                    {employee.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectGroup>
+                            </SelectContent>
+                          </Select>
+                        ) : editingEmployeeKey === row.key ? (
                           <Select
                             value={replacementUserId ?? "scheduled"}
                             onValueChange={(userId) =>
@@ -857,24 +987,41 @@ export function SevenShiftsPresetBuilder({
                         ) : (
                           <span className="min-w-0 flex-1">{displayedName}</span>
                         )}
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="size-9 shrink-0"
-                          aria-label={`Replace ${displayedName}`}
-                          disabled={!canEditEmployee}
-                          onClick={() =>
-                            setEditingEmployeeKey((current) =>
-                              current === row.key ? null : row.key,
-                            )
-                          }
-                        >
-                          <PencilIcon className="size-4" />
-                        </Button>
+                        {row.added ? (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="size-9 shrink-0"
+                            aria-label="Remove added employee"
+                            onClick={() => removeAddedEmployee(row.key)}
+                          >
+                            <Trash2Icon className="size-4" />
+                          </Button>
+                        ) : (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="size-9 shrink-0"
+                            aria-label={`Replace ${displayedName}`}
+                            disabled={!canEditEmployee}
+                            onClick={() =>
+                              setEditingEmployeeKey((current) =>
+                                current === row.key ? null : row.key,
+                              )
+                            }
+                          >
+                            <PencilIcon className="size-4" />
+                          </Button>
+                        )}
                       </CardTitle>
                       <CardDescription className="flex flex-col gap-1">
-                        <span>{row.shifts.map(timeLabel).join(", ")}</span>
+                        <span>
+                          {row.added
+                            ? "Added after the schedule was published"
+                            : row.shifts.map(timeLabel).join(", ")}
+                        </span>
                         {replacementEmployee ? (
                           <span>Covering for {row.name}</span>
                         ) : null}
@@ -976,6 +1123,25 @@ export function SevenShiftsPresetBuilder({
                 );
               })}
             </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full sm:w-auto"
+              disabled={
+                employeesPending ||
+                employeesError !== null ||
+                employees.every(
+                  (employee) =>
+                    scheduledUserIds.has(employee.userId) ||
+                    selectedEmployeeIds.has(employee.userId),
+                )
+              }
+              onClick={addEmployee}
+            >
+              <PlusIcon data-icon="inline-start" />
+              Add employee
+            </Button>
 
             <div className="flex flex-col gap-2 sm:flex-row">
               <Button

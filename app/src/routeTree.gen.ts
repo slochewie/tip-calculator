@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AssignmentsRouteImport } from './routes/assignments'
 import { Route as ClaimsRouteImport } from './routes/claims'
 import { Route as ReportsRouteImport } from './routes/reports'
+import { Route as SevenShiftsRouteImport } from './routes/seven-shifts'
 import { Route as TipsRouteImport } from './routes/tips'
 import { Route as WeightPresetsRouteImport } from './routes/weight-presets'
 
@@ -36,6 +37,11 @@ const ReportsRoute = ReportsRouteImport.update({
   path: '/reports',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SevenShiftsRoute = SevenShiftsRouteImport.update({
+  id: '/seven-shifts',
+  path: '/seven-shifts',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TipsRoute = TipsRouteImport.update({
   id: '/tips',
   path: '/tips',
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/assignments': typeof AssignmentsRoute
   '/claims': typeof ClaimsRoute
   '/reports': typeof ReportsRoute
+  '/seven-shifts': typeof SevenShiftsRoute
   '/tips': typeof TipsRoute
   '/weight-presets': typeof WeightPresetsRoute
 }
@@ -60,6 +67,7 @@ export interface FileRoutesByTo {
   '/assignments': typeof AssignmentsRoute
   '/claims': typeof ClaimsRoute
   '/reports': typeof ReportsRoute
+  '/seven-shifts': typeof SevenShiftsRoute
   '/tips': typeof TipsRoute
   '/weight-presets': typeof WeightPresetsRoute
 }
@@ -69,22 +77,36 @@ export interface FileRoutesById {
   '/assignments': typeof AssignmentsRoute
   '/claims': typeof ClaimsRoute
   '/reports': typeof ReportsRoute
+  '/seven-shifts': typeof SevenShiftsRoute
   '/tips': typeof TipsRoute
   '/weight-presets': typeof WeightPresetsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/assignments' | '/claims' | '/reports' | '/tips' | '/weight-presets'
+    | '/'
+    | '/assignments'
+    | '/claims'
+    | '/reports'
+    | '/seven-shifts'
+    | '/tips'
+    | '/weight-presets'
   fileRoutesByTo: FileRoutesByTo
   to:
-    '/' | '/assignments' | '/claims' | '/reports' | '/tips' | '/weight-presets'
+    | '/'
+    | '/assignments'
+    | '/claims'
+    | '/reports'
+    | '/seven-shifts'
+    | '/tips'
+    | '/weight-presets'
   id:
     | '__root__'
     | '/'
     | '/assignments'
     | '/claims'
     | '/reports'
+    | '/seven-shifts'
     | '/tips'
     | '/weight-presets'
   fileRoutesById: FileRoutesById
@@ -94,10 +116,10 @@ export interface RootRouteChildren {
   AssignmentsRoute: typeof AssignmentsRoute
   ClaimsRoute: typeof ClaimsRoute
   ReportsRoute: typeof ReportsRoute
+  SevenShiftsRoute: typeof SevenShiftsRoute
   TipsRoute: typeof TipsRoute
   WeightPresetsRoute: typeof WeightPresetsRoute
 }
-
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
     '/': {
@@ -128,6 +150,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReportsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/seven-shifts': {
+      id: '/seven-shifts'
+      path: '/seven-shifts'
+      fullPath: '/seven-shifts'
+      preLoaderRoute: typeof SevenShiftsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/tips': {
       id: '/tips'
       path: '/tips'
@@ -150,6 +179,7 @@ const rootRouteChildren: RootRouteChildren = {
   AssignmentsRoute: AssignmentsRoute,
   ClaimsRoute: ClaimsRoute,
   ReportsRoute: ReportsRoute,
+  SevenShiftsRoute: SevenShiftsRoute,
   TipsRoute: TipsRoute,
   WeightPresetsRoute: WeightPresetsRoute,
 }

@@ -3,6 +3,7 @@ import { Link, useLocation } from "@tanstack/react-router";
 import {
   BookOpenIcon,
   Building2Icon,
+  CalendarDaysIcon,
   HandCoinsIcon,
   LandmarkIcon,
   GaugeIcon,
@@ -19,6 +20,7 @@ import {
 } from "lucide-react";
 
 import { AccountSwitcherSubmenu } from "#/components/account-switcher-submenu.tsx";
+import { useSevenShiftsNavigationAccess } from "#/components/calculator-tabs.tsx";
 import { ThemeMenuControl } from "#/components/theme-switcher.tsx";
 import {
   Avatar,
@@ -110,6 +112,7 @@ function TipCalculatorSidebarMenu({ children }: { children: ReactNode }) {
 export function AppChrome({ children }: { children: ReactNode }) {
   const location = useLocation();
   const { data: session } = authClient.useSession();
+  const showSevenShifts = useSevenShiftsNavigationAccess();
 
   if (!session) {
     return children;
@@ -122,9 +125,11 @@ export function AppChrome({ children }: { children: ReactNode }) {
   const appTitle =
     location.pathname === "/tips"
       ? "Tip Pool Calculator"
-      : location.pathname === "/weight-presets"
-        ? "Weight Presets"
-        : "Tip Claim Calculator";
+      : location.pathname === "/seven-shifts"
+        ? "7Shifts Schedule"
+        : location.pathname === "/weight-presets"
+          ? "Weight Presets"
+          : "Tip Claim Calculator";
 
   return (
     <TooltipProvider>
@@ -167,6 +172,23 @@ export function AppChrome({ children }: { children: ReactNode }) {
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
+                  {showSevenShifts ? (
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        asChild
+                        className={sidebarButtonClassName}
+                        isActive={location.pathname === "/seven-shifts"}
+                        tooltip="7Shifts Schedule"
+                      >
+                        <Link to="/seven-shifts">
+                          <CalendarDaysIcon />
+                          <span className={sidebarLabelClassName}>
+                            7Shifts Schedule
+                          </span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ) : null}
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       asChild

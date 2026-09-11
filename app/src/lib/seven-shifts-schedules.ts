@@ -1,5 +1,15 @@
 import { authBaseURL } from "#/lib/auth-client.ts";
 
+type SevenShiftsLocationPermission = {
+  app: "counter" | "unifi" | "schedules";
+  organizationId: string;
+};
+
+type SevenShiftsAccessResponse = {
+  permissions?: SevenShiftsLocationPermission[];
+  error?: string;
+};
+
 export type SevenShiftsScheduleShift = {
   sevenShiftsShiftId: number;
   sevenShiftsUserId: number | null;
@@ -66,6 +76,23 @@ function scheduleError(body: unknown) {
   }
 
   return "Unable to load the 7Shifts schedule.";
+}
+export async function getSevenShiftsScheduleAccess(organizationId: string) {
+  const response = await fetch(
+    new URL("/api/auth/seven-shifts/access", authBaseURL),
+    { credentials: "include" },
+  );
+  const body = (await response.json()) as SevenShiftsAccessResponse;
+
+  if (!response.ok) {
+    throw new Error(scheduleError(body));
+  }
+
+  return (body.permissions ?? []).some(
+    (permission) =>
+      permission.app === "schedules" &&
+      permission.organizationId === organizationId,
+  );
 }
 
 export async function getSevenShiftsScheduleWeek({

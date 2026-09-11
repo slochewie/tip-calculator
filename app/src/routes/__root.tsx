@@ -15,7 +15,6 @@ import type { QueryClient } from '@tanstack/react-query'
 interface MyRouterContext {
   queryClient: QueryClient
 }
-
 const themeInitScript = `
 (() => {
   try {
@@ -63,6 +62,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     location.pathname === '/tips' ||
     location.pathname === '/reports' ||
     location.pathname === '/assignments' ||
+    location.pathname === '/seven-shifts' ||
     location.pathname === '/weight-presets'
 
   return (

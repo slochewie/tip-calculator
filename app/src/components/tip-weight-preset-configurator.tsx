@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { useNavigate } from "@tanstack/react-router";
 import { Cell, Pie, PieChart } from "recharts";
 import {
   ChevronDownIcon,
@@ -10,6 +9,7 @@ import {
   XIcon,
 } from "lucide-react";
 
+import { CalculatorTabs } from "#/components/calculator-tabs.tsx";
 import { Badge } from "#/components/ui/badge.tsx";
 import { Button } from "#/components/ui/button.tsx";
 import {
@@ -28,29 +28,18 @@ import {
 import { Field, FieldDescription, FieldLabel } from "#/components/ui/field.tsx";
 import { Input } from "#/components/ui/input.tsx";
 import {
-  ToggleGroup,
-  ToggleGroupItem,
-} from "#/components/ui/toggle-group.tsx";
-import {
-  SevenShiftsPresetBuilder,
-  type SevenShiftsClaimsSetup,
-} from "#/components/seven-shifts-preset-builder.tsx";
-import {
   TIP_CLAIM_ROLE_LABELS,
   TIP_CLAIM_ROLE_ORDER,
   type TipClaimRoleKey,
   type TipClaimRoleState,
   type TipClaimWeightState,
 } from "#/lib/tip-claim-allocation.ts";
-import { saveTipClaimDraft } from "#/lib/tip-claim-draft.ts";
-import { saveTipPoolStaffingDraft } from "#/lib/use-tip-pool-draft.ts";
 import {
   DEFAULT_TIP_WEIGHT_PRESET_STAFF,
   DEFAULT_TIP_WEIGHT_PRESET_WEIGHTS,
   canManageTipWeightPresets,
   deleteTipWeightPreset,
   listTipWeightPresets,
-  saveTipStaffingSnapshot,
   saveTipWeightPreset,
   type TipWeightPreset,
 } from "#/lib/tip-weight-presets.ts";
@@ -208,7 +197,6 @@ export function TipWeightPresetConfigurator({
   organizationName?: string;
   organizationSelector: ReactNode;
 }) {
-  const navigate = useNavigate();
   const [name, setName] = useState("");
   const [nameCustomized, setNameCustomized] = useState(false);
   const [registerCount, setRegisterCount] = useState(0);
@@ -226,9 +214,6 @@ export function TipWeightPresetConfigurator({
   const [mutationPending, setMutationPending] = useState(false);
   const [presetError, setPresetError] = useState<string | null>(null);
   const [canManagePresets, setCanManagePresets] = useState(false);
-  const [staffingSource, setStaffingSource] = useState<"manual" | "seven-shifts">(
-    "manual",
-  );
   const [expandedRoles, setExpandedRoles] = useState<
     Record<TipClaimRoleKey, boolean>
   >({
@@ -249,9 +234,7 @@ export function TipWeightPresetConfigurator({
       .then((nextPresets) => {
         if (!cancelled) {
           setPresets(
-            nextPresets.filter(
-              (preset) => preset.source !== "seven-shifts",
-            ),
+            nextPresets.filter((preset) => preset.source !== "seven-shifts"),
           );
           setCanManagePresets(canManageTipWeightPresets());
         }
@@ -340,49 +323,6 @@ export function TipWeightPresetConfigurator({
     setWeights({ ...DEFAULT_TIP_WEIGHT_PRESET_WEIGHTS });
   }
 
-  async function saveScheduledSnapshot(setup: SevenShiftsClaimsSetup) {
-    await saveTipStaffingSnapshot(organizationId, {
-      name: setup.name,
-      registerCount: setup.registerCount,
-      claimPercent: 8,
-      weights: DEFAULT_TIP_WEIGHT_PRESET_WEIGHTS,
-      assignments: setup.memberAssignments,
-    });
-  }
-
-  async function openScheduledClaims(setup: SevenShiftsClaimsSetup) {
-    await saveScheduledSnapshot(setup);
-
-    saveTipClaimDraft(organizationId, {
-      claimPercent: "8",
-      nextRegisterId: setup.registerCount + 1,
-      registers: Array.from({ length: setup.registerCount }, (_, index) => ({
-        id: index + 1,
-        name: `Register ${index + 1}`,
-        sales: "",
-      })),
-      staff: setup.staff,
-      memberAssignments: setup.memberAssignments,
-      weights: { ...DEFAULT_TIP_WEIGHT_PRESET_WEIGHTS },
-      editingShiftId: null,
-      editingCompletedAt: null,
-    });
-
-    void navigate({ to: "/claims" });
-  }
-
-  async function openScheduledTips(setup: SevenShiftsClaimsSetup) {
-    await saveScheduledSnapshot(setup);
-
-    saveTipPoolStaffingDraft(
-      organizationId,
-      setup.memberAssignments.map(({ userId, role }) => ({ userId, role })),
-      DEFAULT_TIP_WEIGHT_PRESET_WEIGHTS,
-    );
-
-    void navigate({ to: "/tips" });
-  }
-
   function updateStaff(role: TipClaimRoleKey, value: number) {
     setStaff((current) => ({ ...current, [role]: clampCount(value) }));
   }
@@ -447,7 +387,6 @@ export function TipWeightPresetConfigurator({
     setStaff({ ...preset.staff });
     setWeights({ ...preset.weights });
     setPresetError(null);
-    setStaffingSource("manual");
   }
 
   async function handleDelete(presetId: string) {
@@ -494,54 +433,13 @@ export function TipWeightPresetConfigurator({
         </div>
       </div>
 
+      <CalculatorTabs />
+
       {organizationSelector}
 
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.9fr)]">
         <div className="flex min-w-0 flex-col gap-5">
           {canManagePresets ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>Staffing source</CardTitle>
-                <CardDescription>
-                  Build a custom preset manually or review a persisted 7Shifts
-                  schedule before generating one.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Field>
-                  <FieldLabel>Choose staffing source</FieldLabel>
-                  <ToggleGroup
-                    type="single"
-                    variant="outline"
-                    spacing={0}
-                    value={staffingSource}
-                    onValueChange={(value) => {
-                      if (value === "manual" || value === "seven-shifts") {
-                        setStaffingSource(value);
-                      }
-                    }}
-                  >
-                    <ToggleGroupItem value="manual">
-                      Manual preset
-                    </ToggleGroupItem>
-                    <ToggleGroupItem value="seven-shifts">
-                      7Shifts schedule
-                    </ToggleGroupItem>
-                  </ToggleGroup>
-                </Field>
-              </CardContent>
-            </Card>
-          ) : null}
-
-          {canManagePresets && staffingSource === "seven-shifts" ? (
-            <SevenShiftsPresetBuilder
-              organizationId={organizationId}
-              onApplyClaims={openScheduledClaims}
-              onApplyTips={openScheduledTips}
-            />
-          ) : null}
-
-          {canManagePresets && staffingSource === "manual" ? (
             <Card>
               <CardHeader>
                 <CardTitle>{editingId ? "Edit preset" : "New preset"}</CardTitle>

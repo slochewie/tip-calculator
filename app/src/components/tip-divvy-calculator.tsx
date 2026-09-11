@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { HandCoinsIcon, PlusIcon, RotateCcwIcon, SaveIcon, Trash2Icon } from "lucide-react";
 
+import { CalculatorTabs } from "#/components/calculator-tabs.tsx";
 import {
   Accordion,
   AccordionContent,
@@ -114,7 +115,6 @@ function parseMoney(value: string) {
   const parsed = Number.parseFloat(value);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
 }
-
 function isRoleEnabled(member: TipClaimMember, role: TipClaimRoleKey) {
   return member[ROLE_ENABLED_FIELDS[role]];
 }
@@ -532,6 +532,8 @@ export function TipDivvyCalculator({
           </p>
         </div>
       </div>
+
+      <CalculatorTabs />
 
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(360px,1fr)]">
         <div className="flex min-w-0 flex-col gap-5">

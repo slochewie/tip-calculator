@@ -1,9 +1,10 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { CalendarDaysIcon, ChevronDownIcon, ChevronUpIcon, XIcon } from "lucide-react";
+import { ChevronDownIcon, ChevronUpIcon, XIcon } from "lucide-react";
 import { Cell, Pie, PieChart } from "recharts";
 
 import { CalculatorTabs } from "#/components/calculator-tabs.tsx";
+import { SevenShiftsLogo } from "#/components/seven-shifts-logo.tsx";
 import {
   SevenShiftsPresetBuilder,
   type SevenShiftsClaimsSetup,
@@ -238,7 +239,7 @@ export function SevenShiftsScheduleConfigurator({
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 p-4 md:p-6 lg:p-8">
       <div className="flex items-start gap-3">
         <div className="flex size-10 shrink-0 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-sm">
-          <CalendarDaysIcon className="size-5" />
+          <SevenShiftsLogo />
         </div>
         <div className="flex flex-col gap-1">
           <div className="flex flex-wrap items-center gap-2">

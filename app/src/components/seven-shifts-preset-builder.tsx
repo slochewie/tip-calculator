@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  CalendarDaysIcon,
   ChevronDownIcon,
   ChevronUpIcon,
   PencilIcon,
@@ -9,6 +8,7 @@ import {
   UsersIcon,
 } from "lucide-react";
 
+import { SevenShiftsLogo } from "#/components/seven-shifts-logo.tsx";
 import { Badge } from "#/components/ui/badge.tsx";
 import { Button } from "#/components/ui/button.tsx";
 import {
@@ -745,7 +745,7 @@ export function SevenShiftsPresetBuilder({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <CalendarDaysIcon />
+          <SevenShiftsLogo className="size-4" />
           7Shifts staffing
         </CardTitle>
         <CardDescription>

@@ -3,7 +3,6 @@ import { Link, useLocation } from "@tanstack/react-router";
 import {
   BookOpenIcon,
   Building2Icon,
-  CalendarDaysIcon,
   HandCoinsIcon,
   LandmarkIcon,
   GaugeIcon,
@@ -21,6 +20,7 @@ import {
 
 import { AccountSwitcherSubmenu } from "#/components/account-switcher-submenu.tsx";
 import { useSevenShiftsNavigationAccess } from "#/components/calculator-tabs.tsx";
+import { SevenShiftsLogo } from "#/components/seven-shifts-logo.tsx";
 import { ThemeMenuControl } from "#/components/theme-switcher.tsx";
 import {
   Avatar,
@@ -181,7 +181,7 @@ export function AppChrome({ children }: { children: ReactNode }) {
                         tooltip="7Shifts Schedule"
                       >
                         <Link to="/seven-shifts">
-                          <CalendarDaysIcon />
+                          <SevenShiftsLogo />
                           <span className={sidebarLabelClassName}>
                             7Shifts Schedule
                           </span>

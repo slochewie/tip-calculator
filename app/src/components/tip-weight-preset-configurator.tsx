@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { Cell, Pie, PieChart } from "recharts";
 import {
   ChevronDownIcon,
@@ -30,7 +31,10 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from "#/components/ui/toggle-group.tsx";
-import { SevenShiftsPresetBuilder } from "#/components/seven-shifts-preset-builder.tsx";
+import {
+  SevenShiftsPresetBuilder,
+  type SevenShiftsClaimsSetup,
+} from "#/components/seven-shifts-preset-builder.tsx";
 import {
   TIP_CLAIM_ROLE_LABELS,
   TIP_CLAIM_ROLE_ORDER,
@@ -38,6 +42,7 @@ import {
   type TipClaimRoleState,
   type TipClaimWeightState,
 } from "#/lib/tip-claim-allocation.ts";
+import { saveTipClaimDraft } from "#/lib/tip-claim-draft.ts";
 import {
   DEFAULT_TIP_WEIGHT_PRESET_STAFF,
   DEFAULT_TIP_WEIGHT_PRESET_WEIGHTS,
@@ -201,6 +206,7 @@ export function TipWeightPresetConfigurator({
   organizationName?: string;
   organizationSelector: ReactNode;
 }) {
+  const navigate = useNavigate();
   const [name, setName] = useState("");
   const [nameCustomized, setNameCustomized] = useState(false);
   const [registerCount, setRegisterCount] = useState(0);
@@ -328,14 +334,23 @@ export function TipWeightPresetConfigurator({
     setWeights({ ...DEFAULT_TIP_WEIGHT_PRESET_WEIGHTS });
   }
 
-  function applyScheduledStaff(nextStaff: TipClaimRoleState) {
-    setEditingId(null);
-    setName("");
-    setNameCustomized(false);
-    setStaff(nextStaff);
-    setWeights({ ...DEFAULT_TIP_WEIGHT_PRESET_WEIGHTS });
-    setPresetError(null);
-    setStaffingSource("manual");
+  function openScheduledClaims(setup: SevenShiftsClaimsSetup) {
+    saveTipClaimDraft(organizationId, {
+      claimPercent: "8",
+      nextRegisterId: setup.registerCount + 1,
+      registers: Array.from({ length: setup.registerCount }, (_, index) => ({
+        id: index + 1,
+        name: `Register ${String.fromCharCode(65 + index)}`,
+        sales: "",
+      })),
+      staff: setup.staff,
+      memberAssignments: setup.memberAssignments,
+      weights: { ...DEFAULT_TIP_WEIGHT_PRESET_WEIGHTS },
+      editingShiftId: null,
+      editingCompletedAt: null,
+    });
+
+    void navigate({ to: "/claims" });
   }
 
   function updateStaff(role: TipClaimRoleKey, value: number) {
@@ -491,7 +506,7 @@ export function TipWeightPresetConfigurator({
           {canManagePresets && staffingSource === "seven-shifts" ? (
             <SevenShiftsPresetBuilder
               organizationId={organizationId}
-              onApply={applyScheduledStaff}
+              onApply={openScheduledClaims}
             />
           ) : null}
 

@@ -5,6 +5,13 @@ import {
   type TipClaimWeightState,
 } from "#/lib/tip-claim-allocation.ts";
 
+export type TipWeightPresetStaffingAssignment = {
+  userId: string | null;
+  name: string;
+  role: keyof TipClaimRoleState;
+  registerId: number | null;
+};
+
 export type TipWeightPreset = {
   id: string;
   organizationId: string;
@@ -14,6 +21,9 @@ export type TipWeightPreset = {
   staff: TipClaimRoleState;
   weights: TipClaimWeightState;
   createdByUserId?: string;
+  source?: "manual" | "seven-shifts";
+  assignments?: TipWeightPresetStaffingAssignment[];
+  expiresAt?: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -77,6 +87,50 @@ export async function listTipWeightPresets(organizationId: string) {
 
   weightPresetsCanManage = result.canManage === true;
   return Array.isArray(result.presets) ? result.presets : [];
+}
+
+export async function saveTipStaffingSnapshot(
+  organizationId: string,
+  input: {
+    name: string;
+    registerCount: number;
+    claimPercent?: number;
+    weights: TipClaimWeightState;
+    assignments: TipWeightPresetStaffingAssignment[];
+  },
+) {
+  const url = new URL("/api/auth/tip-claim/staffing-snapshots", authBaseURL);
+  const response = await fetch(url, {
+    method: "POST",
+    credentials: "include",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      organizationId,
+      name: input.name,
+      registerCount: input.registerCount,
+      claimPercent: input.claimPercent ?? 8,
+      weights: input.weights,
+      assignments: input.assignments,
+    }),
+  });
+  const result = (await response.json()) as {
+    snapshot?: { id: string; expiresAt: string };
+    error?: string;
+  };
+
+  if (!response.ok) {
+    throw new Error(
+      typeof result.error === "string"
+        ? result.error
+        : "Unable to save temporary staffing.",
+    );
+  }
+
+  if (!result.snapshot) {
+    throw new Error("Temporary staffing response did not include the snapshot.");
+  }
+
+  return result.snapshot;
 }
 
 export async function saveTipWeightPreset(

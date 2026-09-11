@@ -50,6 +50,7 @@ import {
   canManageTipWeightPresets,
   deleteTipWeightPreset,
   listTipWeightPresets,
+  saveTipStaffingSnapshot,
   saveTipWeightPreset,
   type TipWeightPreset,
 } from "#/lib/tip-weight-presets.ts";
@@ -247,7 +248,11 @@ export function TipWeightPresetConfigurator({
     void listTipWeightPresets(organizationId)
       .then((nextPresets) => {
         if (!cancelled) {
-          setPresets(nextPresets);
+          setPresets(
+            nextPresets.filter(
+              (preset) => preset.source !== "seven-shifts",
+            ),
+          );
           setCanManagePresets(canManageTipWeightPresets());
         }
       })
@@ -335,7 +340,19 @@ export function TipWeightPresetConfigurator({
     setWeights({ ...DEFAULT_TIP_WEIGHT_PRESET_WEIGHTS });
   }
 
-  function openScheduledClaims(setup: SevenShiftsClaimsSetup) {
+  async function saveScheduledSnapshot(setup: SevenShiftsClaimsSetup) {
+    await saveTipStaffingSnapshot(organizationId, {
+      name: setup.name,
+      registerCount: setup.registerCount,
+      claimPercent: 8,
+      weights: DEFAULT_TIP_WEIGHT_PRESET_WEIGHTS,
+      assignments: setup.memberAssignments,
+    });
+  }
+
+  async function openScheduledClaims(setup: SevenShiftsClaimsSetup) {
+    await saveScheduledSnapshot(setup);
+
     saveTipClaimDraft(organizationId, {
       claimPercent: "8",
       nextRegisterId: setup.registerCount + 1,
@@ -354,7 +371,9 @@ export function TipWeightPresetConfigurator({
     void navigate({ to: "/claims" });
   }
 
-  function openScheduledTips(setup: SevenShiftsClaimsSetup) {
+  async function openScheduledTips(setup: SevenShiftsClaimsSetup) {
+    await saveScheduledSnapshot(setup);
+
     saveTipPoolStaffingDraft(
       organizationId,
       setup.memberAssignments.map(({ userId, role }) => ({ userId, role })),

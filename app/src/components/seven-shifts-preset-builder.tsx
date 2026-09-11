@@ -135,23 +135,35 @@ function addDateValueDays(dateValue: string, days: number) {
   ].join("-");
 }
 
-function activeScheduleDate(
+function operationalScheduleDate(
   shifts: SevenShiftsScheduleShift[],
   now: Date,
 ) {
-  const nowTime = now.getTime();
-  const activeDates = shifts.flatMap((shift) => {
-    if (!shift.end) return [];
+  const timezone = shifts.find((shift) => shift.timezone)?.timezone;
+  const parts = timezone
+    ? Object.fromEntries(
+        new Intl.DateTimeFormat("en-US", {
+          timeZone: timezone,
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          hourCycle: "h23",
+        })
+          .formatToParts(now)
+          .filter((part) => part.type !== "literal")
+          .map((part) => [part.type, part.value]),
+      )
+    : {
+        year: String(now.getFullYear()),
+        month: String(now.getMonth() + 1).padStart(2, "0"),
+        day: String(now.getDate()).padStart(2, "0"),
+        hour: String(now.getHours()),
+      };
+  const calendarDate = [parts.year, parts.month, parts.day].join("-");
+  const hour = Number(parts.hour);
 
-    const startTime = new Date(shift.start).getTime();
-    const endTime = new Date(shift.end).getTime();
-
-    return startTime <= nowTime && nowTime < endTime
-      ? [shift.scheduleDate]
-      : [];
-  });
-
-  return activeDates.sort()[0] ?? null;
+  return hour < 5 ? addDateValueDays(calendarDate, -1) : calendarDate;
 }
 
 function formatTime(value: string, timezone: string) {
@@ -305,7 +317,9 @@ export function SevenShiftsPresetBuilder({
   onApplyClaims: (setup: SevenShiftsClaimsSetup) => Promise<void> | void;
   onApplyTips: (setup: SevenShiftsClaimsSetup) => Promise<void> | void;
 }) {
-  const [date, setDate] = useState(() => localDateValue(new Date()));
+  const [date, setDate] = useState(() =>
+    operationalScheduleDate([], new Date()),
+  );
   const [shifts, setShifts] = useState<SevenShiftsScheduleShift[]>([]);
   const [selectedGroupKey, setSelectedGroupKey] = useState("");
   const [roles, setRoles] = useState<Record<string, TipClaimRoleKey | "">>({});
@@ -396,14 +410,14 @@ export function SevenShiftsPresetBuilder({
         if (!initialScheduleDateResolved.current) {
           initialScheduleDateResolved.current = true;
 
-          const currentShiftDate = activeScheduleDate(
+          const currentScheduleDate = operationalScheduleDate(
             availableShifts,
             new Date(),
           );
 
-          if (currentShiftDate && currentShiftDate !== date) {
+          if (currentScheduleDate !== date) {
             setShifts([]);
-            setDate(currentShiftDate);
+            setDate(currentScheduleDate);
             return;
           }
         }
@@ -660,8 +674,9 @@ export function SevenShiftsPresetBuilder({
             }}
           />
           <FieldDescription>
-            Defaults to the persisted start date of an active overnight shift.
-            The Sunday–Saturday week containing this date will be loaded.
+            Before 5:00 AM, defaults to the previous schedule date in the
+            location timezone. The Sunday–Saturday week containing this date
+            will be loaded.
           </FieldDescription>
         </Field>
 

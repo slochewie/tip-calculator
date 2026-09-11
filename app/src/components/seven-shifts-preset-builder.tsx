@@ -39,6 +39,7 @@ const TIP_ROLES: TipClaimRoleKey[] = [
 
 type StaffingRow = {
   key: string;
+  userId: string | null;
   name: string;
   linked: boolean;
   open: boolean;
@@ -49,6 +50,16 @@ type ShiftGroup = {
   key: string;
   end: string | null;
   shifts: SevenShiftsScheduleShift[];
+};
+
+export type SevenShiftsClaimsSetup = {
+  registerCount: number;
+  staff: TipClaimRoleState;
+  memberAssignments: Array<{
+    userId: string | null;
+    role: TipClaimRoleKey;
+    registerId: number | null;
+  }>;
 };
 
 function localDateValue(date: Date) {
@@ -131,6 +142,7 @@ function staffingRows(shifts: SevenShiftsScheduleShift[]) {
 
     rows.set(key, {
       key,
+      userId: shift.user?.id ?? null,
       name:
         shift.user?.name ||
         (shift.sevenShiftsUserId !== null
@@ -166,17 +178,58 @@ function defaultTipRole(row: StaffingRow): TipClaimRoleKey | "" {
   return matches.size === 1 ? Array.from(matches)[0] : "";
 }
 
+function clampRegisterCount(value: number) {
+  if (!Number.isFinite(value)) return 1;
+  return Math.min(50, Math.max(1, Math.trunc(value)));
+}
+
+function normalizeRegisterAssignments(
+  rows: StaffingRow[],
+  roles: Record<string, TipClaimRoleKey | "">,
+  registerCount: number,
+  assignments: Record<string, number | null>,
+) {
+  const bartenderRows = rows.filter((row) => roles[row.key] === "bartender");
+  const usedRegisters = new Set<number>();
+  const next: Record<string, number | null> = {};
+
+  for (const row of bartenderRows) {
+    const registerId = assignments[row.key] ?? null;
+
+    if (
+      registerId !== null &&
+      registerId <= registerCount &&
+      !usedRegisters.has(registerId)
+    ) {
+      next[row.key] = registerId;
+      usedRegisters.add(registerId);
+    } else {
+      next[row.key] = null;
+    }
+  }
+
+  if (bartenderRows.length === 1) {
+    next[bartenderRows[0].key] = 1;
+  }
+
+  return next;
+}
+
 export function SevenShiftsPresetBuilder({
   organizationId,
   onApply,
 }: {
   organizationId: string;
-  onApply: (staff: TipClaimRoleState) => void;
+  onApply: (setup: SevenShiftsClaimsSetup) => void;
 }) {
   const [date, setDate] = useState(() => localDateValue(new Date()));
   const [shifts, setShifts] = useState<SevenShiftsScheduleShift[]>([]);
   const [selectedGroupKey, setSelectedGroupKey] = useState("");
   const [roles, setRoles] = useState<Record<string, TipClaimRoleKey | "">>({});
+  const [registerCount, setRegisterCount] = useState(1);
+  const [registerAssignments, setRegisterAssignments] = useState<
+    Record<string, number | null>
+  >({});
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -187,6 +240,8 @@ export function SevenShiftsPresetBuilder({
     setError(null);
     setSelectedGroupKey("");
     setRoles({});
+    setRegisterCount(1);
+    setRegisterAssignments({});
 
     void getSevenShiftsScheduleWeek({
       organizationId,
@@ -225,20 +280,76 @@ export function SevenShiftsPresetBuilder({
     () => staffingRows(selectedGroup?.shifts ?? []),
     [selectedGroup],
   );
+  const bartenderRows = rows.filter((row) => roles[row.key] === "bartender");
   const assignedRoleCount = rows.filter((row) => roles[row.key]).length;
+  const assignedRegisterIds = new Set(
+    Object.values(registerAssignments).filter(
+      (registerId): registerId is number => registerId !== null,
+    ),
+  );
+  const allRegistersAssigned =
+    bartenderRows.length > 0 && assignedRegisterIds.size === registerCount;
   const canApply =
-    rows.length > 0 && assignedRoleCount === rows.length && !pending;
+    rows.length > 0 &&
+    assignedRoleCount === rows.length &&
+    allRegistersAssigned &&
+    !pending;
 
   function selectShiftGroup(groupKey: string) {
     const group = shiftGroups.find((candidate) => candidate.key === groupKey);
     const nextRows = staffingRows(group?.shifts ?? []);
+    const nextRoles = Object.fromEntries(
+      nextRows.map((row) => [row.key, defaultTipRole(row)]),
+    );
 
     setSelectedGroupKey(groupKey);
-    setRoles(
-      Object.fromEntries(
-        nextRows.map((row) => [row.key, defaultTipRole(row)]),
+    setRoles(nextRoles);
+    setRegisterCount(1);
+    setRegisterAssignments(
+      normalizeRegisterAssignments(nextRows, nextRoles, 1, {}),
+    );
+  }
+
+  function updateRole(rowKey: string, role: TipClaimRoleKey) {
+    const nextRoles = {
+      ...roles,
+      [rowKey]: role,
+    };
+
+    setRoles(nextRoles);
+    setRegisterAssignments((current) =>
+      normalizeRegisterAssignments(
+        rows,
+        nextRoles,
+        registerCount,
+        current,
       ),
     );
+  }
+
+  function updateRegisterCount(value: number) {
+    const nextCount = clampRegisterCount(value);
+
+    setRegisterCount(nextCount);
+    setRegisterAssignments((current) =>
+      normalizeRegisterAssignments(rows, roles, nextCount, current),
+    );
+  }
+
+  function assignRegister(rowKey: string, registerId: number | null) {
+    setRegisterAssignments((current) => {
+      const next = Object.fromEntries(
+        Object.entries(current).map(([key, currentRegisterId]) => [
+          key,
+          key !== rowKey && currentRegisterId === registerId
+            ? null
+            : currentRegisterId,
+        ]),
+      );
+
+      next[rowKey] = registerId;
+      return next;
+    });
   }
 
   function applyStaffing() {
@@ -250,13 +361,28 @@ export function SevenShiftsPresetBuilder({
       barback: 0,
       door: 0,
     };
+    const memberAssignments: SevenShiftsClaimsSetup["memberAssignments"] = [];
 
     for (const row of rows) {
       const role = roles[row.key];
-      if (role) staff[role] += 1;
+      if (!role) continue;
+
+      staff[role] += 1;
+      memberAssignments.push({
+        userId: row.userId,
+        role,
+        registerId:
+          role === "bartender"
+            ? (registerAssignments[row.key] ?? null)
+            : null,
+      });
     }
 
-    onApply(staff);
+    onApply({
+      registerCount,
+      staff,
+      memberAssignments,
+    });
   }
 
   return (
@@ -267,8 +393,8 @@ export function SevenShiftsPresetBuilder({
           7Shifts staffing
         </CardTitle>
         <CardDescription>
-          Choose a date, then select a crew grouped by its scheduled end time.
-          Matching 7Shifts roles are prefilled for review.
+          Choose a date, select a crew grouped by its end time, and configure
+          its registers before opening Claims.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-5">
@@ -336,6 +462,29 @@ export function SevenShiftsPresetBuilder({
 
         {selectedGroup ? (
           <>
+            <Field>
+              <FieldLabel htmlFor="seven-shifts-register-count">
+                Number of registers
+              </FieldLabel>
+              <Input
+                id="seven-shifts-register-count"
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={50}
+                step={1}
+                className="w-full sm:max-w-32"
+                value={registerCount}
+                onChange={(event) =>
+                  updateRegisterCount(event.currentTarget.valueAsNumber)
+                }
+              />
+              <FieldDescription>
+                Assign each register to one bartender. Additional bartenders
+                may work without a register.
+              </FieldDescription>
+            </Field>
+
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="secondary">
                 <UsersIcon data-icon="inline-start" />
@@ -343,7 +492,8 @@ export function SevenShiftsPresetBuilder({
               </Badge>
               <Badge variant="outline">{endTimeLabel(selectedGroup)}</Badge>
               <span className="text-xs text-muted-foreground">
-                {assignedRoleCount} of {rows.length} Tip Calculator roles selected
+                {assignedRoleCount} of {rows.length} roles ·{" "}
+                {assignedRegisterIds.size} of {registerCount} registers assigned
               </span>
             </div>
 
@@ -356,6 +506,8 @@ export function SevenShiftsPresetBuilder({
                     ),
                   ),
                 ).join(", ");
+                const role = roles[row.key] || "";
+                const assignedRegister = registerAssignments[row.key] ?? null;
 
                 return (
                   <Card key={row.key}>
@@ -381,12 +533,9 @@ export function SevenShiftsPresetBuilder({
                           Tip Calculator role
                         </FieldLabel>
                         <Select
-                          value={roles[row.key] || ""}
-                          onValueChange={(role) =>
-                            setRoles((current) => ({
-                              ...current,
-                              [row.key]: role as TipClaimRoleKey,
-                            }))
+                          value={role}
+                          onValueChange={(nextRole) =>
+                            updateRole(row.key, nextRole as TipClaimRoleKey)
                           }
                         >
                           <SelectTrigger
@@ -397,15 +546,66 @@ export function SevenShiftsPresetBuilder({
                           </SelectTrigger>
                           <SelectContent>
                             <SelectGroup>
-                              {TIP_ROLES.map((role) => (
-                                <SelectItem key={role} value={role}>
-                                  {TIP_CLAIM_ROLE_LABELS[role]}
+                              {TIP_ROLES.map((tipRole) => (
+                                <SelectItem key={tipRole} value={tipRole}>
+                                  {TIP_CLAIM_ROLE_LABELS[tipRole]}
                                 </SelectItem>
                               ))}
                             </SelectGroup>
                           </SelectContent>
                         </Select>
                       </Field>
+
+                      {role === "bartender" ? (
+                        <Field>
+                          <FieldLabel htmlFor={`tip-register-${row.key}`}>
+                            Register
+                          </FieldLabel>
+                          <Select
+                            value={
+                              assignedRegister === null
+                                ? "none"
+                                : String(assignedRegister)
+                            }
+                            disabled={bartenderRows.length === 1}
+                            onValueChange={(value) =>
+                              assignRegister(
+                                row.key,
+                                value === "none" ? null : Number(value),
+                              )
+                            }
+                          >
+                            <SelectTrigger
+                              id={`tip-register-${row.key}`}
+                              className="w-full"
+                            >
+                              <SelectValue placeholder="Choose register" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectGroup>
+                                <SelectItem value="none">No register</SelectItem>
+                                {Array.from(
+                                  { length: registerCount },
+                                  (_, index) => index + 1,
+                                ).map((registerId) => (
+                                  <SelectItem
+                                    key={registerId}
+                                    value={String(registerId)}
+                                  >
+                                    Register {registerId}
+                                  </SelectItem>
+                                ))}
+                              </SelectGroup>
+                            </SelectContent>
+                          </Select>
+                          {bartenderRows.length === 1 ? (
+                            <FieldDescription>
+                              The only bartender is assigned to Register 1
+                              automatically.
+                            </FieldDescription>
+                          ) : null}
+                        </Field>
+                      ) : null}
                     </CardContent>
                   </Card>
                 );
@@ -418,12 +618,12 @@ export function SevenShiftsPresetBuilder({
               disabled={!canApply}
               onClick={applyStaffing}
             >
-              Use this staffing
+              Open Claims with this staffing
             </Button>
             {!canApply ? (
               <p className="text-xs text-muted-foreground">
-                Choose a Tip Calculator role for every employee. Manager
-                defaults to Bartender; unmatched 7Shifts roles remain blank.
+                Choose every employee role and assign each register to one
+                bartender before opening Claims.
               </p>
             ) : null}
           </>

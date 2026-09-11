@@ -46,6 +46,7 @@ function SevenShiftsRoute() {
   const { data: activeOrganization, isPending: isActiveOrganizationPending } =
     authClient.useActiveOrganization();
   const [accessAllowed, setAccessAllowed] = useState<boolean | null>(null);
+  const [accessOrganizationId, setAccessOrganizationId] = useState("");
   const [accessError, setAccessError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -81,6 +82,7 @@ function SevenShiftsRoute() {
   useEffect(() => {
     if (!session || !activeOrganization?.id) {
       setAccessAllowed(null);
+      setAccessOrganizationId("");
       setAccessError(null);
       return;
     }
@@ -91,11 +93,15 @@ function SevenShiftsRoute() {
 
     void getSevenShiftsScheduleAccess(activeOrganization.id)
       .then((allowed) => {
-        if (!cancelled) setAccessAllowed(allowed);
+        if (!cancelled) {
+          setAccessAllowed(allowed);
+          setAccessOrganizationId(activeOrganization.id);
+        }
       })
       .catch((error: unknown) => {
         if (cancelled) return;
         setAccessAllowed(false);
+        setAccessOrganizationId(activeOrganization.id);
         setAccessError(
           error instanceof Error
             ? error.message
@@ -113,7 +119,9 @@ function SevenShiftsRoute() {
     areOrganizationsPending ||
     isActiveOrganizationPending ||
     (!activeOrganization && organizations?.length === 1) ||
-    (activeOrganization && accessAllowed === null)
+    (activeOrganization &&
+      (accessAllowed === null ||
+        accessOrganizationId !== activeOrganization.id))
   ) {
     return <ScheduleSkeleton />;
   }

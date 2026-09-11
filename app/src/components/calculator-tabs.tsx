@@ -10,11 +10,14 @@ const activeClassName = "bg-background text-foreground shadow-sm";
 
 export function useSevenShiftsNavigationAccess() {
   const { data: activeOrganization } = authClient.useActiveOrganization();
-  const [allowed, setAllowed] = useState(false);
+  const [access, setAccess] = useState({
+    organizationId: "",
+    allowed: false,
+  });
 
   useEffect(() => {
     if (!activeOrganization?.id) {
-      setAllowed(false);
+      setAccess({ organizationId: "", allowed: false });
       return;
     }
 
@@ -22,10 +25,20 @@ export function useSevenShiftsNavigationAccess() {
 
     void getSevenShiftsScheduleAccess(activeOrganization.id)
       .then((nextAllowed) => {
-        if (!cancelled) setAllowed(nextAllowed);
+        if (!cancelled) {
+          setAccess({
+            organizationId: activeOrganization.id,
+            allowed: nextAllowed,
+          });
+        }
       })
       .catch(() => {
-        if (!cancelled) setAllowed(false);
+        if (!cancelled) {
+          setAccess({
+            organizationId: activeOrganization.id,
+            allowed: false,
+          });
+        }
       });
 
     return () => {
@@ -33,7 +46,9 @@ export function useSevenShiftsNavigationAccess() {
     };
   }, [activeOrganization?.id]);
 
-  return allowed;
+  return (
+    access.organizationId === activeOrganization?.id && access.allowed
+  );
 }
 
 export function CalculatorTabs() {

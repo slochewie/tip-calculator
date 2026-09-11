@@ -438,7 +438,8 @@ export function SevenShiftsPresetBuilder({
   function replaceEmployee(rowKey: string, userId: string) {
     setReplacementUserIds((current) => {
       if (userId === "scheduled") {
-        const { [rowKey]: _removed, ...remaining } = current;
+        const remaining = { ...current };
+        delete remaining[rowKey];
         return remaining;
       }
 
@@ -755,10 +756,12 @@ export function SevenShiftsPresetBuilder({
                     <CardContent className="flex flex-col gap-3">
                       <div className="flex flex-wrap gap-1">
                         <Badge variant="secondary">{roleHints}</Badge>
-                        {!row.linked ? (
+                        {replacementEmployee ? (
+                          <Badge variant="outline">Replacement</Badge>
+                        ) : !row.linked ? (
                           <Badge variant="outline">Unlinked</Badge>
                         ) : null}
-                        {row.open ? (
+                        {!replacementEmployee && row.open ? (
                           <Badge variant="outline">Open</Badge>
                         ) : null}
                       </div>

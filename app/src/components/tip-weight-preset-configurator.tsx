@@ -340,7 +340,7 @@ export function TipWeightPresetConfigurator({
       nextRegisterId: setup.registerCount + 1,
       registers: Array.from({ length: setup.registerCount }, (_, index) => ({
         id: index + 1,
-        name: `Register ${String.fromCharCode(65 + index)}`,
+        name: `Register ${index + 1}`,
         sales: "",
       })),
       staff: setup.staff,

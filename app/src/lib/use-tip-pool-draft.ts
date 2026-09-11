@@ -142,6 +142,34 @@ function reconcileAssignments(
   });
 }
 
+export function saveTipPoolStaffingDraft(
+  organizationId: string,
+  assignments: TipPoolStaffAssignment[],
+  weights: TipClaimWeightState = DEFAULT_TIP_CLAIM_WEIGHTS,
+) {
+  const staff = assignments.reduce(
+    (counts, assignment) => ({
+      ...counts,
+      [assignment.role]: counts[assignment.role] + 1,
+    }),
+    { bartender: 0, manager: 0, barback: 0, door: 0 },
+  );
+  const draft: TipPoolDraft = {
+    version: DRAFT_VERSION,
+    organizationId,
+    updatedAt: new Date().toISOString(),
+    totalTips: "",
+    assignments,
+    weights: { ...weights },
+    allocationMode: "weights",
+    percentageTargets: getTipPoolActualPercentages(staff, weights),
+    editingShiftId: null,
+    editingCompletedAt: null,
+  };
+
+  window.localStorage.setItem(storageKey(organizationId), JSON.stringify(draft));
+}
+
 export function saveTipPoolCorrectionDraft(shift: TipPoolShiftReport) {
   const weights: TipClaimWeightState = {
     manager: shift.managerWeightTenths / 10,

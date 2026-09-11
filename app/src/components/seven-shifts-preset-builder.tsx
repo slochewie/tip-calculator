@@ -68,7 +68,7 @@ function scheduledRoleIndex(row: StaffingRow) {
   let index = Number.MAX_SAFE_INTEGER;
 
   for (const shift of row.shifts) {
-    const roleName = shift.role?.name.trim().toLowerCase();
+    const roleName = shift.role?.name?.trim().toLowerCase();
     const roleIndex = roleName ? SCHEDULE_ROLE_ORDER.get(roleName) : undefined;
 
     if (roleIndex !== undefined) index = Math.min(index, roleIndex);

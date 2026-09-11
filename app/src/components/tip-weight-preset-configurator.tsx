@@ -43,6 +43,7 @@ import {
   type TipClaimWeightState,
 } from "#/lib/tip-claim-allocation.ts";
 import { saveTipClaimDraft } from "#/lib/tip-claim-draft.ts";
+import { saveTipPoolStaffingDraft } from "#/lib/use-tip-pool-draft.ts";
 import {
   DEFAULT_TIP_WEIGHT_PRESET_STAFF,
   DEFAULT_TIP_WEIGHT_PRESET_WEIGHTS,
@@ -353,6 +354,16 @@ export function TipWeightPresetConfigurator({
     void navigate({ to: "/claims" });
   }
 
+  function openScheduledTips(setup: SevenShiftsClaimsSetup) {
+    saveTipPoolStaffingDraft(
+      organizationId,
+      setup.memberAssignments.map(({ userId, role }) => ({ userId, role })),
+      DEFAULT_TIP_WEIGHT_PRESET_WEIGHTS,
+    );
+
+    void navigate({ to: "/tips" });
+  }
+
   function updateStaff(role: TipClaimRoleKey, value: number) {
     setStaff((current) => ({ ...current, [role]: clampCount(value) }));
   }
@@ -506,7 +517,8 @@ export function TipWeightPresetConfigurator({
           {canManagePresets && staffingSource === "seven-shifts" ? (
             <SevenShiftsPresetBuilder
               organizationId={organizationId}
-              onApply={openScheduledClaims}
+              onApplyClaims={openScheduledClaims}
+              onApplyTips={openScheduledTips}
             />
           ) : null}
 

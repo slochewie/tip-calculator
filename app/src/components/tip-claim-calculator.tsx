@@ -286,6 +286,53 @@ export function TipClaimCalculator({
 		const preset = weightPresets.find((candidate) => candidate.id === presetId);
 		if (!preset) return;
 
+		if (
+			preset.source === "seven-shifts" &&
+			preset.assignments &&
+			preset.assignments.length > 0
+		) {
+			const registerCount = clampInteger(preset.registerCount, 1);
+			const nextRegisters: Register[] = Array.from(
+				{ length: registerCount },
+				(_, index) => ({
+					id: index + 1,
+					name: `Register ${index + 1}`,
+					sales: "",
+				}),
+			);
+			const nextAssignments: StaffAssignment[] = preset.assignments.map(
+				({ userId, role, registerId }) => ({
+					userId,
+					role,
+					registerId:
+						registerId !== null && registerId <= registerCount
+							? registerId
+							: null,
+				}),
+			);
+			const nextStaff = nextAssignments.reduce<RoleState>(
+				(counts, assignment) => ({
+					...counts,
+					[assignment.role]: counts[assignment.role] + 1,
+				}),
+				{ bartender: 0, manager: 0, barback: 0, door: 0 },
+			);
+
+			setSelectedWeightPresetId(presetId);
+			setClaimPercent(String(preset.claimPercent));
+			setRegisters(nextRegisters);
+			setNextRegisterId(registerCount + 1);
+			setStaff(nextStaff);
+			setMemberAssignments(nextAssignments);
+			setWeights({ ...preset.weights });
+			setEditingShiftId(null);
+			setEditingCompletedAt(null);
+			setPreviewOpen(false);
+			setSaveError(null);
+			setSavedShiftId(null);
+			return;
+		}
+
 		const registerCount = clampInteger(preset.registerCount);
 		const bartenderCount = Math.max(registerCount, clampInteger(preset.staff.bartender));
 		const nextRegisters: Register[] = Array.from({ length: registerCount }, (_, index) => ({
@@ -563,7 +610,7 @@ export function TipClaimCalculator({
 					<Card>
 						<CardHeader>
 							<CardTitle>Weight preset</CardTitle>
-							<CardDescription>Select a preset to build the registers, staffing slots, claim percentage, and role weights for this shift.</CardDescription>
+							<CardDescription>Select a permanent preset or a 24-hour 7Shifts staffing snapshot. Temporary snapshots also restore employees and register assignments.</CardDescription>
 						</CardHeader>
 						<CardContent className="flex flex-col gap-2">
 							<Select
@@ -584,7 +631,10 @@ export function TipClaimCalculator({
 								</SelectTrigger>
 								<SelectContent>
 									{weightPresets.map((preset) => (
-										<SelectItem key={preset.id} value={preset.id}>{preset.name}</SelectItem>
+										<SelectItem key={preset.id} value={preset.id}>
+											{preset.name}
+											{preset.source === "seven-shifts" ? " · Temporary" : ""}
+										</SelectItem>
 									))}
 								</SelectContent>
 							</Select>

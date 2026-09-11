@@ -367,9 +367,11 @@ export function SevenShiftsPresetBuilder({
   const scheduledUserIds = useMemo(
     () =>
       new Set(
-        rows.flatMap((row) => (row.userId === null ? [] : [row.userId])),
+        shifts.flatMap((shift) =>
+          shift.user?.id ? [shift.user.id] : [],
+        ),
       ),
-    [rows],
+    [shifts],
   );
   const selectedReplacementIds = new Set(Object.values(replacementUserIds));
   const displayedRows = useMemo(

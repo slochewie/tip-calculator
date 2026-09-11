@@ -419,15 +419,20 @@ export function SevenShiftsScheduleConfigurator({
                       })}%
                     </span>
                   </div>
-                  <div className="grid grid-cols-2 items-end gap-3">
-                    <div className="min-w-0">
-                      <div className="text-xs text-muted-foreground">Staff</div>
-                      <div className="mt-1 text-lg font-semibold tabular-nums">
+                  <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-xs text-muted-foreground">
+                        Staff
+                      </span>
+                      <span className="text-lg font-semibold tabular-nums">
                         {item.staff}
-                      </div>
+                      </span>
                     </div>
-                    <Field className="min-w-0">
-                      <FieldLabel htmlFor={`schedule-weight-${item.role}`}>
+                    <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-2">
+                      <FieldLabel
+                        className="shrink-0"
+                        htmlFor={`schedule-weight-${item.role}`}
+                      >
                         Weight
                       </FieldLabel>
                       <WeightStepper
@@ -440,7 +445,7 @@ export function SevenShiftsScheduleConfigurator({
                           }))
                         }
                       />
-                    </Field>
+                    </div>
                   </div>
                   {previewAmount > 0 && item.staff > 0 ? (
                     <p className="mt-2 text-xs text-muted-foreground">

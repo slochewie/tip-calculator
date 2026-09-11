@@ -2,22 +2,30 @@
 
 > **New here?** Read [Getting Started](getting-started.md) first.
 
-Organizations with the 7Shifts APIs enabled can use the published schedule as an optional starting point for Claims or Tips. A manager reviews the crew before anything is sent to a calculator, so schedule roles, open shifts, replacements, and register assignments can be corrected for the actual shift.
+Organizations with the 7Shifts integration enabled can use the published schedule as an optional starting point for Claims or Tips. The schedule is reviewed before anything is sent to a calculator, so the actual crew, Tip Calculator roles, register assignments, and weights can be corrected for the shift.
 
-This workflow is available to users who can manage Weight Presets. It does not replace manual calculator entry or permanent Weight Presets.
+The workflow is a separate **7Shifts Schedule** page. It does not replace manual calculator entry or permanent Weight Presets.
+
+## Availability
+
+**7Shifts Schedule** appears in the sidebar and the calculator tabs only when the active organization has the integration enabled. Switch organizations to check access for a different location.
+
+Opening the route directly for an organization without access shows that 7Shifts scheduling is unavailable. The schedule is never exposed as a staffing-source option on the Weight Presets page.
 
 ## Review scheduled staffing
 
-1. Open **Weight Presets**.
-2. Under **Staffing source**, select **7Shifts schedule**.
-3. Choose the **Schedule date**. The current date is used initially. If an overnight shift is active, its persisted start date is selected automatically.
+1. Open **7Shifts Schedule**.
+2. Confirm the organization.
+3. Choose the **Schedule date**. Before 5:00 AM, the page defaults to the previous schedule date in the location's timezone; at or after 5:00 AM, it defaults to the current date.
 4. Select the **Scheduled shift**. Employees with the same scheduled end time are grouped as one crew.
 5. Set the **Number of registers**.
-6. Review every scheduled employee and select the correct **Tip Calculator role**.
-7. Assign each register to one bartender.
-8. Choose **Open Claims with this staffing** or **Open Tips with this staffing**.
+6. Review the scheduled employees. Replace a scheduled row or use **Add employee** for an eligible organization employee who was not on the schedule.
+7. Confirm or change every employee's **Tip Calculator role**.
+8. Assign every register to a bartender.
+9. In **Distribution preview**, adjust the role weights if needed. An optional preview amount shows hypothetical payouts and is never saved.
+10. Choose **Open Claims with this staffing** or **Open Tips with this staffing**.
 
-Every employee must have a Tip Calculator role, and every register must be assigned to one bartender before either button becomes available.
+The handoff buttons become available when the reviewed crew is not empty, every added row has an employee, every employee has a role, and every register is assigned to a bartender.
 
 ## Employees and roles
 
@@ -32,7 +40,9 @@ Recognized 7Shifts roles receive an initial Tip Calculator role:
 
 Always review the initial role. Any unrecognized or conflicting role must be selected manually.
 
-A pencil button beside an employee allows the scheduled person, an unlinked 7Shifts employee, or an open shift to be replaced with an available organization employee. Employees already scheduled elsewhere that day are excluded from the replacement list, and one replacement employee cannot fill multiple rows in the same reviewed crew.
+Use the edit control beside a scheduled row to replace an unlinked 7Shifts employee, an open shift, or a scheduled employee with an available organization employee. Replacement choices exclude employees scheduled anywhere else that day and employees already selected in the reviewed crew.
+
+Use **Add employee** to include an eligible organization employee who was not scheduled. An added employee can also be removed from the reviewed crew before handoff. These changes affect only the Tip Calculator setup; they do not edit the published 7Shifts schedule.
 
 ## Register assignments
 
@@ -41,6 +51,21 @@ Every configured register must be assigned to one bartender. Extra bartenders ca
 When the crew contains exactly one bartender, that employee is assigned to Register 1 automatically. Increasing the register count may require assigning the additional registers manually.
 
 Register assignments are restored when opening Claims. Tips ignores them because Tip Pool calculations do not use registers.
+
+## Distribution preview and weights
+
+The preview uses the reviewed crew and the current role weights. New schedule setups begin with these preset defaults:
+
+| Role | Weight |
+| --- | ---: |
+| Manager | 5 |
+| Bartender | 5 |
+| Barback | 3 |
+| Door | 2 |
+
+Change a role weight in the preview when the shift needs a different employee-to-employee relationship. The weights shown at handoff are carried into Claims or Tips.
+
+The optional **Preview amount** is only a planning aid. It shows hypothetical role and employee payouts but is not saved with the temporary staffing snapshot or sent as the shift's sales or tip-pool amount.
 
 ## What opens in each calculator
 
@@ -52,8 +77,8 @@ Register assignments are restored when opening Claims. Tips ignores them because
 - Tip Calculator roles;
 - register rows;
 - bartender-to-register assignments;
-- the default 8% claim percentage;
-- default role weights.
+- the current reviewed role weights;
+- the default 8% claim percentage.
 
 Register sales remain blank and must be entered for the current shift.
 
@@ -63,18 +88,20 @@ Register sales remain blank and must be entered for the current shift.
 
 - employee assignments;
 - Tip Calculator roles;
-- default role weights.
+- the current reviewed role weights.
 
 The register configuration is intentionally ignored. Enter the complete Tip pool amount and review the resulting distribution.
 
 ## Temporary staffing snapshots
 
-Opening either calculator saves the reviewed crew as a temporary staffing snapshot for the organization. The snapshot:
+Opening either calculator saves the reviewed crew as a temporary staffing snapshot named for the schedule date and crew end time. The snapshot:
 
 - appears in the calculators' **Weight preset** selector with a **Temporary** label;
 - preserves the reviewed employee and role assignments;
+- preserves the reviewed role weights;
 - preserves register assignments for Claims;
 - remains available for 24 hours;
+- does not appear among permanent presets on the Weight Presets page;
 - does not become a permanent Weight Preset.
 
 The original 7Shifts schedule is not edited. Changes made during review apply only to the temporary Tip Calculator staffing.

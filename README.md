@@ -2,12 +2,12 @@
 
 A NiteOwl.dev web application for calculating, allocating, saving, and reviewing employee tip claims and tip pools for McCarthy's Irish Pub.
 
-The application now includes two related calculators:
+The application includes two related calculators:
 
 - **Claims** — calculates a required tip claim from register sales and a claim percentage, then distributes that claim across on-duty staff using configurable role weights.
 - **Tips** — distributes a complete tip pool across on-duty staff using either direct role weights or percentage targets.
 
-Both workflows integrate with the NiteOwl.dev Better Auth service for organizations, employee access, role assignments, saved reports, corrections, and shared weight presets.
+Both workflows integrate with the NiteOwl.dev Better Auth service for organizations, employee access, role assignments, saved reports, corrections, and shared weight presets. Organizations with the 7Shifts integration enabled also receive a dedicated schedule workspace for reviewing a crew before opening either calculator.
 
 ## Documentation
 
@@ -86,9 +86,9 @@ Preset behavior differs intentionally between calculators:
 
 A preset can therefore represent situations such as a normal shift, full staffing, a swing shift, or a solo bartender with a different claim percentage.
 
-Weight Presets also include a live distribution preview. An optional preview amount can be entered to show hypothetical dollar amounts per role and per employee; that amount is never saved with the preset.
+New manual presets start with one Bartender, no Barbacks or Door employees, and 5/3/2 weights. The name field suggests a descriptive name as staffing, weights, or register count changes; the creator can replace that suggestion with any name.
 
-For organizations with the 7Shifts APIs enabled, authorized preset managers can instead review scheduled staffing, normalize employee roles and register assignments, and open Claims or Tips with that setup. The reviewed setup is stored as a temporary 24-hour staffing snapshot rather than a permanent preset.
+Weight Presets also include a live distribution preview. An optional preview amount can be entered to show hypothetical dollar amounts per role and per employee; that amount is never saved with the preset.
 
 Preset management is permission-aware:
 
@@ -96,6 +96,16 @@ Preset management is permission-aware:
 - Regular Tip Calculator users can view and use presets but see the page in read-only mode.
 
 See the [Weight Presets guide](docs/weight-presets.md) for worked examples and an explanation of the weighting model.
+
+### 7Shifts Schedule
+
+For an active organization with the 7Shifts integration enabled, a dedicated **7Shifts Schedule** page appears in the sidebar and calculator tabs.
+
+The page lets the user select a schedule date and crew, review or replace scheduled employees, add eligible unscheduled employees, confirm Tip Calculator roles, configure registers, and adjust the role weights in a live distribution preview. Before 5:00 AM, the initial schedule date uses the previous day in the location's timezone.
+
+Opening Claims or Tips creates a temporary 24-hour staffing snapshot. Claims receives employees, roles, weights, registers, and register assignments; Tips receives employees, roles, and weights while ignoring register configuration.
+
+See the [7Shifts Staffing guide](docs/seven-shifts-staffing.md) for the complete workflow.
 
 ### Assignments
 
@@ -134,7 +144,7 @@ Authorized users can correct saved reports. Reports can also be deleted with con
 
 Both calculators use the same weighted allocation engine.
 
-Default role weights:
+Default one-off calculator role weights:
 
 | Role | Weight |
 | --- | ---: |
@@ -142,6 +152,8 @@ Default role weights:
 | Manager | 5 |
 | Barback | 3 |
 | Door | 1 |
+
+New Weight Presets and 7Shifts schedule reviews use **Manager 5, Bartender 5, Barback 3, and Door 2** as their starting weights.
 
 For Claims:
 
@@ -163,12 +175,13 @@ All money allocation is calculated in cents and reconciled so employee allocatio
 
 | Route | Access | Purpose |
 | --- | --- | --- |
-| `/` | Public | Standalone Tip Claim Calculator |
-| `/app` | Authenticated | Organization-based Claims calculator |
+| `/` | Public entry | Redirects to Claims |
+| `/claims` | Authenticated | Organization-based Claims calculator |
 | `/tips` | Authenticated | Tip Pool Calculator |
+| `/weight-presets` | Authenticated | Shared organization weight/staffing presets |
+| `/seven-shifts` | Authenticated / integration-enabled | Scheduled staffing review and calculator handoff |
 | `/reports` | Authenticated | Saved Claims and Tip Pool reports |
 | `/assignments` | Authenticated / managed | Employee access and role assignments |
-| `/weight-presets` | Authenticated | Shared organization weight/staffing presets |
 
 ## Authentication and Authorization
 
@@ -188,9 +201,10 @@ The Tip Calculator section currently includes:
 
 - Claims
 - Tips
+- Weight Presets
+- 7Shifts Schedule, when enabled for the active organization
 - Reports
 - Assignments
-- Weight Presets
 
 The Apps section links to other NiteOwl applications, including Console, Counter, and Network Status.
 
@@ -253,7 +267,7 @@ Protected routes authenticate through the NiteOwl.dev / McCarthy's Better Auth s
 │   ├── src/
 │   │   ├── components/   # Calculator, report, preview, shell, and shadcn UI components
 │   │   ├── lib/          # Auth clients, allocation engines, drafts, reports, and presets
-│   │   └── routes/       # Claims, Tips, Reports, Assignments, and Weight Presets routes
+│   │   └── routes/       # Claims, Tips, Weight Presets, 7Shifts, Reports, and Assignments routes
 │   └── package.json
 ├── docs/                 # User-facing application guides
 ├── docker-compose.yml
@@ -264,4 +278,4 @@ Protected routes authenticate through the NiteOwl.dev / McCarthy's Better Auth s
 
 This repository contains the Tip Calculator frontend.
 
-The Better Auth configuration and the server-side `tip-claim` plugin are maintained separately in the NiteOwl.dev authentication service. That backend owns persisted Claim reports, Tip Pool reports, employee assignment/access state, and Weight Presets.
+The Better Auth configuration and the server-side `tip-claim` plugin are maintained separately in the NiteOwl.dev authentication service. That backend owns persisted Claim reports, Tip Pool reports, employee assignment/access state, Weight Presets, temporary staffing snapshots, and organization-level 7Shifts schedule access.

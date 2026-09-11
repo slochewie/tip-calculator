@@ -5,7 +5,7 @@ Use this guide to complete a shift in about five minutes. Select the organizatio
 - Use **Claims** when you have register sales and need the calculator to determine the required claim.
 - Use **Tips** when you already know the complete tip pool amount.
 
-For organizations with the 7Shifts APIs enabled, an authorized manager can optionally review the scheduled crew on **Weight Presets → 7Shifts schedule** and open either calculator with employees and roles already populated. See [7Shifts Staffing](seven-shifts-staffing.md).
+When the active organization has the 7Shifts integration enabled, **7Shifts Schedule** appears in the Tip Calculator navigation and calculator tabs. Review the scheduled crew there, then open either calculator with employees, roles, weights, and applicable register assignments already populated. See [7Shifts Staffing](seven-shifts-staffing.md).
 
 ## Tip Claims
 
@@ -17,6 +17,8 @@ For organizations with the 7Shifts APIs enabled, an authorized manager can optio
 6. Verify the **Required claim** and employee allocations.
 7. Preview the completed shift, then select **Save End of Shift Sales**.
 
+To start from today's schedule instead, open **7Shifts Schedule**, review the crew, and select **Open Claims with this staffing**.
+
 See the [Tip Claim Calculator guide](tip-claim-calculator.md) for the full workflow.
 
 ## Tip Pool
@@ -27,6 +29,8 @@ See the [Tip Claim Calculator guide](tip-claim-calculator.md) for the full workf
 4. Assign employees to the staffing slots.
 5. Verify the distribution and confirm the allocated total matches the pool.
 6. Preview and save the completed shift.
+
+To start from today's schedule instead, open **7Shifts Schedule**, review the crew, and select **Open Tips with this staffing**.
 
 See the [Tip Pool Calculator guide](tip-pool-calculator.md) for the full workflow.
 

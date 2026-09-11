@@ -57,17 +57,18 @@ You can still adjust the working configuration after loading a preset. Changing 
 
 ## Loading staffing from 7Shifts
 
-For organizations with the 7Shifts APIs enabled, an authorized preset manager can open **Weight Presets**, choose **7Shifts schedule**, and review the scheduled crew before opening Claims.
+When the active organization has the integration enabled, open **7Shifts Schedule** from the sidebar or calculator tabs and review the scheduled crew before opening Claims.
 
-The review step lets the manager:
+The review step lets the user:
 
-- choose the schedule date and crew grouped by end time;
-- replace an unlinked employee or open shift with an available organization employee;
+- choose the schedule date and a crew grouped by end time;
+- replace a scheduled row or add an eligible organization employee who was not scheduled;
 - confirm or change every Tip Calculator role;
 - set the number of registers;
-- assign each register to one bartender.
+- assign each register to one bartender;
+- adjust role weights while reviewing the live distribution preview.
 
-Selecting **Open Claims with this staffing** opens Claims with the reviewed employees, roles, register rows, and register assignments already populated. Register sales remain blank for the current shift. The claim percentage is set to 8% and the default role weights are applied; both can still be adjusted in Claims.
+Selecting **Open Claims with this staffing** opens Claims with the reviewed employees, roles, weights, register rows, and register assignments already populated. Register sales remain blank for the current shift, and the claim percentage starts at 8%. The working setup can still be adjusted in Claims.
 
 The reviewed setup is also saved for 24 hours as a temporary staffing snapshot. It appears in the **Weight preset** selector with a **Temporary** label and can be selected again during that period.
 

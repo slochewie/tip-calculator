@@ -27,20 +27,38 @@ The **Tips** pool calculator ignores Register count and Claim percentage. It use
 
 *The default Weight Presets page. Staffing counts and weights are edited in the Distribution preview before saving a named preset.*
 
-## Using a 7Shifts schedule
+## New-preset defaults and suggested names
 
-For organizations with the 7Shifts APIs enabled, preset managers see two choices under **Staffing source**:
+A new manual preset starts with:
 
-- **Manual preset** creates a permanent reusable staffing template.
-- **7Shifts schedule** reviews the scheduled crew and creates temporary staffing for the current shift.
+| Role | Staff | Weight |
+| --- | ---: | ---: |
+| Manager | 0 | 5 |
+| Bartender | 1 | 5 |
+| Barback | 0 | 3 |
+| Door | 0 | 2 |
 
-The schedule workflow is optional and does not modify permanent Weight Presets. Select the schedule date and a crew grouped by scheduled end time, then review every employee's Tip Calculator role. Unlinked employees and open shifts can be replaced with an available organization employee.
+As the register count, staffing counts, or role weights change, the name field suggests a compact description. For example:
 
-Set the register count and assign each register to one bartender. Additional bartenders may remain without a register. When there is only one bartender, that employee is assigned to Register 1 automatically.
+```text
+Staff: 3-2-2 Weights: 5/3/2 Registers: 2
+```
 
-After every employee has a role and every register has a bartender, choose **Open Claims with this staffing** or **Open Tips with this staffing**. The reviewed setup is saved as a temporary 24-hour staffing snapshot and appears in either calculator's **Weight preset** selector with a **Temporary** label.
+That means three Bartenders, two Barbacks, two Door employees, 5/3/2 weights, and two registers. Zero counts remain descriptive: `Staff: 3-1-0` means three Bartenders, one Barback, and no Door employees.
 
-Claims restores the employees, roles, register rows, and register assignments. Tips restores employees and roles but ignores the register assignments. Both calculators use the default 8% claim setting and default role weights when the schedule is opened.
+When a Manager is included, Manager count and weight appear first:
+
+```text
+Staff: 1-3-2-2 Weights: 5/5/3/2 Registers: 2
+```
+
+The suggested name is only a starting point. Replace it with any name that is more useful to the organization before saving.
+
+## Weight Presets and 7Shifts Schedule
+
+Weight Presets contains permanent reusable templates. For an enabled organization, **7Shifts Schedule** is a separate workspace for reviewing one scheduled crew and opening Claims or Tips with temporary staffing.
+
+Opening a reviewed schedule creates a 24-hour snapshot that can appear in a calculator's **Weight preset** selector with a **Temporary** label. Temporary schedule snapshots do not appear in the saved-preset list and never become permanent presets automatically.
 
 See [7Shifts Staffing](seven-shifts-staffing.md) for the complete workflow.
 

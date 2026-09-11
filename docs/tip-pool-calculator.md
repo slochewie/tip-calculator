@@ -56,13 +56,13 @@ The loaded preset is a starting point, not a lock. The working shift can still b
 
 ## Loading staffing from 7Shifts
 
-For organizations with the 7Shifts APIs enabled, an authorized preset manager can open **Weight Presets**, choose **7Shifts schedule**, and review the scheduled crew before opening Tips.
+When the active organization has the integration enabled, open **7Shifts Schedule** from the sidebar or calculator tabs and review the scheduled crew before opening Tips.
 
-The manager chooses the schedule date and crew, resolves unlinked employees or open shifts when needed, and confirms every employee's Tip Calculator role. The schedule review also requires register assignments so the same reviewed staffing can be used by Claims.
+Choose the schedule date and crew, replace scheduled rows or add eligible unscheduled employees when needed, confirm every Tip Calculator role, and adjust the role weights while reviewing the live distribution preview. Register assignments are also completed so the same reviewed crew can be handed to Claims.
 
-Selecting **Open Tips with this staffing** opens Tips with the reviewed employees and roles already populated. Register count and register assignments are intentionally ignored by the Tip Pool Calculator. Enter the complete pool amount, review the distribution, and save normally.
+Selecting **Open Tips with this staffing** opens Tips with the reviewed employees, roles, and current weights already populated. Register count and register assignments are intentionally ignored by the Tip Pool Calculator. Enter the complete pool amount, review the distribution, and save normally.
 
-The default role weights are applied and can still be adjusted in Tips. The reviewed setup is also saved for 24 hours as a temporary staffing snapshot, shown with a **Temporary** label in the **Weight preset** selector.
+The reviewed setup is saved for 24 hours as a temporary staffing snapshot, shown with a **Temporary** label in the **Weight preset** selector.
 
 See [7Shifts Staffing](seven-shifts-staffing.md) for the complete review workflow.
 

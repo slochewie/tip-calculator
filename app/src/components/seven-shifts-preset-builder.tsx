@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { CalendarDaysIcon, UsersIcon } from "lucide-react";
+import {
+  CalendarDaysIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  UsersIcon,
+} from "lucide-react";
 
 import { Badge } from "#/components/ui/badge.tsx";
 import { Button } from "#/components/ui/button.tsx";
@@ -51,6 +56,26 @@ type ShiftGroup = {
   end: string | null;
   shifts: SevenShiftsScheduleShift[];
 };
+
+const SCHEDULE_ROLE_ORDER = new Map([
+  ["manager", 0],
+  ["bartender", 1],
+  ["barback", 2],
+  ["door", 3],
+]);
+
+function scheduledRoleIndex(row: StaffingRow) {
+  let index = Number.MAX_SAFE_INTEGER;
+
+  for (const shift of row.shifts) {
+    const roleName = shift.role?.name.trim().toLowerCase();
+    const roleIndex = roleName ? SCHEDULE_ROLE_ORDER.get(roleName) : undefined;
+
+    if (roleIndex !== undefined) index = Math.min(index, roleIndex);
+  }
+
+  return index;
+}
 
 export type SevenShiftsClaimsSetup = {
   registerCount: number;
@@ -154,7 +179,11 @@ function staffingRows(shifts: SevenShiftsScheduleShift[]) {
     });
   }
 
-  return Array.from(rows.values());
+  return Array.from(rows.values()).sort(
+    (left, right) =>
+      scheduledRoleIndex(left) - scheduledRoleIndex(right) ||
+      left.name.localeCompare(right.name),
+  );
 }
 
 function matchingTipRole(roleName: string | null | undefined) {
@@ -466,19 +495,45 @@ export function SevenShiftsPresetBuilder({
               <FieldLabel htmlFor="seven-shifts-register-count">
                 Number of registers
               </FieldLabel>
-              <Input
-                id="seven-shifts-register-count"
-                type="number"
-                inputMode="numeric"
-                min={1}
-                max={50}
-                step={1}
-                className="w-full sm:max-w-32"
-                value={registerCount}
-                onChange={(event) =>
-                  updateRegisterCount(event.currentTarget.valueAsNumber)
-                }
-              />
+              <div className="flex w-full items-stretch gap-2 sm:max-w-56">
+                <Input
+                  id="seven-shifts-register-count"
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={50}
+                  step={1}
+                  className="min-w-0 flex-1"
+                  value={registerCount}
+                  onChange={(event) =>
+                    updateRegisterCount(event.currentTarget.valueAsNumber)
+                  }
+                />
+                <div className="flex shrink-0 overflow-hidden rounded-md border">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-10 rounded-none border-r"
+                    aria-label="Decrease register count"
+                    disabled={registerCount <= 1}
+                    onClick={() => updateRegisterCount(registerCount - 1)}
+                  >
+                    <ChevronDownIcon className="size-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-10 rounded-none"
+                    aria-label="Increase register count"
+                    disabled={registerCount >= 50}
+                    onClick={() => updateRegisterCount(registerCount + 1)}
+                  >
+                    <ChevronUpIcon className="size-4" />
+                  </Button>
+                </div>
+              </div>
               <FieldDescription>
                 Assign each register to one bartender. Additional bartenders
                 may work without a register.

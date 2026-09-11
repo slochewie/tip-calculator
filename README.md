@@ -16,6 +16,7 @@ Both workflows integrate with the NiteOwl.dev Better Auth service for organizati
 - [Tip Claim Calculator](docs/tip-claim-calculator.md) — how to build a one-off shift or load a preset, enter register sales, assign staff, review the required claim, and save the shift.
 - [Tip Pool Calculator](docs/tip-pool-calculator.md) — how to configure a one-off pool or load a preset, enter the complete pool amount, assign staff, and review the weighted distribution.
 - [Weight Presets](docs/weight-presets.md) — how role weights work, 5/3/2 examples, staffing changes, and why employee weights are preferable to fixed role percentages.
+- [7Shifts Staffing](docs/seven-shifts-staffing.md) — review a scheduled crew and open Claims or Tips with temporary prefilled staffing.
 - [Assignments](docs/assignments.md) — calculator access, assignment managers, and employee role eligibility.
 - [Reports](docs/reports.md) — reviewing, correcting, and deleting saved shifts.
 
@@ -39,6 +40,7 @@ The Claims calculator supports both a standalone public mode and the authenticat
 - Save completed reports to the Better Auth backend
 - Correct previously saved reports when authorized
 - Preserve in-progress authenticated drafts locally
+- Optionally load reviewed staffing and register assignments from 7Shifts for configured organizations
 
 See the [Tip Claim Calculator guide](docs/tip-claim-calculator.md) for the user workflow.
 
@@ -57,6 +59,7 @@ The Tips page provides a separate tip-pool workflow that is intentionally unawar
 - Save completed Tip Pool reports
 - Correct previously saved Tip Pool reports when authorized
 - Store in-progress drafts locally per organization
+- Optionally load reviewed staffing and roles from 7Shifts for configured organizations
 
 See the [Tip Pool Calculator guide](docs/tip-pool-calculator.md) for the user workflow.
 
@@ -84,6 +87,8 @@ Preset behavior differs intentionally between calculators:
 A preset can therefore represent situations such as a normal shift, full staffing, a swing shift, or a solo bartender with a different claim percentage.
 
 Weight Presets also include a live distribution preview. An optional preview amount can be entered to show hypothetical dollar amounts per role and per employee; that amount is never saved with the preset.
+
+For organizations with the 7Shifts APIs enabled, authorized preset managers can instead review scheduled staffing, normalize employee roles and register assignments, and open Claims or Tips with that setup. The reviewed setup is stored as a temporary 24-hour staffing snapshot rather than a permanent preset.
 
 Preset management is permission-aware:
 

@@ -6,6 +6,7 @@ Start with [Getting Started](getting-started.md) for the shortest path through a
 
 - [Getting Started](getting-started.md) — complete either calculator workflow in about five minutes.
 - [Weight Presets](weight-presets.md) — create reusable staffing configurations and understand employee weights.
+- [7Shifts Staffing](seven-shifts-staffing.md) — review a scheduled crew and populate Claims or Tips with temporary staffing.
 - [Tip Claim Calculator](tip-claim-calculator.md) — calculate a required claim from register sales and allocate it across on-duty staff.
 - [Tip Pool Calculator](tip-pool-calculator.md) — distribute one complete tip pool across on-duty staff.
 - [Assignments](assignments.md) — control calculator access and the roles available to each employee.
@@ -14,7 +15,7 @@ Start with [Getting Started](getting-started.md) for the shortest path through a
 ## Recommended order
 
 1. Read [Getting Started](getting-started.md).
-2. Learn [Weight Presets](weight-presets.md) if your organization reuses staffing patterns.
+2. Learn [Weight Presets](weight-presets.md) if your organization reuses staffing patterns, or [7Shifts Staffing](seven-shifts-staffing.md) if the organization imports schedules.
 3. Use the detailed [Tip Claim Calculator](tip-claim-calculator.md) or [Tip Pool Calculator](tip-pool-calculator.md) guide as needed.
 4. Use [Assignments](assignments.md) to manage employee access and role eligibility.
 5. Use [Reports](reports.md) to review or correct completed shifts.

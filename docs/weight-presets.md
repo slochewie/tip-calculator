@@ -27,6 +27,23 @@ The **Tips** pool calculator ignores Register count and Claim percentage. It use
 
 *The default Weight Presets page. Staffing counts and weights are edited in the Distribution preview before saving a named preset.*
 
+## Using a 7Shifts schedule
+
+For organizations with the 7Shifts APIs enabled, preset managers see two choices under **Staffing source**:
+
+- **Manual preset** creates a permanent reusable staffing template.
+- **7Shifts schedule** reviews the scheduled crew and creates temporary staffing for the current shift.
+
+The schedule workflow is optional and does not modify permanent Weight Presets. Select the schedule date and a crew grouped by scheduled end time, then review every employee's Tip Calculator role. Unlinked employees and open shifts can be replaced with an available organization employee.
+
+Set the register count and assign each register to one bartender. Additional bartenders may remain without a register. When there is only one bartender, that employee is assigned to Register 1 automatically.
+
+After every employee has a role and every register has a bartender, choose **Open Claims with this staffing** or **Open Tips with this staffing**. The reviewed setup is saved as a temporary 24-hour staffing snapshot and appears in either calculator's **Weight preset** selector with a **Temporary** label.
+
+Claims restores the employees, roles, register rows, and register assignments. Tips restores employees and roles but ignores the register assignments. Both calculators use the default 8% claim setting and default role weights when the schedule is opened.
+
+See [7Shifts Staffing](seven-shifts-staffing.md) for the complete workflow.
+
 ## Example: 5 / 3 / 2 weights
 
 Suppose the desired relationship is:

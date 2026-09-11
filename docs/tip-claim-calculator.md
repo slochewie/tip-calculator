@@ -8,8 +8,9 @@ The page supports two ways to configure a shift:
 
 - **One-off configuration** — build the shift directly on the Claims page by choosing the register count, claim percentage, on-duty staffing, roles, and weights you need for that shift.
 - **Weight Preset** — load a saved staffing configuration so the form is built automatically, then fill in the employees and register sales for the current shift.
+- **7Shifts staffing** — for a configured organization, review a scheduled crew and open Claims with employees, roles, register rows, and register assignments already populated.
 
-Weight Presets are optional. A preset saves time when the same staffing pattern is used repeatedly, but the calculator does not require one.
+Weight Presets and 7Shifts staffing are optional. A permanent preset saves time when the same staffing pattern is used repeatedly; a temporary 7Shifts snapshot represents one reviewed scheduled crew. The calculator does not require either one.
 
 See [Weight Presets](weight-presets.md) for a detailed explanation of role weights and why weights are preferable to fixed role percentages.
 
@@ -53,6 +54,24 @@ For example, a preset named `Staff: 3-2-2 Weights: 5/3/2 Registers: 2` creates t
 The preset creates the structure of the shift, not the employee assignments. Employee selectors remain blank so the manager can choose the people who actually worked that shift.
 
 You can still adjust the working configuration after loading a preset. Changing a value on the current shift does not rewrite the saved preset unless you edit the preset itself on the Weight Presets page.
+
+## Loading staffing from 7Shifts
+
+For organizations with the 7Shifts APIs enabled, an authorized preset manager can open **Weight Presets**, choose **7Shifts schedule**, and review the scheduled crew before opening Claims.
+
+The review step lets the manager:
+
+- choose the schedule date and crew grouped by end time;
+- replace an unlinked employee or open shift with an available organization employee;
+- confirm or change every Tip Calculator role;
+- set the number of registers;
+- assign each register to one bartender.
+
+Selecting **Open Claims with this staffing** opens Claims with the reviewed employees, roles, register rows, and register assignments already populated. Register sales remain blank for the current shift. The claim percentage is set to 8% and the default role weights are applied; both can still be adjusted in Claims.
+
+The reviewed setup is also saved for 24 hours as a temporary staffing snapshot. It appears in the **Weight preset** selector with a **Temporary** label and can be selected again during that period.
+
+See [7Shifts Staffing](seven-shifts-staffing.md) for the complete review workflow.
 
 ## Entering register sales
 

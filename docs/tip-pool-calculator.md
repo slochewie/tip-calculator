@@ -10,8 +10,9 @@ The page supports two ways to configure a shift:
 
 - **One-off configuration** — build the current staffing mix directly on the Tips page and adjust the active role weights as needed.
 - **Weight Preset** — load a reusable staffing configuration so the staffing slots and role weights are created automatically.
+- **7Shifts staffing** — for a configured organization, review a scheduled crew and open Tips with employees and roles already populated.
 
-Weight Presets are optional. They are useful for recurring staffing patterns, but a tip pool can always be configured directly on the page.
+Weight Presets and 7Shifts staffing are optional. Permanent presets are useful for recurring staffing patterns; temporary 7Shifts snapshots represent one reviewed scheduled crew. A tip pool can always be configured directly on the page.
 
 See [Weight Presets](weight-presets.md) for a detailed explanation of how weighted allocation works.
 
@@ -52,6 +53,18 @@ The preset may also contain a register count and claim percentage because preset
 Employee selectors remain blank after loading the preset so the manager can choose the people who actually worked that shift.
 
 The loaded preset is a starting point, not a lock. The working shift can still be changed without altering the saved preset itself.
+
+## Loading staffing from 7Shifts
+
+For organizations with the 7Shifts APIs enabled, an authorized preset manager can open **Weight Presets**, choose **7Shifts schedule**, and review the scheduled crew before opening Tips.
+
+The manager chooses the schedule date and crew, resolves unlinked employees or open shifts when needed, and confirms every employee's Tip Calculator role. The schedule review also requires register assignments so the same reviewed staffing can be used by Claims.
+
+Selecting **Open Tips with this staffing** opens Tips with the reviewed employees and roles already populated. Register count and register assignments are intentionally ignored by the Tip Pool Calculator. Enter the complete pool amount, review the distribution, and save normally.
+
+The default role weights are applied and can still be adjusted in Tips. The reviewed setup is also saved for 24 hours as a temporary staffing snapshot, shown with a **Temporary** label in the **Weight preset** selector.
+
+See [7Shifts Staffing](seven-shifts-staffing.md) for the complete review workflow.
 
 ## Entering the tip pool
 

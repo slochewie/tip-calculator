@@ -5,10 +5,12 @@ Use this guide to complete a shift in about five minutes. Select the organizatio
 - Use **Claims** when you have register sales and need the calculator to determine the required claim.
 - Use **Tips** when you already know the complete tip pool amount.
 
+For organizations with the 7Shifts APIs enabled, an authorized manager can optionally review the scheduled crew on **Weight Presets → 7Shifts schedule** and open either calculator with employees and roles already populated. See [7Shifts Staffing](seven-shifts-staffing.md).
+
 ## Tip Claims
 
 1. Open **Claims**.
-2. Load a **Weight Preset**, or leave it blank to build a one-off shift.
+2. Load a permanent **Weight Preset**, select a temporary 7Shifts staffing snapshot, or leave the preset blank to build a one-off shift.
 3. Enter the sales amount for each register.
 4. Assign the bartender responsible for each register.
 5. Assign employees to the staffing slots created by the preset.
@@ -20,7 +22,7 @@ See the [Tip Claim Calculator guide](tip-claim-calculator.md) for the full workf
 ## Tip Pool
 
 1. Open **Tips**.
-2. Load a **Weight Preset**, or leave it blank to build a one-off shift.
+2. Load a permanent **Weight Preset**, select a temporary 7Shifts staffing snapshot, or leave the preset blank to build a one-off shift.
 3. Enter the complete **Tip pool** amount.
 4. Assign employees to the staffing slots.
 5. Verify the distribution and confirm the allocated total matches the pool.

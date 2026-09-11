@@ -309,6 +309,25 @@ export function TipDivvyCalculator({
     const preset = weightPresets.find((candidate) => candidate.id === presetId);
     if (!preset) return;
 
+    if (
+      preset.source === "seven-shifts" &&
+      preset.assignments &&
+      preset.assignments.length > 0
+    ) {
+      setSelectedWeightPresetId(presetId);
+      setAssignments(
+        preset.assignments.map(({ userId, role }) => ({ userId, role })),
+      );
+      setWeights({ ...preset.weights });
+      setAllocationMode("weights");
+      setEditingShiftId(null);
+      setEditingCompletedAt(null);
+      setPreviewOpen(false);
+      setSaveError(null);
+      setSaveMessage(null);
+      return;
+    }
+
     const nextAssignments: TipPoolStaffAssignment[] = [];
     for (const role of TIP_CLAIM_ROLE_ORDER) {
       for (let index = 0; index < preset.staff[role]; index += 1) {
@@ -522,7 +541,7 @@ export function TipDivvyCalculator({
             <CardHeader>
               <CardTitle>Weight preset</CardTitle>
               <CardDescription>
-                Select a preset to build the staffing slots and role weights for this tip pool. Register count and claim percentage are ignored here.
+                Select a permanent preset or a 24-hour 7Shifts staffing snapshot. Temporary snapshots restore the reviewed employees and roles; register assignments are ignored here.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-2">
@@ -546,6 +565,7 @@ export function TipDivvyCalculator({
                   {weightPresets.map((preset) => (
                     <SelectItem key={preset.id} value={preset.id}>
                       {preset.name}
+                      {preset.source === "seven-shifts" ? " · Temporary" : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>

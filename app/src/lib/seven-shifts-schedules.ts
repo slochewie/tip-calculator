@@ -119,13 +119,26 @@ export type SevenShiftsOrganizationSyncResult = {
 };
 
 function scheduleError(body: unknown) {
-  if (
-    typeof body === "object" &&
-    body !== null &&
-    "error" in body &&
-    typeof body.error === "string"
-  ) {
+  if (typeof body !== "object" || body === null) {
+    return "Unable to load the 7Shifts schedule.";
+  }
+
+  if ("error" in body && typeof body.error === "string") {
     return body.error;
+  }
+
+  if ("message" in body && typeof body.message === "string") {
+    return body.message;
+  }
+
+  if (
+    "error" in body &&
+    typeof body.error === "object" &&
+    body.error !== null &&
+    "message" in body.error &&
+    typeof body.error.message === "string"
+  ) {
+    return body.error.message;
   }
 
   return "Unable to load the 7Shifts schedule.";

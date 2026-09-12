@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import {
   ChevronDownIcon,
@@ -32,6 +32,12 @@ import {
 } from "#/components/ui/chart.tsx";
 import { Field, FieldDescription, FieldLabel } from "#/components/ui/field.tsx";
 import { Input } from "#/components/ui/input.tsx";
+import {
+  checkSevenShiftsScheduleUpdates,
+  getSevenShiftsScheduleSyncControls,
+  syncSevenShiftsOrganizationSchedule,
+  type SevenShiftsScheduleSyncControls,
+} from "#/lib/seven-shifts-schedules.ts";
 import {
   TIP_CLAIM_ROLE_LABELS,
   TIP_CLAIM_ROLE_ORDER,
@@ -71,6 +77,22 @@ const currencyFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "USD",
 });
+
+const syncTimeFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+});
+
+function formatLastScheduleSync(value: string | null) {
+  if (!value) return "Never";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Unknown";
+
+  return syncTimeFormatter.format(date);
+}
 
 function clampWeight(value: number) {
   if (!Number.isFinite(value)) return 0;
@@ -156,6 +178,45 @@ export function SevenShiftsScheduleConfigurator({
     ...DEFAULT_TIP_WEIGHT_PRESET_WEIGHTS,
   });
   const [previewAmount, setPreviewAmount] = useState(0);
+  const [weekStart, setWeekStart] = useState<string | null>(null);
+  const [scheduleRefreshKey, setScheduleRefreshKey] = useState(0);
+  const [syncControls, setSyncControls] =
+    useState<SevenShiftsScheduleSyncControls | null>(null);
+  const [syncPending, setSyncPending] = useState<"check" | "sync" | null>(
+    null,
+  );
+  const [updatesAvailable, setUpdatesAvailable] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    setSyncControls(null);
+    setUpdatesAvailable(false);
+    setSyncError(null);
+
+    void getSevenShiftsScheduleSyncControls(organizationId)
+      .then((controls) => {
+        if (!cancelled) setSyncControls(controls);
+      })
+      .catch((loadError: unknown) => {
+        if (cancelled) return;
+        setSyncError(
+          loadError instanceof Error
+            ? loadError.message
+            : "Unable to load schedule sync status.",
+        );
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [organizationId]);
+
+  useEffect(() => {
+    setUpdatesAvailable(false);
+    setSyncError(null);
+  }, [weekStart]);
 
   const roleData = useMemo(() => {
     const totalUnits = TIP_CLAIM_ROLE_ORDER.reduce(
@@ -241,25 +302,122 @@ export function SevenShiftsScheduleConfigurator({
     await navigate({ to: "/tips" });
   }
 
+  async function handleScheduleSyncAction() {
+    if (
+      !weekStart ||
+      !syncControls?.configured ||
+      !syncControls.canManage ||
+      syncPending !== null
+    ) {
+      return;
+    }
+
+    setSyncError(null);
+
+    if (!updatesAvailable) {
+      setSyncPending("check");
+
+      try {
+        const result = await checkSevenShiftsScheduleUpdates({
+          organizationId,
+          weekStart,
+        });
+        setUpdatesAvailable(result.updatesAvailable);
+      } catch (checkError) {
+        setSyncError(
+          checkError instanceof Error
+            ? checkError.message
+            : "Unable to check the 7Shifts schedule.",
+        );
+      } finally {
+        setSyncPending(null);
+      }
+
+      return;
+    }
+
+    setSyncPending("sync");
+
+    try {
+      await syncSevenShiftsOrganizationSchedule({
+        organizationId,
+        weekStart,
+      });
+
+      const controls = await getSevenShiftsScheduleSyncControls(organizationId);
+      setSyncControls(controls);
+      setUpdatesAvailable(false);
+      setScheduleRefreshKey((current) => current + 1);
+    } catch (syncFailure) {
+      setSyncError(
+        syncFailure instanceof Error
+          ? syncFailure.message
+          : "Unable to sync the 7Shifts schedule.",
+      );
+    } finally {
+      setSyncPending(null);
+    }
+  }
+
+  const showSyncStatus = syncControls?.configured === true;
+  const showSyncButton = showSyncStatus && syncControls.canManage;
+  const syncButtonLabel =
+    syncPending === "check"
+      ? "Checking…"
+      : syncPending === "sync"
+        ? "Syncing…"
+        : updatesAvailable
+          ? "Sync now"
+          : "Check for updates";
+
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 p-4 md:p-6 lg:p-8">
-      <div className="flex items-start gap-3">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-sm">
-          <SevenShiftsLogo />
-        </div>
-        <div className="flex flex-col gap-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-semibold tracking-tight">
-              7Shifts Schedule
-            </h1>
-            <Badge variant="secondary">Live staffing</Badge>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+        <div className="flex min-w-0 flex-1 items-start gap-3">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-sm">
+            <SevenShiftsLogo />
           </div>
-          <p className="text-sm text-muted-foreground">
-            Review scheduled staffing, last-minute changes, registers, and role
-            weights{organizationName ? ` for ${organizationName}` : ""}.
-          </p>
+          <div className="flex min-w-0 flex-col gap-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-2xl font-semibold tracking-tight">
+                7Shifts Schedule
+              </h1>
+              <Badge variant="secondary">Live staffing</Badge>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Review scheduled staffing, last-minute changes, registers, and role
+              weights{organizationName ? ` for ${organizationName}` : ""}.
+            </p>
+          </div>
         </div>
+
+        {showSyncStatus ? (
+          <div className="flex shrink-0 flex-wrap items-center gap-3 sm:justify-end">
+            <div className="flex flex-col gap-0.5 sm:items-end">
+              <span className="text-xs text-muted-foreground">
+                Last schedule sync
+              </span>
+              <span className="text-sm font-medium tabular-nums">
+                {formatLastScheduleSync(syncControls.lastSyncedAt)}
+              </span>
+            </div>
+            {showSyncButton ? (
+              <Button
+                type="button"
+                variant={updatesAvailable ? "default" : "outline"}
+                disabled={!weekStart || syncPending !== null}
+                onClick={() => void handleScheduleSyncAction()}
+              >
+                {syncButtonLabel}
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
       </div>
+
+      {syncError ? (
+        <p className="text-sm text-destructive">{syncError}</p>
+      ) : null}
 
       <CalculatorTabs />
       {organizationSelector}
@@ -270,6 +428,8 @@ export function SevenShiftsScheduleConfigurator({
           onApplyClaims={openClaims}
           onApplyTips={openTips}
           onStaffChange={setStaff}
+          onWeekStartChange={setWeekStart}
+          refreshKey={scheduleRefreshKey}
         />
 
         <Card className="lg:sticky lg:top-6">

@@ -372,25 +372,26 @@ export function SevenShiftsScheduleConfigurator({
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 p-4 md:p-6 lg:p-8">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-        <div className="flex min-w-0 flex-1 items-start gap-3">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-sm">
-            <SevenShiftsLogo />
-          </div>
-          <div className="flex min-w-0 flex-col gap-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-2xl font-semibold tracking-tight">
-                7Shifts Schedule
-              </h1>
-              <Badge variant="secondary">Live staffing</Badge>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Review scheduled staffing, last-minute changes, registers, and role
-              weights{organizationName ? ` for ${organizationName}` : ""}.
-            </p>
-          </div>
+      <div className="flex items-start gap-3">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-sm">
+          <SevenShiftsLogo />
         </div>
+        <div className="flex min-w-0 flex-col gap-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-2xl font-semibold tracking-tight">
+              7Shifts Schedule
+            </h1>
+            <Badge variant="secondary">Live staffing</Badge>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Review scheduled staffing, last-minute changes, registers, and role
+            weights{organizationName ? ` for ${organizationName}` : ""}.
+          </p>
+        </div>
+      </div>
 
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <CalculatorTabs />
         {showSyncStatus ? (
           <div className="flex shrink-0 flex-wrap items-center gap-3 sm:justify-end">
             <div className="flex flex-col gap-0.5 sm:items-end">
@@ -419,7 +420,6 @@ export function SevenShiftsScheduleConfigurator({
         <p className="text-sm text-destructive">{syncError}</p>
       ) : null}
 
-      <CalculatorTabs />
       {organizationSelector}
 
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.9fr)]">

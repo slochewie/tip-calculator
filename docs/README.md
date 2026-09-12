@@ -8,7 +8,7 @@ Start with [Getting Started](getting-started.md) for the shortest path through a
 - [Tip Claim Calculator](tip-claim-calculator.md) — calculate a required claim from register sales and allocate it across on-duty staff.
 - [Tip Pool Calculator](tip-pool-calculator.md) — distribute one complete tip pool across on-duty staff.
 - [Weight Presets](weight-presets.md) — create reusable staffing configurations and understand employee weights.
-- [7Shifts Staffing](seven-shifts-staffing.md) — review a scheduled crew and open Claims or Tips with temporary prefilled staffing.
+- [7Shifts Staffing](seven-shifts-staffing.md) — refresh the location's local schedule copy, review a crew, and open Claims or Tips with temporary prefilled staffing.
 - [Assignments](assignments.md) — control calculator access and the roles available to each employee.
 - [Reports](reports.md) — review, correct, and delete saved Claim and Tip Pool reports.
 

@@ -12,6 +12,26 @@ The workflow is a separate **7Shifts Schedule** page. It does not replace manual
 
 Opening the route directly for an organization without access shows that 7Shifts scheduling is unavailable. The schedule is never exposed as a staffing-source option on the Weight Presets page.
 
+## Keeping the local schedule current
+
+The page reads from a local copy of the 7Shifts schedule. When the selected organization is configured for schedule syncing, **Last schedule sync** appears beside the calculator tabs. All users who can open the schedule can see this timestamp.
+
+The action button appears only for:
+
+- Better Auth global admins; and
+- users with Tip Calculator **Assignment manager** permission for the selected organization.
+
+To refresh the schedule:
+
+1. Select the organization and a date in the week you want to review.
+2. Select **Check for updates**. The check compares the local copy with the mapped 7Shifts location for that Sunday–Saturday week.
+3. If changes are available, the button changes to **Sync now**.
+4. Select **Sync now** to update the local copy. The current schedule view reloads and **Last schedule sync** updates.
+
+The check and sync are scoped to the selected organization, its mapped 7Shifts location, and the week containing the selected date. If several organizations share one 7Shifts API connection, refreshing one location does not pull schedules for the other locations. Changing to a date in another week requires a new update check.
+
+The sync only pulls data from 7Shifts into the local schedule copy; it never writes changes back to 7Shifts. API, mapping, permission, and sync failures appear below the controls with the error returned by the Better Auth schedule service.
+
 ## Review scheduled staffing
 
 1. Open **7Shifts Schedule**.

@@ -9,7 +9,7 @@ The **Assignments** page controls who can use the Tip Calculator and which staff
 Assignment managers can enable or disable:
 
 - **Tip Calculator access** — allows the member to use the organization's calculator.
-- **Assignment manager** — allows the member to manage these settings for other members.
+- **Assignment manager** — allows the member to manage these settings and permanent Weight Presets for the organization. When 7Shifts schedule syncing is configured, it also allows the member to check for and sync schedule updates for that organization.
 - **Bartender**
 - **Manager**
 - **Barback**

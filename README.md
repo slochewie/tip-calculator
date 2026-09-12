@@ -16,7 +16,7 @@ Both workflows integrate with the NiteOwl.dev Better Auth service for organizati
 - [Tip Claim Calculator](docs/tip-claim-calculator.md) — how to build a one-off shift or load a preset, enter register sales, assign staff, review the required claim, and save the shift.
 - [Tip Pool Calculator](docs/tip-pool-calculator.md) — how to configure a one-off pool or load a preset, enter the complete pool amount, assign staff, and review the weighted distribution.
 - [Weight Presets](docs/weight-presets.md) — how role weights work, 5/3/2 examples, staffing changes, and why employee weights are preferable to fixed role percentages.
-- [7Shifts Staffing](docs/seven-shifts-staffing.md) — review a scheduled crew and open Claims or Tips with temporary prefilled staffing.
+- [7Shifts Staffing](docs/seven-shifts-staffing.md) — refresh the location's local schedule copy, review a crew, and open Claims or Tips with temporary prefilled staffing.
 - [Assignments](docs/assignments.md) — calculator access, assignment managers, and employee role eligibility.
 - [Reports](docs/reports.md) — reviewing, correcting, and deleting saved shifts.
 
@@ -102,6 +102,8 @@ See the [Weight Presets guide](docs/weight-presets.md) for worked examples and a
 For an active organization with the 7Shifts integration enabled, a dedicated **7Shifts Schedule** page appears in the sidebar and calculator tabs.
 
 The page lets the user select a schedule date and crew, review or replace scheduled employees, add eligible unscheduled employees, confirm Tip Calculator roles, configure registers, and adjust the role weights in a live distribution preview. Before 5:00 AM, the initial schedule date uses the previous day in the location's timezone.
+
+When schedule syncing is configured, the page shows the organization's most recent local schedule sync. Better Auth global admins and users with Tip Calculator Assignment manager permission for the selected organization can check the selected Sunday–Saturday week for changes and sync only that organization's mapped 7Shifts location. Errors returned by the schedule service are shown on the page.
 
 Opening Claims or Tips creates a temporary 24-hour staffing snapshot. Claims receives employees, roles, weights, registers, and register assignments; Tips receives employees, roles, and weights while ignoring register configuration.
 

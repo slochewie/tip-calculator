@@ -65,6 +65,59 @@ export type SevenShiftsScheduleWeek = {
   shifts: SevenShiftsScheduleShift[];
 };
 
+export type SevenShiftsScheduleSyncControls = {
+  canManage: boolean;
+  configured: boolean;
+  lastSyncedAt: string | null;
+  location: {
+    id: number | null;
+    name: string | null;
+  };
+};
+
+export type SevenShiftsScheduleUpdateCheck = {
+  organization: {
+    id: string;
+    name: string;
+  };
+  location: {
+    id: number;
+    name: string;
+    timezone: string;
+  };
+  week: {
+    start: string;
+    end: string;
+  };
+  updatesAvailable: boolean;
+  remoteShiftCount: number;
+  localShiftCount: number;
+};
+
+export type SevenShiftsOrganizationSyncResult = {
+  organization: {
+    id: string;
+    name: string;
+  };
+  location: {
+    id: number;
+    name: string;
+    timezone: string;
+  };
+  week: {
+    start: string;
+    end: string;
+  };
+  summary: {
+    fetchedShifts: number;
+    importedShifts: number;
+    inserted: number;
+    updated: number;
+    linkedShifts: number;
+    deletedShifts: number;
+  };
+};
+
 function scheduleError(body: unknown) {
   if (
     typeof body === "object" &&
@@ -77,6 +130,17 @@ function scheduleError(body: unknown) {
 
   return "Unable to load the 7Shifts schedule.";
 }
+
+async function scheduleJson<T>(response: Response) {
+  const body = (await response.json()) as unknown;
+
+  if (!response.ok) {
+    throw new Error(scheduleError(body));
+  }
+
+  return body as T;
+}
+
 export async function getSevenShiftsScheduleAccess(organizationId: string) {
   const response = await fetch(
     new URL("/api/auth/seven-shifts-schedules/organizations", authBaseURL),
@@ -115,11 +179,66 @@ export async function getSevenShiftsScheduleWeek({
     credentials: "include",
     signal,
   });
-  const body = (await response.json()) as unknown;
 
-  if (!response.ok) {
-    throw new Error(scheduleError(body));
-  }
+  return scheduleJson<SevenShiftsScheduleWeek>(response);
+}
 
-  return body as SevenShiftsScheduleWeek;
+export async function getSevenShiftsScheduleSyncControls(
+  organizationId: string,
+) {
+  const url = new URL(
+    "/api/auth/seven-shifts-schedules/sync-controls",
+    authBaseURL,
+  );
+  url.searchParams.set("organizationId", organizationId);
+
+  const response = await fetch(url, {
+    credentials: "include",
+  });
+
+  return scheduleJson<SevenShiftsScheduleSyncControls>(response);
+}
+
+export async function checkSevenShiftsScheduleUpdates({
+  organizationId,
+  weekStart,
+}: {
+  organizationId: string;
+  weekStart: string;
+}) {
+  const response = await fetch(
+    new URL("/api/auth/seven-shifts-schedules/check-updates", authBaseURL),
+    {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ organizationId, weekStart }),
+    },
+  );
+
+  return scheduleJson<SevenShiftsScheduleUpdateCheck>(response);
+}
+
+export async function syncSevenShiftsOrganizationSchedule({
+  organizationId,
+  weekStart,
+}: {
+  organizationId: string;
+  weekStart: string;
+}) {
+  const response = await fetch(
+    new URL("/api/auth/seven-shifts-schedules/sync-organization", authBaseURL),
+    {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ organizationId, weekStart }),
+    },
+  );
+
+  return scheduleJson<SevenShiftsOrganizationSyncResult>(response);
 }

@@ -315,11 +315,15 @@ export function SevenShiftsPresetBuilder({
   onApplyClaims,
   onApplyTips,
   onStaffChange,
+  onWeekStartChange,
+  refreshKey = 0,
 }: {
   organizationId: string;
   onApplyClaims: (setup: SevenShiftsClaimsSetup) => Promise<void> | void;
   onApplyTips: (setup: SevenShiftsClaimsSetup) => Promise<void> | void;
   onStaffChange?: (staff: TipClaimRoleState) => void;
+  onWeekStartChange?: (weekStart: string) => void;
+  refreshKey?: number;
 }) {
   const [date, setDate] = useState(() =>
     operationalScheduleDate([], new Date()),
@@ -351,6 +355,10 @@ export function SevenShiftsPresetBuilder({
   >([]);
   const nextAddedEmployeeId = useRef(1);
   const initialScheduleDateResolved = useRef(false);
+
+  useEffect(() => {
+    onWeekStartChange?.(weekStartFor(date));
+  }, [date, onWeekStartChange]);
 
   useEffect(() => {
     let cancelled = false;
@@ -451,7 +459,7 @@ export function SevenShiftsPresetBuilder({
       });
 
     return () => controller.abort();
-  }, [date, organizationId]);
+  }, [date, organizationId, refreshKey]);
 
   const shiftGroups = useMemo(() => groupShiftsByEndTime(shifts), [shifts]);
   const selectedGroup = useMemo(

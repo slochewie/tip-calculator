@@ -1,22 +1,9 @@
 import { useEffect } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { OrganizationSelector } from "@niteowl/ui";
 
 import { TipWeightPresetConfigurator } from "#/components/tip-weight-preset-configurator.tsx";
 import { CalculatorTabs } from "#/components/calculator-tabs.tsx";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "#/components/ui/card.tsx";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "#/components/ui/select.tsx";
 import { Skeleton } from "#/components/ui/skeleton.tsx";
 import { authBaseURL, authClient } from "#/lib/auth-client.ts";
 
@@ -94,44 +81,15 @@ function WeightPresetsRoute() {
     areOrganizationsPending || isActiveOrganizationPending;
 
   const organizationSelector = (
-    <Card>
-      <CardHeader>
-        <CardTitle>Organization</CardTitle>
-        <CardDescription>
-          Choose the organization whose weight presets you want to manage.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Select
-          value={activeOrganization?.id ?? ""}
-          disabled={organizationsPending || organizationList.length === 0}
-          onValueChange={(organizationId) => {
-            if (organizationId) {
-              void authClient.organization.setActive({ organizationId });
-            }
-          }}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue
-              placeholder={
-                organizationsPending
-                  ? "Loading organizations…"
-                  : organizationList.length === 0
-                    ? "No organizations"
-                    : "Select organization"
-              }
-            />
-          </SelectTrigger>
-          <SelectContent>
-            {organizationList.map((organization) => (
-              <SelectItem key={organization.id} value={organization.id}>
-                {organization.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </CardContent>
-    </Card>
+    <OrganizationSelector
+      organizations={organizationList}
+      value={activeOrganization?.id}
+      loading={organizationsPending}
+      description="Choose the organization whose weight presets you want to manage."
+      onValueChange={(organizationId) => {
+        void authClient.organization.setActive({ organizationId });
+      }}
+    />
   );
 
   if (!activeOrganization) {
@@ -144,13 +102,11 @@ function WeightPresetsRoute() {
   }
 
   return (
-    <>
-      <TipWeightPresetConfigurator
-        key={activeOrganization.id}
-        organizationId={activeOrganization.id}
-        organizationName={activeOrganization.name}
-        organizationSelector={organizationSelector}
-      />
-    </>
+    <TipWeightPresetConfigurator
+      key={activeOrganization.id}
+      organizationId={activeOrganization.id}
+      organizationName={activeOrganization.name}
+      organizationSelector={organizationSelector}
+    />
   );
 }

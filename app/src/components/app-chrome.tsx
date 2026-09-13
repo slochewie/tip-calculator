@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
+import { buildNavigation, type NiteOwlIconId } from "@niteowl/app-config";
 import {
   BookOpenIcon,
   Building2Icon,
@@ -73,15 +74,17 @@ function getAppLinks() {
   if (isMccarthysDomain) {
     return {
       console: "https://console.mccarthysirishpub.com/",
+      "tip-calculator": "https://tips.mccarthysirishpub.com",
       counter: "https://counter.mccarthysirishpub.com",
-      networkStatus: "https://unifi.mccarthysirishpub.com",
+      "network-status": "https://unifi.mccarthysirishpub.com",
     };
   }
 
   return {
     console: "https://console.niteowl.dev",
+    "tip-calculator": "https://tips.niteowl.dev",
     counter: "https://counter.niteowl.dev",
-    networkStatus: "https://unifi.niteowl.dev",
+    "network-status": "https://unifi.niteowl.dev",
   };
 }
 
@@ -109,6 +112,31 @@ function TipCalculatorSidebarMenu({ children }: { children: ReactNode }) {
   );
 }
 
+function NavigationIcon({ icon }: { icon: NiteOwlIconId }) {
+  switch (icon) {
+    case "landmark":
+      return <LandmarkIcon />;
+    case "hand-coins":
+      return <HandCoinsIcon />;
+    case "scale":
+      return <ScaleIcon />;
+    case "seven-shifts":
+      return <SevenShiftsLogo />;
+    case "scroll-text":
+      return <ScrollTextIcon />;
+    case "users":
+      return <UsersIcon />;
+    case "square-terminal":
+      return <SquareTerminalIcon />;
+    case "gauge":
+      return <GaugeIcon />;
+    case "network":
+      return <NetworkIcon />;
+    default:
+      return null;
+  }
+}
+
 export function AppChrome({ children }: { children: ReactNode }) {
   const location = useLocation();
   const { data: session } = authClient.useSession();
@@ -122,6 +150,15 @@ export function AppChrome({ children }: { children: ReactNode }) {
   const avatarLabel = getInitials(displayName);
   const consoleBaseURL = authBaseURL.replace(/\/$/, "");
   const sidebarDefaultOpen = getSidebarDefaultOpen();
+  const navigation = buildNavigation({
+    currentApp: "tip-calculator",
+    currentPath: location.pathname,
+    urls: getAppLinks(),
+    canAccess: ({ key }) =>
+      key === "tip-calculator:seven-shifts-navigation" ? showSevenShifts : true,
+  });
+  const primarySection = navigation.primary[0];
+  const appsSection = navigation.apps[0];
   const appTitle =
     location.pathname === "/tips"
       ? "Tip Pool Calculator"
@@ -143,91 +180,26 @@ export function AppChrome({ children }: { children: ReactNode }) {
 
           <SidebarContent>
             <SidebarGroup>
-              <SidebarGroupLabel className="text-sm">Tip Calculator</SidebarGroupLabel>
+              <SidebarGroupLabel className="text-sm">
+                {primarySection.label}
+              </SidebarGroupLabel>
               <SidebarGroupContent>
                 <TipCalculatorSidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      asChild
-                      className={sidebarButtonClassName}
-                      isActive={location.pathname === "/claims"}
-                      tooltip="Claims"
-                    >
-                      <Link to="/claims">
-                        <LandmarkIcon />
-                        <span className={sidebarLabelClassName}>Claims</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      asChild
-                      className={sidebarButtonClassName}
-                      isActive={location.pathname === "/tips"}
-                      tooltip="Tips"
-                    >
-                      <Link to="/tips">
-                        <HandCoinsIcon />
-                        <span className={sidebarLabelClassName}>Tips</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      asChild
-                      className={sidebarButtonClassName}
-                      isActive={location.pathname === "/weight-presets"}
-                      tooltip="Weight Presets"
-                    >
-                      <Link to="/weight-presets">
-                        <ScaleIcon />
-                        <span className={sidebarLabelClassName}>Weight Presets</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  {showSevenShifts ? (
-                    <SidebarMenuItem>
+                  {primarySection.items.map((item) => (
+                    <SidebarMenuItem key={item.id}>
                       <SidebarMenuButton
                         asChild
                         className={sidebarButtonClassName}
-                        isActive={location.pathname === "/seven-shifts"}
-                        tooltip="7Shifts Schedule"
+                        isActive={item.active}
+                        tooltip={item.label}
                       >
-                        <Link to="/seven-shifts">
-                          <SevenShiftsLogo />
-                          <span className={sidebarLabelClassName}>
-                            7Shifts Schedule
-                          </span>
+                        <Link to={item.href}>
+                          <NavigationIcon icon={item.icon} />
+                          <span className={sidebarLabelClassName}>{item.label}</span>
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
-                  ) : null}
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      asChild
-                      className={sidebarButtonClassName}
-                      isActive={location.pathname === "/reports"}
-                      tooltip="Reports"
-                    >
-                      <Link to="/reports">
-                        <ScrollTextIcon />
-                        <span className={sidebarLabelClassName}>Reports</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      asChild
-                      className={sidebarButtonClassName}
-                      isActive={location.pathname === "/assignments"}
-                      tooltip="Assignments"
-                    >
-                      <Link to="/assignments">
-                        <UsersIcon />
-                        <span className={sidebarLabelClassName}>Assignments</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
+                  ))}
                 </TipCalculatorSidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
@@ -235,48 +207,23 @@ export function AppChrome({ children }: { children: ReactNode }) {
             <SidebarSeparator />
 
             <SidebarGroup>
-              <SidebarGroupLabel className="text-sm">Apps</SidebarGroupLabel>
+              <SidebarGroupLabel className="text-sm">
+                {appsSection.label}
+              </SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      className={sidebarButtonClassName}
-                      tooltip="Console"
-                      onClick={() => {
-                        const links = getAppLinks();
-                        window.location.assign(links.console);
-                      }}
-                    >
-                      <SquareTerminalIcon />
-                      <span className={sidebarLabelClassName}>Console</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      className={sidebarButtonClassName}
-                      tooltip="Counter"
-                      onClick={() => {
-                        const links = getAppLinks();
-                        window.location.assign(links.counter);
-                      }}
-                    >
-                      <GaugeIcon />
-                      <span className={sidebarLabelClassName}>Counter</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      className={sidebarButtonClassName}
-                      tooltip="Network Status"
-                      onClick={() => {
-                        const links = getAppLinks();
-                        window.location.assign(links.networkStatus);
-                      }}
-                    >
-                      <NetworkIcon />
-                      <span className={sidebarLabelClassName}>Network Status</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
+                  {appsSection.items.map((item) => (
+                    <SidebarMenuItem key={item.id}>
+                      <SidebarMenuButton
+                        className={sidebarButtonClassName}
+                        tooltip={item.label}
+                        onClick={() => window.location.assign(item.href)}
+                      >
+                        <NavigationIcon icon={item.icon} />
+                        <span className={sidebarLabelClassName}>{item.label}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>

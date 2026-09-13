@@ -93,7 +93,7 @@ const APP_LINKS = getAppLinks();
 
 function NavigationIcon({ icon }: { icon: NiteOwlIconId }) {
   switch (icon) {
-    case "console":
+    case "square-terminal":
       return <SquareTerminalIcon />;
     case "hand-coins":
       return <HandCoinsIcon />;
@@ -111,12 +111,8 @@ function NavigationIcon({ icon }: { icon: NiteOwlIconId }) {
       return <UsersIcon />;
     case "book-open":
       return <BookOpenIcon />;
-    case "building":
-      return <Building2Icon />;
-    case "settings":
-      return <SettingsIcon />;
-    case "shield":
-      return <ShieldCheckIcon />;
+    default:
+      return null;
   }
 }
 
@@ -126,20 +122,23 @@ function SidebarNavigation({
   onNavigate?: () => void;
 }) {
   const location = useLocation();
-  const { data: session } = authClient.useSession();
   const sevenShiftsAllowed = useSevenShiftsNavigationAccess();
   const navigation = buildNavigation({
     currentApp: "tip-calculator",
     currentPath: location.pathname,
-    userRole: session?.user.role,
-    sevenShiftsAllowed,
+    urls: APP_LINKS,
+    canAccess: ({ key }) =>
+      key === "tip-calculator:seven-shifts-navigation"
+        ? sevenShiftsAllowed
+        : true,
   });
+  const groups = [...navigation.primary, ...navigation.apps];
 
   return (
     <>
-      {navigation.map((group) => (
-        <SidebarGroup key={group.label}>
-          <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+      {groups.map((group) => (
+        <SidebarGroup key={group.id}>
+          {group.label ? <SidebarGroupLabel>{group.label}</SidebarGroupLabel> : null}
           <SidebarGroupContent>
             <SidebarMenu>
               {group.items.map((item) => {
@@ -154,10 +153,7 @@ function SidebarNavigation({
                   return (
                     <SidebarMenuItem key={item.id}>
                       <SidebarMenuButton asChild tooltip={item.label}>
-                        <a
-                          href={APP_LINKS[item.id as keyof typeof APP_LINKS]}
-                          onClick={onNavigate}
-                        >
+                        <a href={item.href} onClick={onNavigate}>
                           {icon}
                           <span>{item.label}</span>
                         </a>

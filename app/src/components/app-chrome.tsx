@@ -61,7 +61,7 @@ function getInitials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
 
   if (parts.length === 0) return "?";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  if (parts.length === 1) return parts[0][0]?.toUpperCase() ?? "?";
 
   return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
 }
@@ -82,322 +82,249 @@ function getAppLinks() {
   }
 
   return {
-    console: "https://console.niteowl.dev",
+    console: "https://console.niteowl.dev/",
     "tip-calculator": "https://tips.niteowl.dev",
     counter: "https://counter.niteowl.dev",
     "network-status": "https://unifi.niteowl.dev",
   };
 }
 
-function getSidebarDefaultOpen() {
-  if (typeof document === "undefined") return true;
-
-  const sidebarState = document.cookie
-    .split("; ")
-    .find((cookie) => cookie.startsWith("sidebar_state="))
-    ?.split("=")[1];
-
-  return sidebarState !== "false";
-}
-
-const sidebarButtonClassName =
-  "text-base [&>svg]:size-5 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-2";
-const sidebarLabelClassName =
-  "truncate group-data-[collapsible=icon]:hidden";
-
-function TipCalculatorSidebarMenu({ children }: { children: ReactNode }) {
-  const { setOpenMobile } = useSidebar();
-
-  return (
-    <SidebarMenu onClick={() => setOpenMobile(false)}>{children}</SidebarMenu>
-  );
-}
+const APP_LINKS = getAppLinks();
 
 function NavigationIcon({ icon }: { icon: NiteOwlIconId }) {
   switch (icon) {
-    case "landmark":
-      return <LandmarkIcon />;
+    case "console":
+      return <SquareTerminalIcon />;
     case "hand-coins":
       return <HandCoinsIcon />;
-    case "scale":
-      return <ScaleIcon />;
-    case "seven-shifts":
-      return <SevenShiftsLogo />;
-    case "scroll-text":
-      return <ScrollTextIcon />;
-    case "users":
-      return <UsersIcon />;
-    case "square-terminal":
-      return <SquareTerminalIcon />;
     case "gauge":
       return <GaugeIcon />;
     case "network":
       return <NetworkIcon />;
-    default:
-      return null;
+    case "landmark":
+      return <LandmarkIcon />;
+    case "scroll-text":
+      return <ScrollTextIcon />;
+    case "scale":
+      return <ScaleIcon />;
+    case "users":
+      return <UsersIcon />;
+    case "book-open":
+      return <BookOpenIcon />;
+    case "building":
+      return <Building2Icon />;
+    case "settings":
+      return <SettingsIcon />;
+    case "shield":
+      return <ShieldCheckIcon />;
   }
 }
 
-export function AppChrome({ children }: { children: ReactNode }) {
+function SidebarNavigation({
+  onNavigate,
+}: {
+  onNavigate?: () => void;
+}) {
   const location = useLocation();
   const { data: session } = authClient.useSession();
-  const showSevenShifts = useSevenShiftsNavigationAccess();
-
-  if (!session) {
-    return children;
-  }
-
-  const displayName = session.user.name || session.user.email;
-  const avatarLabel = getInitials(displayName);
-  const consoleBaseURL = authBaseURL.replace(/\/$/, "");
-  const sidebarDefaultOpen = getSidebarDefaultOpen();
+  const sevenShiftsAllowed = useSevenShiftsNavigationAccess();
   const navigation = buildNavigation({
     currentApp: "tip-calculator",
     currentPath: location.pathname,
-    urls: getAppLinks(),
-    canAccess: ({ key }) =>
-      key === "tip-calculator:seven-shifts-navigation" ? showSevenShifts : true,
+    userRole: session?.user.role,
+    sevenShiftsAllowed,
   });
-  const primarySection = navigation.primary[0];
-  const appsSection = navigation.apps[0];
-  const appTitle =
-    location.pathname === "/tips"
-      ? "Tip Pool Calculator"
-      : location.pathname === "/seven-shifts"
-        ? "7Shifts Schedule"
-        : location.pathname === "/weight-presets"
-          ? "Weight Presets"
-          : "Tip Claim Calculator";
 
   return (
+    <>
+      {navigation.map((group) => (
+        <SidebarGroup key={group.label}>
+          <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {group.items.map((item) => {
+                const icon =
+                  item.id === "seven-shifts" ? (
+                    <SevenShiftsLogo className="size-4" />
+                  ) : (
+                    <NavigationIcon icon={item.icon} />
+                  );
+
+                if (item.external) {
+                  return (
+                    <SidebarMenuItem key={item.id}>
+                      <SidebarMenuButton asChild tooltip={item.label}>
+                        <a
+                          href={APP_LINKS[item.id as keyof typeof APP_LINKS]}
+                          onClick={onNavigate}
+                        >
+                          {icon}
+                          <span>{item.label}</span>
+                        </a>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                }
+
+                return (
+                  <SidebarMenuItem key={item.id}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={item.active}
+                      tooltip={item.label}
+                    >
+                      <Link to={item.href} onClick={onNavigate}>
+                        {icon}
+                        <span>{item.label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      ))}
+    </>
+  );
+}
+
+function MobileClosingSidebarNavigation() {
+  const { setOpenMobile } = useSidebar();
+  return <SidebarNavigation onNavigate={() => setOpenMobile(false)} />;
+}
+
+function AppSidebar() {
+  return (
+    <Sidebar collapsible="icon">
+      <SidebarHeader>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton size="lg" asChild>
+              <a href={APP_LINKS.console}>
+                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                  <SquareTerminalIcon className="size-4" />
+                </div>
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-semibold">NiteOwl.dev</span>
+                  <span className="truncate text-xs">Tip Calculator</span>
+                </div>
+              </a>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarHeader>
+      <SidebarSeparator />
+      <SidebarContent>
+        <MobileClosingSidebarNavigation />
+      </SidebarContent>
+    </Sidebar>
+  );
+}
+
+function AccountMenu() {
+  const { data: session } = authClient.useSession();
+
+  if (!session) return null;
+
+  const user = session.user;
+  const displayName = user.name || user.email;
+  const initials = getInitials(displayName);
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className="flex size-8 items-center justify-center rounded-full outline-none ring-offset-background transition focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          aria-label="Open account menu"
+        >
+          <Avatar className="size-8">
+            <AvatarImage src={user.image ?? undefined} alt={displayName} />
+            <AvatarFallback>{initials}</AvatarFallback>
+          </Avatar>
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="w-64" align="end">
+        <DropdownMenuLabel className="font-normal">
+          <div className="flex flex-col space-y-1">
+            <p className="text-sm font-medium leading-none">{displayName}</p>
+            <p className="text-xs leading-none text-muted-foreground">
+              {user.email}
+            </p>
+          </div>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuGroup>
+          <DropdownMenuItem asChild>
+            <a href={`${authBaseURL}/settings`}>
+              <UserCircleIcon />
+              Account
+            </a>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <a href={`${authBaseURL}/settings/security`}>
+              <ShieldCheckIcon />
+              Security
+            </a>
+          </DropdownMenuItem>
+          <AccountSwitcherSubmenu />
+          <DropdownMenuItem asChild>
+            <a href={`${authBaseURL}/settings/organizations`}>
+              <Building2Icon />
+              Organizations
+            </a>
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuGroup>
+          <DropdownMenuItem asChild>
+            <a href={`${authBaseURL}/settings`}>
+              <SettingsIcon />
+              Settings
+            </a>
+          </DropdownMenuItem>
+          <DropdownMenuItem>
+            <PaletteIcon />
+            <ThemeMenuControl />
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onSelect={() => {
+            void authClient.signOut().then(() => {
+              window.location.assign(`${authBaseURL}/auth/sign-in`);
+            });
+          }}
+        >
+          <LogOutIcon />
+          Sign out
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+export function AppChrome({ children }: { children: ReactNode }) {
+  return (
     <TooltipProvider>
-      <SidebarProvider defaultOpen={sidebarDefaultOpen}>
-        <Sidebar collapsible="icon">
-          <SidebarHeader className="px-3 py-4">
-            <div className="text-base font-semibold group-data-[collapsible=icon]:hidden">
-              NiteOwl
-            </div>
-          </SidebarHeader>
-
-          <SidebarContent>
-            <SidebarGroup>
-              <SidebarGroupLabel className="text-sm">
-                {primarySection.label}
-              </SidebarGroupLabel>
-              <SidebarGroupContent>
-                <TipCalculatorSidebarMenu>
-                  {primarySection.items.map((item) => (
-                    <SidebarMenuItem key={item.id}>
-                      <SidebarMenuButton
-                        asChild
-                        className={sidebarButtonClassName}
-                        isActive={item.active}
-                        tooltip={item.label}
-                      >
-                        <Link to={item.href}>
-                          <NavigationIcon icon={item.icon} />
-                          <span className={sidebarLabelClassName}>{item.label}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </TipCalculatorSidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-
-            <SidebarSeparator />
-
-            <SidebarGroup>
-              <SidebarGroupLabel className="text-sm">
-                {appsSection.label}
-              </SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {appsSection.items.map((item) => (
-                    <SidebarMenuItem key={item.id}>
-                      <SidebarMenuButton
-                        className={sidebarButtonClassName}
-                        tooltip={item.label}
-                        onClick={() => window.location.assign(item.href)}
-                      >
-                        <NavigationIcon icon={item.icon} />
-                        <span className={sidebarLabelClassName}>{item.label}</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-
-            <SidebarSeparator />
-
-            <SidebarGroup>
-              <SidebarGroupLabel className="text-sm">Settings</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      asChild
-                      className={sidebarButtonClassName}
-                      tooltip="Documentation"
-                    >
-                      <a
-                        href="https://github.com/slochewie/tip-calculator/tree/main/docs"
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        <BookOpenIcon />
-                        <span className={sidebarLabelClassName}>Documentation</span>
-                      </a>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      asChild
-                      className={sidebarButtonClassName}
-                      tooltip="Account"
-                    >
-                      <a href={`${consoleBaseURL}/settings/account`}>
-                        <UserCircleIcon />
-                        <span className={sidebarLabelClassName}>Account</span>
-                      </a>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      asChild
-                      className={sidebarButtonClassName}
-                      tooltip="Security"
-                    >
-                      <a href={`${consoleBaseURL}/settings/security`}>
-                        <ShieldCheckIcon />
-                        <span className={sidebarLabelClassName}>Security</span>
-                      </a>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      asChild
-                      className={sidebarButtonClassName}
-                      tooltip="Organizations"
-                    >
-                      <a href={`${consoleBaseURL}/settings/organizations`}>
-                        <Building2Icon />
-                        <span className={sidebarLabelClassName}>Organizations</span>
-                      </a>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </SidebarContent>
-        </Sidebar>
-
-        <SidebarInset className="bg-transparent [&_h1]:text-lg sm:[&_h1]:text-xl">
-          <header className="flex min-h-16 items-center gap-3 border-b bg-[var(--header-bg)] px-4 backdrop-blur md:px-6">
+      <SidebarProvider>
+        <AppSidebar />
+        <SidebarInset>
+          <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/60 sm:px-4">
             <SidebarTrigger />
-
-            <img
-              src={`${consoleBaseURL}/branding/niteowl.dev/niteowl-icon.png`}
-              alt=""
-              width={28}
-              height={28}
-              className="h-7 w-7 max-w-7 shrink-0 object-contain"
-              style={{ width: 28, height: 28 }}
-            />
-
-            <div className="min-w-0 shrink-0">
-              <p className="truncate text-sm font-semibold">{appTitle}</p>
-              <p className="hidden truncate text-xs text-muted-foreground sm:block">
-                NiteOwl.dev
-              </p>
-            </div>
-
+            <a
+              href={APP_LINKS.console}
+              className="min-w-0 truncate text-sm font-semibold"
+            >
+              NiteOwl.dev
+            </a>
             <div className="ml-auto flex min-w-0 items-center gap-2">
               <OrganizationHeaderSelector />
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    type="button"
-                    className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    aria-label={`Open account menu for ${displayName}`}
-                  >
-                    <Avatar>
-                      {session.user.image ? (
-                        <AvatarImage src={session.user.image} alt="" />
-                      ) : null}
-                      <AvatarFallback>{avatarLabel}</AvatarFallback>
-                    </Avatar>
-                  </button>
-                </DropdownMenuTrigger>
-
-                <DropdownMenuContent align="end" className="w-64">
-                  <DropdownMenuGroup>
-                    <DropdownMenuLabel className="font-normal">
-                      <div className="flex items-center gap-3">
-                        <Avatar>
-                          {session.user.image ? (
-                            <AvatarImage src={session.user.image} alt="" />
-                          ) : null}
-                          <AvatarFallback>{avatarLabel}</AvatarFallback>
-                        </Avatar>
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-medium">{displayName}</p>
-                          {session.user.email ? (
-                            <p className="truncate text-xs text-muted-foreground">
-                              {session.user.email}
-                            </p>
-                          ) : null}
-                        </div>
-                      </div>
-                    </DropdownMenuLabel>
-                  </DropdownMenuGroup>
-
-                  <DropdownMenuSeparator />
-
-                  <DropdownMenuGroup>
-                    <DropdownMenuItem
-                      onSelect={() =>
-                        window.location.assign(`${consoleBaseURL}/settings/account`)
-                      }
-                    >
-                      <SettingsIcon className="text-muted-foreground" />
-                      Settings
-                    </DropdownMenuItem>
-
-                    <div className="relative">
-                      <PaletteIcon className="pointer-events-none absolute left-2 top-1/2 z-10 size-4 -translate-y-1/2 text-muted-foreground" />
-                      <div className="pl-6">
-                        <ThemeMenuControl />
-                      </div>
-                    </div>
-
-                    <AccountSwitcherSubmenu
-                      currentUserId={session.user.id}
-                      consoleBaseURL={consoleBaseURL}
-                    />
-                  </DropdownMenuGroup>
-
-                  <DropdownMenuSeparator />
-
-                  <DropdownMenuGroup>
-                    <DropdownMenuItem
-                      onSelect={() =>
-                        window.location.assign(`${consoleBaseURL}/auth/sign-out`)
-                      }
-                    >
-                      <LogOutIcon className="text-muted-foreground" />
-                      Sign Out
-                    </DropdownMenuItem>
-                  </DropdownMenuGroup>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <AccountMenu />
             </div>
           </header>
-
-          <div className="flex flex-1 flex-col [&>header:first-child]:hidden">
-            {children}
-          </div>
+          <div className="min-h-0 flex-1">{children}</div>
         </SidebarInset>
       </SidebarProvider>
     </TooltipProvider>

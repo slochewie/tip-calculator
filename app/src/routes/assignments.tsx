@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { OrganizationSelector } from "@niteowl/ui";
 import { ChevronDownIcon, SearchIcon, UsersIcon } from "lucide-react";
 
 import { Badge } from "#/components/ui/badge.tsx";
@@ -16,13 +17,6 @@ import {
   CollapsibleTrigger,
 } from "#/components/ui/collapsible.tsx";
 import { Input } from "#/components/ui/input.tsx";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "#/components/ui/select.tsx";
 import { Skeleton } from "#/components/ui/skeleton.tsx";
 import {
   Table,
@@ -220,28 +214,15 @@ function TipClaimAssignments() {
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Organization</CardTitle>
-          <CardDescription>Assignments are stored separately for each organization.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Select
-            value={activeOrganization?.id ?? ""}
-            disabled={organizationsPending || organizationList.length === 0}
-            onValueChange={(organizationId) => {
-              if (organizationId) void authClient.organization.setActive({ organizationId });
-            }}
-          >
-            <SelectTrigger className="w-full sm:max-w-sm">
-              <SelectValue placeholder={organizationsPending ? "Loading organizations…" : organizationList.length === 0 ? "No organizations" : "Select organization"} />
-            </SelectTrigger>
-            <SelectContent>
-              {organizationList.map((organization) => <SelectItem key={organization.id} value={organization.id}>{organization.name}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </CardContent>
-      </Card>
+      <OrganizationSelector
+        organizations={organizationList}
+        value={activeOrganization?.id}
+        loading={organizationsPending}
+        description="Assignments are stored separately for each organization."
+        onValueChange={(organizationId) => {
+          void authClient.organization.setActive({ organizationId });
+        }}
+      />
 
       <div className="relative sm:max-w-sm">
         <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />

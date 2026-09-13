@@ -1,3 +1,5 @@
+import { toast } from "sonner";
+
 import { authBaseURL } from "#/lib/auth-client.ts";
 
 type SevenShiftsScheduleOrganization = {
@@ -219,19 +221,36 @@ export async function checkSevenShiftsScheduleUpdates({
   organizationId: string;
   weekStart: string;
 }) {
-  const response = await fetch(
-    new URL("/api/auth/seven-shifts-schedules/check-updates", authBaseURL),
-    {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "content-type": "application/json",
+  try {
+    const response = await fetch(
+      new URL("/api/auth/seven-shifts-schedules/check-updates", authBaseURL),
+      {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ organizationId, weekStart }),
       },
-      body: JSON.stringify({ organizationId, weekStart }),
-    },
-  );
+    );
 
-  return scheduleJson<SevenShiftsScheduleUpdateCheck>(response);
+    const result = await scheduleJson<SevenShiftsScheduleUpdateCheck>(response);
+
+    if (result.updatesAvailable) {
+      toast.info("Schedule changes are available to sync.");
+    } else {
+      toast.info("Schedule is already up to date.");
+    }
+
+    return result;
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Unable to check the 7Shifts schedule.";
+    toast.error(message);
+    throw error;
+  }
 }
 
 export async function syncSevenShiftsOrganizationSchedule({
@@ -241,17 +260,28 @@ export async function syncSevenShiftsOrganizationSchedule({
   organizationId: string;
   weekStart: string;
 }) {
-  const response = await fetch(
-    new URL("/api/auth/seven-shifts-schedules/sync-organization", authBaseURL),
-    {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "content-type": "application/json",
+  try {
+    const response = await fetch(
+      new URL("/api/auth/seven-shifts-schedules/sync-organization", authBaseURL),
+      {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ organizationId, weekStart }),
       },
-      body: JSON.stringify({ organizationId, weekStart }),
-    },
-  );
+    );
 
-  return scheduleJson<SevenShiftsOrganizationSyncResult>(response);
+    const result = await scheduleJson<SevenShiftsOrganizationSyncResult>(response);
+    toast.success("7shifts schedule synced successfully.");
+    return result;
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Unable to sync the 7Shifts schedule.";
+    toast.error(message);
+    throw error;
+  }
 }

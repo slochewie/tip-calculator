@@ -7,6 +7,7 @@ import {
 
 import { AppChrome } from '../components/app-chrome'
 import { ThemeSwitcher } from '../components/theme-switcher'
+import { Toaster } from '../components/ui/sonner'
 
 import appCss from '../styles.css?url'
 
@@ -80,6 +81,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
             {children}
           </>
         )}
+        <Toaster />
         <Scripts />
       </body>
     </html>

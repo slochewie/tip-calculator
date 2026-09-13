@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 
 import { AccountSwitcherSubmenu } from "#/components/account-switcher-submenu.tsx";
+import { OrganizationHeaderSelector } from "#/components/organization-header-selector.tsx";
 import { useSevenShiftsNavigationAccess } from "#/components/calculator-tabs.tsx";
 import { SevenShiftsLogo } from "#/components/seven-shifts-logo.tsx";
 import { ThemeMenuControl } from "#/components/theme-switcher.tsx";
@@ -313,6 +314,7 @@ export function AppChrome({ children }: { children: ReactNode }) {
             </div>
 
             <div className="ml-auto flex min-w-0 items-center gap-2">
+              <OrganizationHeaderSelector />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button

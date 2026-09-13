@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { OrganizationSelector } from "@niteowl/ui";
 
 import { TipWeightPresetConfigurator } from "#/components/tip-weight-preset-configurator.tsx";
 import { CalculatorTabs } from "#/components/calculator-tabs.tsx";
@@ -76,27 +75,13 @@ function WeightPresetsRoute() {
 
   if (!session) return null;
 
-  const organizationList = organizations ?? [];
-  const organizationsPending =
-    areOrganizationsPending || isActiveOrganizationPending;
-
-  const organizationSelector = (
-    <OrganizationSelector
-      organizations={organizationList}
-      value={activeOrganization?.id}
-      loading={organizationsPending}
-      description="Choose the organization whose weight presets you want to manage."
-      onValueChange={(organizationId) => {
-        void authClient.organization.setActive({ organizationId });
-      }}
-    />
-  );
-
   if (!activeOrganization) {
     return (
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 p-4 md:p-6 lg:p-8">
         <CalculatorTabs />
-        {organizationSelector}
+        <p className="text-sm text-muted-foreground">
+          Select an organization from the header to manage its weight presets.
+        </p>
       </main>
     );
   }
@@ -106,7 +91,6 @@ function WeightPresetsRoute() {
       key={activeOrganization.id}
       organizationId={activeOrganization.id}
       organizationName={activeOrganization.name}
-      organizationSelector={organizationSelector}
     />
   );
 }

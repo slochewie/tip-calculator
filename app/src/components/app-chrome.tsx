@@ -67,7 +67,7 @@ function getInitials(name: string) {
 }
 
 function getAppLinks() {
-  const hostname = window.location.hostname;
+  const hostname = new URL(authBaseURL).hostname.toLowerCase();
   const isMccarthysDomain =
     hostname === "mccarthysirishpub.com" ||
     hostname.endsWith(".mccarthysirishpub.com");

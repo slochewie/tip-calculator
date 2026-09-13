@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { OrganizationSelector } from "@niteowl/ui";
 
 import {
   TipClaimCalculator,
@@ -195,26 +194,9 @@ function AuthenticatedTipCalculator() {
     return null;
   }
 
-  const organizationList = organizations ?? [];
-  const organizationsPending =
-    areOrganizationsPending || isActiveOrganizationPending;
-
-  const organizationSelector = (
-    <OrganizationSelector
-      organizations={organizationList}
-      value={activeOrganization?.id}
-      loading={organizationsPending}
-      description="Choose the organization for this shift."
-      onValueChange={(organizationId) => {
-        void authClient.organization.setActive({ organizationId });
-      }}
-    />
-  );
-
   if (activeOrganization?.id && accessAllowed === false && !areMembersPending) {
     return (
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 p-4 md:p-6 lg:p-8">
-        {organizationSelector}
         <Card>
           <CardHeader>
             <CardTitle>Tip Calculator access required</CardTitle>
@@ -240,7 +222,6 @@ function AuthenticatedTipCalculator() {
     <TipClaimCalculator
       organizationId={activeOrganization?.id}
       organizationName={activeOrganization?.name}
-      organizationSelector={organizationSelector}
       members={members}
       membersPending={areMembersPending}
       membersError={membersError}

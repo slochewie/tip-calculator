@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { OrganizationSelector } from "@niteowl/ui";
 import { ChevronDownIcon, SearchIcon, UsersIcon } from "lucide-react";
 
 import { Badge } from "#/components/ui/badge.tsx";
@@ -189,8 +188,6 @@ function TipClaimAssignments() {
     );
   }
 
-  const organizationList = organizations ?? [];
-  const organizationsPending = areOrganizationsPending || isActiveOrganizationPending;
   const employeeTableState = assignmentsPending ? (
     <div className="flex flex-col gap-2">
       <Skeleton className="h-10 w-full" />
@@ -213,16 +210,6 @@ function TipClaimAssignments() {
           <p className="text-sm text-muted-foreground">Manage Tip Calculator access and employee role eligibility.</p>
         </div>
       </div>
-
-      <OrganizationSelector
-        organizations={organizationList}
-        value={activeOrganization?.id}
-        loading={organizationsPending}
-        description="Assignments are stored separately for each organization."
-        onValueChange={(organizationId) => {
-          void authClient.organization.setActive({ organizationId });
-        }}
-      />
 
       <div className="relative sm:max-w-sm">
         <SearchIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />

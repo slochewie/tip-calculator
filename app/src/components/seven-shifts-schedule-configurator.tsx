@@ -396,9 +396,9 @@ export function SevenShiftsScheduleConfigurator({
           <div className="flex shrink-0 flex-wrap items-center gap-3 sm:justify-end">
             <div className="flex flex-col gap-0.5 sm:items-end">
               <span className="text-xs text-muted-foreground">
-                Last schedule sync
+                Last schedule sync:
               </span>
-              <span className="text-xs font-medium tabular-nums">
+              <span className="text-xs font-normal tabular-nums text-muted-foreground">
                 {formatLastScheduleSync(syncControls.lastSyncedAt)}
               </span>
             </div>

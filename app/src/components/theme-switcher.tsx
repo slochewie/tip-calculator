@@ -59,6 +59,11 @@ function useTheme() {
   return { theme, changeTheme }
 }
 
+export function ThemeSync() {
+  useTheme()
+  return null
+}
+
 export function ThemeMenuControl() {
   const { theme, changeTheme } = useTheme()
 

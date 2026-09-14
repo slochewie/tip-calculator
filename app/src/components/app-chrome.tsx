@@ -1,22 +1,14 @@
 import type { ReactNode } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
-import { buildNavigation, type NiteOwlIconId } from "@niteowl/app-config";
+import { buildNavigation, getDefaultAppUrls } from "@niteowl/app-config";
+import { AppSidebarIdentity, NiteOwlNavigationIcon } from "@niteowl/ui";
 import {
-  BookOpenIcon,
   Building2Icon,
-  HandCoinsIcon,
-  LandmarkIcon,
-  GaugeIcon,
   LogOutIcon,
-  NetworkIcon,
   PaletteIcon,
-  ScaleIcon,
-  ScrollTextIcon,
   SettingsIcon,
   ShieldCheckIcon,
-  SquareTerminalIcon,
   UserCircleIcon,
-  UsersIcon,
 } from "lucide-react";
 
 import { AccountSwitcherSubmenu } from "#/components/account-switcher-submenu.tsx";
@@ -66,55 +58,7 @@ function getInitials(name: string) {
   return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
 }
 
-function getAppLinks() {
-  const hostname = new URL(authBaseURL).hostname.toLowerCase();
-  const isMccarthysDomain =
-    hostname === "mccarthysirishpub.com" ||
-    hostname.endsWith(".mccarthysirishpub.com");
-
-  if (isMccarthysDomain) {
-    return {
-      console: "https://console.mccarthysirishpub.com/",
-      "tip-calculator": "https://tips.mccarthysirishpub.com",
-      counter: "https://counter.mccarthysirishpub.com",
-      "network-status": "https://unifi.mccarthysirishpub.com",
-    };
-  }
-
-  return {
-    console: "https://console.niteowl.dev/",
-    "tip-calculator": "https://tips.niteowl.dev",
-    counter: "https://counter.niteowl.dev",
-    "network-status": "https://unifi.niteowl.dev",
-  };
-}
-
-const APP_LINKS = getAppLinks();
-
-function NavigationIcon({ icon }: { icon: NiteOwlIconId }) {
-  switch (icon) {
-    case "square-terminal":
-      return <SquareTerminalIcon />;
-    case "hand-coins":
-      return <HandCoinsIcon />;
-    case "gauge":
-      return <GaugeIcon />;
-    case "network":
-      return <NetworkIcon />;
-    case "landmark":
-      return <LandmarkIcon />;
-    case "scroll-text":
-      return <ScrollTextIcon />;
-    case "scale":
-      return <ScaleIcon />;
-    case "users":
-      return <UsersIcon />;
-    case "book-open":
-      return <BookOpenIcon />;
-    default:
-      return null;
-  }
-}
+const APP_LINKS = getDefaultAppUrls(new URL(authBaseURL).hostname);
 
 function SidebarNavigation({
   onNavigate,
@@ -142,12 +86,14 @@ function SidebarNavigation({
           <SidebarGroupContent>
             <SidebarMenu>
               {group.items.map((item) => {
-                const icon =
-                  item.id === "seven-shifts" ? (
-                    <SevenShiftsLogo className="size-4" />
-                  ) : (
-                    <NavigationIcon icon={item.icon} />
-                  );
+                const icon = (
+                  <NiteOwlNavigationIcon
+                    icon={item.icon}
+                    overrides={{
+                      "seven-shifts": <SevenShiftsLogo className="size-4" />,
+                    }}
+                  />
+                );
 
                 if (item.external) {
                   return (
@@ -194,21 +140,10 @@ function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
-              <a href={APP_LINKS.console}>
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                  <SquareTerminalIcon className="size-4" />
-                </div>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">NiteOwl.dev</span>
-                  <span className="truncate text-xs">Tip Calculator</span>
-                </div>
-              </a>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        <AppSidebarIdentity
+          href={APP_LINKS.console}
+          appName="Tip Calculator"
+        />
       </SidebarHeader>
       <SidebarSeparator />
       <SidebarContent>

@@ -59,7 +59,6 @@ import {
 import { TooltipProvider } from "#/components/ui/tooltip.tsx";
 import { authBaseURL, authClient } from "#/lib/auth-client.ts";
 
-const FALLBACK_HOSTNAME = new URL(authBaseURL).hostname;
 const TIP_APP = appDefinitionsById["tip-calculator"];
 
 function getInitials(name: string) {
@@ -75,11 +74,14 @@ function SidebarNavigation({
   appLinks,
   onNavigate,
 }: {
-  appLinks: AppUrlMap;
+  appLinks: AppUrlMap | null;
   onNavigate?: () => void;
 }) {
   const location = useLocation();
   const sevenShiftsAllowed = useSevenShiftsNavigationAccess();
+
+  if (!appLinks) return null;
+
   const navigation = buildNavigation({
     currentApp: "tip-calculator",
     currentPath: location.pathname,
@@ -144,7 +146,7 @@ function SidebarNavigation({
   );
 }
 
-function MobileClosingSidebarNavigation({ appLinks }: { appLinks: AppUrlMap }) {
+function MobileClosingSidebarNavigation({ appLinks }: { appLinks: AppUrlMap | null }) {
   const { setOpenMobile } = useSidebar();
   return (
     <SidebarNavigation
@@ -158,17 +160,21 @@ function AppSidebar({
   appLinks,
   brand,
 }: {
-  appLinks: AppUrlMap;
-  brand: string;
+  appLinks: AppUrlMap | null;
+  brand: string | null;
 }) {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
-        <AppSidebarIdentity
-          href={appLinks.console}
-          brand={brand}
-          appName={TIP_APP.label}
-        />
+        {appLinks && brand ? (
+          <AppSidebarIdentity
+            href={appLinks.console}
+            brand={brand}
+            appName={TIP_APP.label}
+          />
+        ) : (
+          <div className="h-12" aria-hidden="true" />
+        )}
       </SidebarHeader>
       <SidebarSeparator />
       <SidebarContent>
@@ -262,9 +268,9 @@ function AccountMenu() {
 }
 
 export function AppChrome({ children }: { children: ReactNode }) {
-  const hostname = useCurrentHostname(FALLBACK_HOSTNAME);
-  const appLinks = getDefaultAppUrls(hostname);
-  const brand = getDeploymentBrand(hostname);
+  const hostname = useCurrentHostname();
+  const appLinks = hostname ? getDefaultAppUrls(hostname) : null;
+  const brand = hostname ? getDeploymentBrand(hostname) : null;
 
   return (
     <TooltipProvider>
@@ -273,12 +279,18 @@ export function AppChrome({ children }: { children: ReactNode }) {
         <SidebarInset>
           <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/60 sm:px-4">
             <SidebarTrigger />
-            <a
-              href={appLinks.console}
-              className="min-w-0 truncate text-sm font-semibold"
-            >
-              {TIP_APP.label}
-            </a>
+            {appLinks ? (
+              <a
+                href={appLinks.console}
+                className="min-w-0 truncate text-sm font-semibold"
+              >
+                {TIP_APP.label}
+              </a>
+            ) : (
+              <span className="min-w-0 truncate text-sm font-semibold">
+                {TIP_APP.label}
+              </span>
+            )}
             <div className="ml-auto flex min-w-0 items-center gap-2">
               <OrganizationHeaderSelector />
               <AccountMenu />

@@ -168,7 +168,7 @@ function AppSidebar({
       <SidebarHeader>
         {appLinks && brand ? (
           <AppSidebarIdentity
-            href={appLinks.console}
+            href={appLinks["tip-calculator"]}
             brand={brand}
             appName={TIP_APP.label}
           />

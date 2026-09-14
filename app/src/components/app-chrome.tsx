@@ -1,7 +1,17 @@
 import type { ReactNode } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
-import { buildNavigation, getDefaultAppUrls } from "@niteowl/app-config";
-import { AppSidebarIdentity, NiteOwlNavigationIcon } from "@niteowl/ui";
+import {
+  appDefinitionsById,
+  buildNavigation,
+  getDefaultAppUrls,
+  getDeploymentBrand,
+  type AppUrlMap,
+} from "@niteowl/app-config";
+import {
+  AppSidebarIdentity,
+  NiteOwlNavigationIcon,
+  useCurrentHostname,
+} from "@niteowl/ui";
 import {
   Building2Icon,
   LogOutIcon,
@@ -49,6 +59,9 @@ import {
 import { TooltipProvider } from "#/components/ui/tooltip.tsx";
 import { authBaseURL, authClient } from "#/lib/auth-client.ts";
 
+const FALLBACK_HOSTNAME = new URL(authBaseURL).hostname;
+const TIP_APP = appDefinitionsById["tip-calculator"];
+
 function getInitials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
 
@@ -58,11 +71,11 @@ function getInitials(name: string) {
   return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
 }
 
-const APP_LINKS = getDefaultAppUrls(new URL(authBaseURL).hostname);
-
 function SidebarNavigation({
+  appLinks,
   onNavigate,
 }: {
+  appLinks: AppUrlMap;
   onNavigate?: () => void;
 }) {
   const location = useLocation();
@@ -70,7 +83,7 @@ function SidebarNavigation({
   const navigation = buildNavigation({
     currentApp: "tip-calculator",
     currentPath: location.pathname,
-    urls: APP_LINKS,
+    urls: appLinks,
     canAccess: ({ key }) =>
       key === "tip-calculator:seven-shifts-navigation"
         ? sevenShiftsAllowed
@@ -131,23 +144,35 @@ function SidebarNavigation({
   );
 }
 
-function MobileClosingSidebarNavigation() {
+function MobileClosingSidebarNavigation({ appLinks }: { appLinks: AppUrlMap }) {
   const { setOpenMobile } = useSidebar();
-  return <SidebarNavigation onNavigate={() => setOpenMobile(false)} />;
+  return (
+    <SidebarNavigation
+      appLinks={appLinks}
+      onNavigate={() => setOpenMobile(false)}
+    />
+  );
 }
 
-function AppSidebar() {
+function AppSidebar({
+  appLinks,
+  brand,
+}: {
+  appLinks: AppUrlMap;
+  brand: string;
+}) {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
         <AppSidebarIdentity
-          href={APP_LINKS.console}
-          appName="Tip Calculator"
+          href={appLinks.console}
+          brand={brand}
+          appName={TIP_APP.label}
         />
       </SidebarHeader>
       <SidebarSeparator />
       <SidebarContent>
-        <MobileClosingSidebarNavigation />
+        <MobileClosingSidebarNavigation appLinks={appLinks} />
       </SidebarContent>
     </Sidebar>
   );
@@ -237,18 +262,22 @@ function AccountMenu() {
 }
 
 export function AppChrome({ children }: { children: ReactNode }) {
+  const hostname = useCurrentHostname(FALLBACK_HOSTNAME);
+  const appLinks = getDefaultAppUrls(hostname);
+  const brand = getDeploymentBrand(hostname);
+
   return (
     <TooltipProvider>
       <SidebarProvider>
-        <AppSidebar />
+        <AppSidebar appLinks={appLinks} brand={brand} />
         <SidebarInset>
           <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/60 sm:px-4">
             <SidebarTrigger />
             <a
-              href={APP_LINKS.console}
+              href={appLinks.console}
               className="min-w-0 truncate text-sm font-semibold"
             >
-              NiteOwl.dev
+              {TIP_APP.label}
             </a>
             <div className="ml-auto flex min-w-0 items-center gap-2">
               <OrganizationHeaderSelector />

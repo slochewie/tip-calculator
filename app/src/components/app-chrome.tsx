@@ -163,14 +163,21 @@ function AppSidebar({
   appLinks: AppUrlMap | null;
   brand: string | null;
 }) {
+  const location = useLocation();
+  const { toggleSidebar } = useSidebar();
+  const currentHref = appLinks
+    ? `${appLinks["tip-calculator"].replace(/\/$/, "")}${location.pathname}`
+    : null;
+
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
-        {appLinks && brand ? (
+        {currentHref && brand ? (
           <AppSidebarIdentity
-            href={appLinks["tip-calculator"]}
+            href={currentHref}
             brand={brand}
             appName={TIP_APP.label}
+            onToggle={toggleSidebar}
           />
         ) : (
           <div className="h-12" aria-hidden="true" />

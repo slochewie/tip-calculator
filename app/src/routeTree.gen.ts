@@ -16,6 +16,8 @@ import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as SevenShiftsRouteImport } from './routes/seven-shifts'
 import { Route as TipsRouteImport } from './routes/tips'
 import { Route as WeightPresetsRouteImport } from './routes/weight-presets'
+import { Route as ApiTipClaimAccessRouteImport } from './routes/api/tip-claim.access'
+import { Route as ApiTipClaimAvailableRouteImport } from './routes/api/tip-claim.available'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -52,6 +54,16 @@ const WeightPresetsRoute = WeightPresetsRouteImport.update({
   path: '/weight-presets',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiTipClaimAccessRoute = ApiTipClaimAccessRouteImport.update({
+  id: '/api/tip-claim/access',
+  path: '/api/tip-claim/access',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTipClaimAvailableRoute = ApiTipClaimAvailableRouteImport.update({
+  id: '/api/tip-claim/available',
+  path: '/api/tip-claim/available',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -61,6 +73,8 @@ export interface FileRoutesByFullPath {
   '/seven-shifts': typeof SevenShiftsRoute
   '/tips': typeof TipsRoute
   '/weight-presets': typeof WeightPresetsRoute
+  '/api/tip-claim/access': typeof ApiTipClaimAccessRoute
+  '/api/tip-claim/available': typeof ApiTipClaimAvailableRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -70,6 +84,8 @@ export interface FileRoutesByTo {
   '/seven-shifts': typeof SevenShiftsRoute
   '/tips': typeof TipsRoute
   '/weight-presets': typeof WeightPresetsRoute
+  '/api/tip-claim/access': typeof ApiTipClaimAccessRoute
+  '/api/tip-claim/available': typeof ApiTipClaimAvailableRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -80,6 +96,8 @@ export interface FileRoutesById {
   '/seven-shifts': typeof SevenShiftsRoute
   '/tips': typeof TipsRoute
   '/weight-presets': typeof WeightPresetsRoute
+  '/api/tip-claim/access': typeof ApiTipClaimAccessRoute
+  '/api/tip-claim/available': typeof ApiTipClaimAvailableRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -91,6 +109,8 @@ export interface FileRouteTypes {
     | '/seven-shifts'
     | '/tips'
     | '/weight-presets'
+    | '/api/tip-claim/access'
+    | '/api/tip-claim/available'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -100,6 +120,8 @@ export interface FileRouteTypes {
     | '/seven-shifts'
     | '/tips'
     | '/weight-presets'
+    | '/api/tip-claim/access'
+    | '/api/tip-claim/available'
   id:
     | '__root__'
     | '/'
@@ -109,6 +131,8 @@ export interface FileRouteTypes {
     | '/seven-shifts'
     | '/tips'
     | '/weight-presets'
+    | '/api/tip-claim/access'
+    | '/api/tip-claim/available'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -119,7 +143,10 @@ export interface RootRouteChildren {
   SevenShiftsRoute: typeof SevenShiftsRoute
   TipsRoute: typeof TipsRoute
   WeightPresetsRoute: typeof WeightPresetsRoute
+  ApiTipClaimAccessRoute: typeof ApiTipClaimAccessRoute
+  ApiTipClaimAvailableRoute: typeof ApiTipClaimAvailableRoute
 }
+
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
     '/': {
@@ -171,6 +198,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WeightPresetsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/tip-claim/access': {
+      id: '/api/tip-claim/access'
+      path: '/api/tip-claim/access'
+      fullPath: '/api/tip-claim/access'
+      preLoaderRoute: typeof ApiTipClaimAccessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/tip-claim/available': {
+      id: '/api/tip-claim/available'
+      path: '/api/tip-claim/available'
+      fullPath: '/api/tip-claim/available'
+      preLoaderRoute: typeof ApiTipClaimAvailableRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -182,6 +223,8 @@ const rootRouteChildren: RootRouteChildren = {
   SevenShiftsRoute: SevenShiftsRoute,
   TipsRoute: TipsRoute,
   WeightPresetsRoute: WeightPresetsRoute,
+  ApiTipClaimAccessRoute: ApiTipClaimAccessRoute,
+  ApiTipClaimAvailableRoute: ApiTipClaimAvailableRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -17,7 +17,12 @@ import { Route as SevenShiftsRouteImport } from './routes/seven-shifts'
 import { Route as TipsRouteImport } from './routes/tips'
 import { Route as WeightPresetsRouteImport } from './routes/weight-presets'
 import { Route as ApiTipClaimAccessRouteImport } from './routes/api/tip-claim.access'
+import { Route as ApiTipClaimAssignmentsRouteImport } from './routes/api/tip-claim.assignments'
 import { Route as ApiTipClaimAvailableRouteImport } from './routes/api/tip-claim.available'
+import { Route as ApiTipClaimEmployeesRouteImport } from './routes/api/tip-claim.employees'
+import { Route as ApiTipClaimShiftsRouteImport } from './routes/api/tip-claim.shifts'
+import { Route as ApiTipClaimTipPoolShiftsRouteImport } from './routes/api/tip-claim.tip-pool-shifts'
+import { Route as ApiTipClaimWeightPresetsRouteImport } from './routes/api/tip-claim.weight-presets'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -59,11 +64,38 @@ const ApiTipClaimAccessRoute = ApiTipClaimAccessRouteImport.update({
   path: '/api/tip-claim/access',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiTipClaimAssignmentsRoute = ApiTipClaimAssignmentsRouteImport.update({
+  id: '/api/tip-claim/assignments',
+  path: '/api/tip-claim/assignments',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiTipClaimAvailableRoute = ApiTipClaimAvailableRouteImport.update({
   id: '/api/tip-claim/available',
   path: '/api/tip-claim/available',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiTipClaimEmployeesRoute = ApiTipClaimEmployeesRouteImport.update({
+  id: '/api/tip-claim/employees',
+  path: '/api/tip-claim/employees',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTipClaimShiftsRoute = ApiTipClaimShiftsRouteImport.update({
+  id: '/api/tip-claim/shifts',
+  path: '/api/tip-claim/shifts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTipClaimTipPoolShiftsRoute =
+  ApiTipClaimTipPoolShiftsRouteImport.update({
+    id: '/api/tip-claim/tip-pool-shifts',
+    path: '/api/tip-claim/tip-pool-shifts',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiTipClaimWeightPresetsRoute =
+  ApiTipClaimWeightPresetsRouteImport.update({
+    id: '/api/tip-claim/weight-presets',
+    path: '/api/tip-claim/weight-presets',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -74,7 +106,12 @@ export interface FileRoutesByFullPath {
   '/tips': typeof TipsRoute
   '/weight-presets': typeof WeightPresetsRoute
   '/api/tip-claim/access': typeof ApiTipClaimAccessRoute
+  '/api/tip-claim/assignments': typeof ApiTipClaimAssignmentsRoute
   '/api/tip-claim/available': typeof ApiTipClaimAvailableRoute
+  '/api/tip-claim/employees': typeof ApiTipClaimEmployeesRoute
+  '/api/tip-claim/shifts': typeof ApiTipClaimShiftsRoute
+  '/api/tip-claim/tip-pool-shifts': typeof ApiTipClaimTipPoolShiftsRoute
+  '/api/tip-claim/weight-presets': typeof ApiTipClaimWeightPresetsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -85,7 +122,12 @@ export interface FileRoutesByTo {
   '/tips': typeof TipsRoute
   '/weight-presets': typeof WeightPresetsRoute
   '/api/tip-claim/access': typeof ApiTipClaimAccessRoute
+  '/api/tip-claim/assignments': typeof ApiTipClaimAssignmentsRoute
   '/api/tip-claim/available': typeof ApiTipClaimAvailableRoute
+  '/api/tip-claim/employees': typeof ApiTipClaimEmployeesRoute
+  '/api/tip-claim/shifts': typeof ApiTipClaimShiftsRoute
+  '/api/tip-claim/tip-pool-shifts': typeof ApiTipClaimTipPoolShiftsRoute
+  '/api/tip-claim/weight-presets': typeof ApiTipClaimWeightPresetsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -97,7 +139,12 @@ export interface FileRoutesById {
   '/tips': typeof TipsRoute
   '/weight-presets': typeof WeightPresetsRoute
   '/api/tip-claim/access': typeof ApiTipClaimAccessRoute
+  '/api/tip-claim/assignments': typeof ApiTipClaimAssignmentsRoute
   '/api/tip-claim/available': typeof ApiTipClaimAvailableRoute
+  '/api/tip-claim/employees': typeof ApiTipClaimEmployeesRoute
+  '/api/tip-claim/shifts': typeof ApiTipClaimShiftsRoute
+  '/api/tip-claim/tip-pool-shifts': typeof ApiTipClaimTipPoolShiftsRoute
+  '/api/tip-claim/weight-presets': typeof ApiTipClaimWeightPresetsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -110,7 +157,12 @@ export interface FileRouteTypes {
     | '/tips'
     | '/weight-presets'
     | '/api/tip-claim/access'
+    | '/api/tip-claim/assignments'
     | '/api/tip-claim/available'
+    | '/api/tip-claim/employees'
+    | '/api/tip-claim/shifts'
+    | '/api/tip-claim/tip-pool-shifts'
+    | '/api/tip-claim/weight-presets'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -121,7 +173,12 @@ export interface FileRouteTypes {
     | '/tips'
     | '/weight-presets'
     | '/api/tip-claim/access'
+    | '/api/tip-claim/assignments'
     | '/api/tip-claim/available'
+    | '/api/tip-claim/employees'
+    | '/api/tip-claim/shifts'
+    | '/api/tip-claim/tip-pool-shifts'
+    | '/api/tip-claim/weight-presets'
   id:
     | '__root__'
     | '/'
@@ -132,7 +189,12 @@ export interface FileRouteTypes {
     | '/tips'
     | '/weight-presets'
     | '/api/tip-claim/access'
+    | '/api/tip-claim/assignments'
     | '/api/tip-claim/available'
+    | '/api/tip-claim/employees'
+    | '/api/tip-claim/shifts'
+    | '/api/tip-claim/tip-pool-shifts'
+    | '/api/tip-claim/weight-presets'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -144,7 +206,12 @@ export interface RootRouteChildren {
   TipsRoute: typeof TipsRoute
   WeightPresetsRoute: typeof WeightPresetsRoute
   ApiTipClaimAccessRoute: typeof ApiTipClaimAccessRoute
+  ApiTipClaimAssignmentsRoute: typeof ApiTipClaimAssignmentsRoute
   ApiTipClaimAvailableRoute: typeof ApiTipClaimAvailableRoute
+  ApiTipClaimEmployeesRoute: typeof ApiTipClaimEmployeesRoute
+  ApiTipClaimShiftsRoute: typeof ApiTipClaimShiftsRoute
+  ApiTipClaimTipPoolShiftsRoute: typeof ApiTipClaimTipPoolShiftsRoute
+  ApiTipClaimWeightPresetsRoute: typeof ApiTipClaimWeightPresetsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -205,11 +272,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiTipClaimAccessRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/tip-claim/assignments': {
+      id: '/api/tip-claim/assignments'
+      path: '/api/tip-claim/assignments'
+      fullPath: '/api/tip-claim/assignments'
+      preLoaderRoute: typeof ApiTipClaimAssignmentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/tip-claim/available': {
       id: '/api/tip-claim/available'
       path: '/api/tip-claim/available'
       fullPath: '/api/tip-claim/available'
       preLoaderRoute: typeof ApiTipClaimAvailableRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/tip-claim/employees': {
+      id: '/api/tip-claim/employees'
+      path: '/api/tip-claim/employees'
+      fullPath: '/api/tip-claim/employees'
+      preLoaderRoute: typeof ApiTipClaimEmployeesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/tip-claim/shifts': {
+      id: '/api/tip-claim/shifts'
+      path: '/api/tip-claim/shifts'
+      fullPath: '/api/tip-claim/shifts'
+      preLoaderRoute: typeof ApiTipClaimShiftsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/tip-claim/tip-pool-shifts': {
+      id: '/api/tip-claim/tip-pool-shifts'
+      path: '/api/tip-claim/tip-pool-shifts'
+      fullPath: '/api/tip-claim/tip-pool-shifts'
+      preLoaderRoute: typeof ApiTipClaimTipPoolShiftsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/tip-claim/weight-presets': {
+      id: '/api/tip-claim/weight-presets'
+      path: '/api/tip-claim/weight-presets'
+      fullPath: '/api/tip-claim/weight-presets'
+      preLoaderRoute: typeof ApiTipClaimWeightPresetsRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -224,7 +326,12 @@ const rootRouteChildren: RootRouteChildren = {
   TipsRoute: TipsRoute,
   WeightPresetsRoute: WeightPresetsRoute,
   ApiTipClaimAccessRoute: ApiTipClaimAccessRoute,
+  ApiTipClaimAssignmentsRoute: ApiTipClaimAssignmentsRoute,
   ApiTipClaimAvailableRoute: ApiTipClaimAvailableRoute,
+  ApiTipClaimEmployeesRoute: ApiTipClaimEmployeesRoute,
+  ApiTipClaimShiftsRoute: ApiTipClaimShiftsRoute,
+  ApiTipClaimTipPoolShiftsRoute: ApiTipClaimTipPoolShiftsRoute,
+  ApiTipClaimWeightPresetsRoute: ApiTipClaimWeightPresetsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

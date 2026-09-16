@@ -21,6 +21,7 @@ import { Route as ApiTipClaimAssignmentsRouteImport } from './routes/api/tip-cla
 import { Route as ApiTipClaimAvailableRouteImport } from './routes/api/tip-claim.available'
 import { Route as ApiTipClaimEmployeesRouteImport } from './routes/api/tip-claim.employees'
 import { Route as ApiTipClaimShiftsRouteImport } from './routes/api/tip-claim.shifts'
+import { Route as ApiTipClaimStaffingSnapshotsRouteImport } from './routes/api/tip-claim.staffing-snapshots'
 import { Route as ApiTipClaimTipPoolShiftsRouteImport } from './routes/api/tip-claim.tip-pool-shifts'
 import { Route as ApiTipClaimWeightPresetsRouteImport } from './routes/api/tip-claim.weight-presets'
 
@@ -84,6 +85,12 @@ const ApiTipClaimShiftsRoute = ApiTipClaimShiftsRouteImport.update({
   path: '/api/tip-claim/shifts',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiTipClaimStaffingSnapshotsRoute =
+  ApiTipClaimStaffingSnapshotsRouteImport.update({
+    id: '/api/tip-claim/staffing-snapshots',
+    path: '/api/tip-claim/staffing-snapshots',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiTipClaimTipPoolShiftsRoute =
   ApiTipClaimTipPoolShiftsRouteImport.update({
     id: '/api/tip-claim/tip-pool-shifts',
@@ -110,6 +117,7 @@ export interface FileRoutesByFullPath {
   '/api/tip-claim/available': typeof ApiTipClaimAvailableRoute
   '/api/tip-claim/employees': typeof ApiTipClaimEmployeesRoute
   '/api/tip-claim/shifts': typeof ApiTipClaimShiftsRoute
+  '/api/tip-claim/staffing-snapshots': typeof ApiTipClaimStaffingSnapshotsRoute
   '/api/tip-claim/tip-pool-shifts': typeof ApiTipClaimTipPoolShiftsRoute
   '/api/tip-claim/weight-presets': typeof ApiTipClaimWeightPresetsRoute
 }
@@ -126,6 +134,7 @@ export interface FileRoutesByTo {
   '/api/tip-claim/available': typeof ApiTipClaimAvailableRoute
   '/api/tip-claim/employees': typeof ApiTipClaimEmployeesRoute
   '/api/tip-claim/shifts': typeof ApiTipClaimShiftsRoute
+  '/api/tip-claim/staffing-snapshots': typeof ApiTipClaimStaffingSnapshotsRoute
   '/api/tip-claim/tip-pool-shifts': typeof ApiTipClaimTipPoolShiftsRoute
   '/api/tip-claim/weight-presets': typeof ApiTipClaimWeightPresetsRoute
 }
@@ -143,6 +152,7 @@ export interface FileRoutesById {
   '/api/tip-claim/available': typeof ApiTipClaimAvailableRoute
   '/api/tip-claim/employees': typeof ApiTipClaimEmployeesRoute
   '/api/tip-claim/shifts': typeof ApiTipClaimShiftsRoute
+  '/api/tip-claim/staffing-snapshots': typeof ApiTipClaimStaffingSnapshotsRoute
   '/api/tip-claim/tip-pool-shifts': typeof ApiTipClaimTipPoolShiftsRoute
   '/api/tip-claim/weight-presets': typeof ApiTipClaimWeightPresetsRoute
 }
@@ -161,6 +171,7 @@ export interface FileRouteTypes {
     | '/api/tip-claim/available'
     | '/api/tip-claim/employees'
     | '/api/tip-claim/shifts'
+    | '/api/tip-claim/staffing-snapshots'
     | '/api/tip-claim/tip-pool-shifts'
     | '/api/tip-claim/weight-presets'
   fileRoutesByTo: FileRoutesByTo
@@ -177,6 +188,7 @@ export interface FileRouteTypes {
     | '/api/tip-claim/available'
     | '/api/tip-claim/employees'
     | '/api/tip-claim/shifts'
+    | '/api/tip-claim/staffing-snapshots'
     | '/api/tip-claim/tip-pool-shifts'
     | '/api/tip-claim/weight-presets'
   id:
@@ -193,6 +205,7 @@ export interface FileRouteTypes {
     | '/api/tip-claim/available'
     | '/api/tip-claim/employees'
     | '/api/tip-claim/shifts'
+    | '/api/tip-claim/staffing-snapshots'
     | '/api/tip-claim/tip-pool-shifts'
     | '/api/tip-claim/weight-presets'
   fileRoutesById: FileRoutesById
@@ -210,6 +223,7 @@ export interface RootRouteChildren {
   ApiTipClaimAvailableRoute: typeof ApiTipClaimAvailableRoute
   ApiTipClaimEmployeesRoute: typeof ApiTipClaimEmployeesRoute
   ApiTipClaimShiftsRoute: typeof ApiTipClaimShiftsRoute
+  ApiTipClaimStaffingSnapshotsRoute: typeof ApiTipClaimStaffingSnapshotsRoute
   ApiTipClaimTipPoolShiftsRoute: typeof ApiTipClaimTipPoolShiftsRoute
   ApiTipClaimWeightPresetsRoute: typeof ApiTipClaimWeightPresetsRoute
 }
@@ -300,6 +314,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiTipClaimShiftsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/tip-claim/staffing-snapshots': {
+      id: '/api/tip-claim/staffing-snapshots'
+      path: '/api/tip-claim/staffing-snapshots'
+      fullPath: '/api/tip-claim/staffing-snapshots'
+      preLoaderRoute: typeof ApiTipClaimStaffingSnapshotsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/tip-claim/tip-pool-shifts': {
       id: '/api/tip-claim/tip-pool-shifts'
       path: '/api/tip-claim/tip-pool-shifts'
@@ -330,6 +351,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiTipClaimAvailableRoute: ApiTipClaimAvailableRoute,
   ApiTipClaimEmployeesRoute: ApiTipClaimEmployeesRoute,
   ApiTipClaimShiftsRoute: ApiTipClaimShiftsRoute,
+  ApiTipClaimStaffingSnapshotsRoute: ApiTipClaimStaffingSnapshotsRoute,
   ApiTipClaimTipPoolShiftsRoute: ApiTipClaimTipPoolShiftsRoute,
   ApiTipClaimWeightPresetsRoute: ApiTipClaimWeightPresetsRoute,
 }

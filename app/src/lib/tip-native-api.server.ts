@@ -2,6 +2,12 @@ type TipClaimInternalFetchOptions = {
   organizationId?: string;
 };
 
+type TipClaimInternalRequestOptions = {
+  organizationId?: string;
+  method?: "GET" | "POST" | "PATCH" | "DELETE";
+  body?: unknown;
+};
+
 function getAuthBaseUrl(request: Request) {
   const hostname = new URL(request.url).hostname.toLowerCase();
 
@@ -35,11 +41,11 @@ function getInternalSecret() {
   return internalSecret;
 }
 
-export async function fetchTipClaimInternalJson<T>(
+function internalRequest(
   request: Request,
   internalPath: string,
   userId: string,
-  options: TipClaimInternalFetchOptions = {},
+  options: TipClaimInternalRequestOptions = {},
 ) {
   const url = new URL(`${getAuthBaseUrl(request)}${internalPath}`);
   url.searchParams.set("userId", userId);
@@ -48,15 +54,62 @@ export async function fetchTipClaimInternalJson<T>(
     url.searchParams.set("organizationId", options.organizationId);
   }
 
-  const response = await fetch(url, {
-    headers: {
-      "x-tip-claim-internal-secret": getInternalSecret(),
-    },
+  const headers: Record<string, string> = {
+    "x-tip-claim-internal-secret": getInternalSecret(),
+  };
+
+  if (options.body !== undefined) {
+    headers["content-type"] = "application/json";
+  }
+
+  return fetch(url, {
+    method: options.method ?? "GET",
+    headers,
+    body:
+      options.body === undefined
+        ? undefined
+        : JSON.stringify(options.body),
   });
+}
+
+export async function fetchTipClaimInternalJson<T>(
+  request: Request,
+  internalPath: string,
+  userId: string,
+  options: TipClaimInternalFetchOptions = {},
+) {
+  const response = await internalRequest(request, internalPath, userId, options);
 
   if (!response.ok) {
     return null;
   }
 
   return (await response.json()) as T;
+}
+
+export async function forwardTipClaimInternalJson(
+  request: Request,
+  internalPath: string,
+  userId: string,
+  options: TipClaimInternalRequestOptions,
+) {
+  const response = await internalRequest(request, internalPath, userId, options);
+  const contentType = response.headers.get("content-type") ?? "";
+
+  if (contentType.includes("application/json")) {
+    const result = (await response.json()) as unknown;
+
+    return Response.json(result, { status: response.status });
+  }
+
+  const text = await response.text();
+
+  if (text.length > 0) {
+    return new Response(text, {
+      status: response.status,
+      headers: { "content-type": contentType || "text/plain" },
+    });
+  }
+
+  return new Response(null, { status: response.status });
 }

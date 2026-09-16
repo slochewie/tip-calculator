@@ -200,7 +200,7 @@ function Reports() {
 
   function handleCorrectClaim(shift: TipClaimShiftReport) {
     saveTipClaimCorrectionDraft(shift);
-    void navigate({ to: "/app" });
+    void navigate({ to: "/claims" });
   }
 
   function handleCorrectPool(shift: TipPoolShiftReport) {

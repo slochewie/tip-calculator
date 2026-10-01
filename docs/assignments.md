@@ -14,17 +14,19 @@ Assignment managers can enable or disable:
 - **Manager**
 - **Barback**
 - **Door**
+- **7Shifts** — shown only when 7shifts schedule syncing is configured for the organization. This grants Tip Calculator schedule features without requiring a matching permission-producing role in 7shifts.
 
-Role eligibility controls the employee choices shown in Claims and Tips. For example, a Barback staffing slot only lists members enabled for the Barback role.
+Role eligibility controls the employee choices shown in Claims and Tips. The 7Shifts assignment is separate from staffing-role eligibility. For example, a Barback staffing slot only lists members enabled for the Barback role.
 
 ## Update an employee
 
 1. Open **Assignments**.
 2. Select the organization.
-3. Find the employee. Use search when the member list is long.
+3. Find the employee. The Access and Roles tables each have their own search, filters, and pagination.
 4. Enable **Tip Calculator access** when the employee should use the application.
-5. Enable every role the employee may perform.
-6. Enable assignment-manager access only when the employee should manage assignments for others.
+5. Enable every staffing role the employee may perform.
+6. If 7shifts schedule syncing is configured and the employee should use Tip Calculator schedule features, enable **7Shifts**. Existing 7shifts-derived schedule permissions continue to work; this assignment is an additional explicit grant.
+7. Enable assignment-manager access only when the employee should manage assignments for others.
 
 Changes are saved as they are made.
 

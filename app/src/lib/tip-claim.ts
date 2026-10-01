@@ -1,6 +1,7 @@
 import { authBaseURL } from "#/lib/auth-client.ts";
 
 export type TipClaimRole = "bartender" | "manager" | "barback" | "door";
+export type TipClaimAssignmentRole = TipClaimRole | "seven-shifts";
 
 export type TipClaimSaveRegister = {
   registerKey: string;
@@ -78,6 +79,7 @@ export type TipClaimEmployeeAssignment = {
   managerEnabled: boolean;
   barbackEnabled: boolean;
   doorEnabled: boolean;
+  sevenShiftsEnabled: boolean;
   canUpdateAccess: boolean;
   canUpdateManager: boolean;
   canUpdateRoles: boolean;
@@ -110,6 +112,7 @@ type TipClaimDeleteResponse = {
 
 type TipClaimAssignmentsResponse = {
   assignments?: TipClaimEmployeeAssignment[];
+  sevenShiftsConfigured?: boolean;
   error?: string;
 };
 
@@ -170,7 +173,10 @@ export async function listTipClaimAssignments(organizationId: string) {
   const response = await fetch(url, { credentials: "include" });
   const result = (await response.json()) as TipClaimAssignmentsResponse;
   if (!response.ok) throw new Error(typeof result.error === "string" ? result.error : "Unable to load employee assignments.");
-  return Array.isArray(result.assignments) ? result.assignments : [];
+  return {
+    assignments: Array.isArray(result.assignments) ? result.assignments : [],
+    sevenShiftsConfigured: result.sevenShiftsConfigured === true,
+  };
 }
 
 export async function listTipClaimEmployees(organizationId: string) {
@@ -208,7 +214,7 @@ export function updateTipClaimManager(organizationId: string, userId: string, en
   return updateAssignmentFlag("/api/auth/tip-claim/manager", organizationId, userId, enabled, "Unable to update Tip Calculator manager.");
 }
 
-export async function updateTipClaimAssignment(organizationId: string, userId: string, role: TipClaimRole, enabled: boolean) {
+export async function updateTipClaimAssignment(organizationId: string, userId: string, role: TipClaimAssignmentRole, enabled: boolean) {
   const url = new URL("/api/auth/tip-claim/assignments", authBaseURL);
   const response = await fetch(url, { method: "PATCH", credentials: "include", headers: { "content-type": "application/json" }, body: JSON.stringify({ organizationId, userId, role, enabled }) });
   const result = (await response.json()) as TipClaimAssignmentUpdateResponse;

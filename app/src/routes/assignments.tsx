@@ -314,9 +314,9 @@ function TipClaimAssignments() {
       <Skeleton className="h-10 w-full" />
     </div>
   ) : !activeOrganization ? null : assignments.length === 0 ? (
-    <p className="text-sm text-muted-foreground">No eligible organization employees are available.</p>
-  ) : filteredAssignments.length === 0 ? (
-    <p className="text-sm text-muted-foreground">No employees match your search.</p>
+    <p className="text-sm text-muted-foreground">
+      No eligible organization employees are available.
+    </p>
   ) : null;
 
   return (
@@ -358,7 +358,8 @@ function TipClaimAssignments() {
               />
               {employeeTableState}
               {!assignmentsPending && accessAssignments.length > 0 ? (
-                <div className="overflow-x-auto rounded-md border">
+                <>
+                  <div className="overflow-x-auto rounded-md border">
                   <Table>
                     <TableHeader><TableRow><TableHead>Employee</TableHead><TableHead>Access</TableHead><TableHead>Manager</TableHead></TableRow></TableHeader>
                     <TableBody>
@@ -405,12 +406,17 @@ function TipClaimAssignments() {
                     </TableBody>
                   </Table>
                 </div>
-                <Pagination
-                  page={safeAccessPage}
-                  pageCount={accessPageCount}
-                  total={accessAssignments.length}
-                  onPageChange={setAccessPage}
-                />
+                  <Pagination
+                    page={safeAccessPage}
+                    pageCount={accessPageCount}
+                    total={accessAssignments.length}
+                    onPageChange={setAccessPage}
+                  />
+                </>
+              ) : !assignmentsPending && assignments.length > 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No employees match these access filters.
+                </p>
               ) : null}
             </CardContent>
           </CollapsibleContent>
@@ -453,7 +459,8 @@ function TipClaimAssignments() {
               />
               {employeeTableState}
               {!assignmentsPending && roleAssignments.length > 0 ? (
-                <div className="overflow-x-auto rounded-md border">
+                <>
+                  <div className="overflow-x-auto rounded-md border">
                   <Table>
                     <TableHeader><TableRow><TableHead>Employee</TableHead><TableHead>Roles</TableHead></TableRow></TableHeader>
                     <TableBody>
@@ -491,12 +498,17 @@ function TipClaimAssignments() {
                     </TableBody>
                   </Table>
                 </div>
-                <Pagination
-                  page={safeRolesPage}
-                  pageCount={rolesPageCount}
-                  total={roleAssignments.length}
-                  onPageChange={setRolesPage}
-                />
+                  <Pagination
+                    page={safeRolesPage}
+                    pageCount={rolesPageCount}
+                    total={roleAssignments.length}
+                    onPageChange={setRolesPage}
+                  />
+                </>
+              ) : !assignmentsPending && assignments.length > 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No employees match these role filters.
+                </p>
               ) : null}
             </CardContent>
           </CollapsibleContent>
@@ -518,7 +530,7 @@ function TableControls({
   onSearchChange: (value: string) => void;
   filter: string;
   onFilterChange: (value: string) => void;
-  options: string[][];
+  options: Array<Array<string>>;
 }) {
   return (
     <div className="flex flex-col gap-2 sm:flex-row">
